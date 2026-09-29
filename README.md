@@ -9,8 +9,9 @@ evolution through the Clinical API.
 ## Scope
 
 The portal is a presentation client. It does not own user identity, tokens, sessions, patient
-administrative records, appointment scheduling, billing/money or Clinical persistence. Those
-responsibilities remain at their owning bounded context or the platform boundary.
+administrative records, appointment scheduling, billing/money or Clinical persistence. The
+shared HTTP client, token and session handling belong to `dlc-front`; Clinical consumes that
+platform capability instead of duplicating it.
 
 ## Technical baseline
 
@@ -19,7 +20,7 @@ responsibilities remain at their owning bounded context or the platform boundary
 - API use follows the versioned Clinical OpenAPI contract.
 - UI state is display state only; clinical writes remain idempotent at the API boundary.
 
-Do not call databases or bypass the API gateway/authorization boundary from the browser.
+Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
 
 ## Documentation
 
