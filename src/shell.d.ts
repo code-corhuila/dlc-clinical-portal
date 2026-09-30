@@ -1,11 +1,8 @@
 declare module 'shell/apiClient' {
-  /**
-   * Contract intentionally pending publication by dlc-front.
-   * Portals must not add operations to this boundary.
-   */
-  interface ApiClient {
-    readonly __contractPending?: never;
-  }
+  export type ApiClient = {
+    get<T>(path: string): Promise<T>;
+    post<T>(path: string, body: unknown, options?: { idempotencyKey?: string }): Promise<T>;
+  };
 
   const apiClient: ApiClient;
   export default apiClient;

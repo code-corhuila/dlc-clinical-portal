@@ -1,11 +1,11 @@
-import {
-  ClinicalPortalComposition,
-  type ClinicalShellContext,
-} from './composition/ClinicalPortalComposition';
-
-export type { ClinicalShellContext };
-
-/** Federated entry mounted by dlc-front at /app/patients/:patientId. */
-export function ClinicalPortal(context: ClinicalShellContext) {
-  return <ClinicalPortalComposition {...context} />;
+export function ClinicalPortal() {
+  return (
+    <main className="portal-placeholder" aria-labelledby="clinical-portal-title">
+      <h1 id="clinical-portal-title">Clinical portal</h1>
+      <p>The Clinical remote is available for federation.</p>
+      <p>
+        Domain workflows require the shared client and session supplied by <code>dlc-front</code>.
+      </p>
+    </main>
+  );
 }
