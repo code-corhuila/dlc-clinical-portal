@@ -49,7 +49,8 @@ This branch establishes the portal foundation only: runtime, build, remote expos
 documented `shell/apiClient` boundary, and containerized static delivery. It does not implement
 a Clinical user story, authentication, session handling, HTTP calls, Clinical forms, Analytics,
 or API integration. The exact `shell/apiClient` operations and any session/role contract remain
-a documentation gap until `dlc-front` publishes them.
+a documentation gap until `dlc-front` publishes them. Its TypeScript value is intentionally
+typed as `unknown`; this repository must not infer or implement the missing client contract.
 
 Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
 
