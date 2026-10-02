@@ -16,7 +16,7 @@ platform capability instead of duplicating it.
 ## Technical baseline
 
 - React 19 with the established workspace tooling.
-- Node.js 24 for local development.
+- Node.js 22 for local development and CI.
 - API use follows the versioned Clinical OpenAPI contract.
 - UI state is display state only; clinical writes remain idempotent at the API boundary.
 
@@ -42,6 +42,14 @@ docker compose -f deploy/compose.yml up --build
 
 `remoteEntry.js` is deliberately sent with `Cache-Control: no-store` because it selects
 the version of the remote that the browser loads.
+
+## Foundation status
+
+This branch establishes the portal foundation only: runtime, build, remote exposure, the
+documented `shell/apiClient` boundary, and containerized static delivery. It does not implement
+a Clinical user story, authentication, session handling, HTTP calls, Clinical forms, Analytics,
+or API integration. The exact `shell/apiClient` operations and any session/role contract remain
+a documentation gap until `dlc-front` publishes them.
 
 Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
 
