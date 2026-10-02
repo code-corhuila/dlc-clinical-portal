@@ -1,4 +1,12 @@
 declare module 'shell/apiClient' {
-  const apiClient: unknown;
+  /**
+   * Contract intentionally pending publication by dlc-front.
+   * Portals must not add operations to this boundary.
+   */
+  interface ApiClient {
+    readonly __contractPending?: never;
+  }
+
+  const apiClient: ApiClient;
   export default apiClient;
 }
