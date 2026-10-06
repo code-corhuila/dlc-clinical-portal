@@ -1,0 +1,9 @@
+name: dlc-clinical-portal
+
+services:
+  clinical-portal:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "${PORTAL_PORT:-4173}:80"
