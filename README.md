@@ -43,6 +43,39 @@ docker compose -f deploy/compose.yml up --build
 `remoteEntry.js` is deliberately sent with `Cache-Control: no-store` because it selects
 the version of the remote that the browser loads.
 
+## Quality workflow
+
+Node.js 22 is the supported runtime for local development and CI. Vitest together with React
+Testing Library provides the current test harness.
+
+| Command | Validates |
+| --- | --- |
+| `npm run typecheck` | TypeScript project references and types. |
+| `npm run lint` | TypeScript/React static checks through ESLint. |
+| `npm run format:check` | Prettier formatting for the Quality configuration files. |
+| `npm test` | The Vitest regression suite. |
+| `npm run test:coverage` | The Vitest regression suite with V8 coverage reporting. |
+| `npm run build` | Type checking followed by the Vite production build. |
+| `npm run quality` | Typecheck, lint, formatting, tests, coverage and build in that order. |
+
+Coverage is currently restricted to `src/clinical` and excludes test harness files. It reports
+the structural Clinical source scope only; it must not be read as complete functional Clinical
+coverage. No arbitrary coverage threshold is configured yet because there is no Clinical
+domain or application behavior from which to establish a meaningful business baseline.
+
+The format check intentionally covers the Quality configuration files. Pre-existing source
+formatting outside that scope should be handled in a dedicated formatting change, not mixed
+with functional work.
+
+Functional user stories must follow real chronological test-first development:
+
+```
+RED → GREEN → REFACTOR → REGRESSION
+```
+
+Do not add fictitious tests solely to increase coverage. The first Clinical behaviors will
+establish their own test-first evidence and coverage baseline.
+
 ## Foundation status
 
 This branch establishes the portal foundation only: runtime, build, remote exposure, the
