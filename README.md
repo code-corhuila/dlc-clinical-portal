@@ -1,9 +1,32 @@
 # dlc-clinical-portal
 
-> clinical bounded context: web UI (remote)
+> Clinical bounded context: remote web UI.
 
-Part of the **LMS Library** distributed system — team `lms-library`, Grupo 2.
-Governance and documentation live in [`library-docs`](https://github.com/code-corhuila/library-docs).
+This repository contains the **Di Lucca Clinical** frontend. It gives authorized clinical users a
+safe interface for clinical histories, consultations, diagnoses, treatments, procedures and their
+evolution through the Clinical API.
+
+## Scope
+
+The portal is a presentation client. It does not own user identity, tokens, sessions, patient
+administrative records, appointment scheduling, billing/money or Clinical persistence. The
+shared HTTP client, token and session handling belong to `dlc-front`; Clinical consumes that
+platform capability instead of duplicating it.
+
+## Technical baseline
+
+- React 19 with the established workspace tooling.
+- Node.js 24 for local development.
+- API use follows the versioned Clinical OpenAPI contract.
+- UI state is display state only; clinical writes remain idempotent at the API boundary.
+
+Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
+
+## Documentation
+
+The authoritative specifications and governance live in
+[`dlc-docs`](https://github.com/code-corhuila/dlc-docs). Read the Clinical scope, frontend and
+integration rules, and repository/PR regulations before implementing a flow.
 
 ## Branching
 
@@ -13,13 +36,14 @@ branch and leave through a Pull Request.
 ```
 develop  <--PR--  feat/... fix/... chore/...
 qa       <--PR--  qa/...
-main     <--PR--  release/...  hotfix/...
+main     <--PR--  release/... hotfix/...
 ```
 
 Promotion happens **by re-application** (`git cherry-pick -x`), never by merging one permanent
 branch into another: `merge develop -> qa` and `merge qa -> main` do not exist in this model.
 
-`main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
-rule.
+`main` approval is enforced through the repository's `CODEOWNERS`. Review rules for `develop`
+and `qa` are defined by the team according to the course regulation.
 
-Full policy: `00-governance/branching-policy.md` in `library-docs`.
+Every Pull Request declares the affected user story (or why it is not applicable), stays within
+the permitted diff size and targets the correct permanent branch.
