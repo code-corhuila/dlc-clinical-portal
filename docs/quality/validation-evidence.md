@@ -142,3 +142,32 @@ Verifiable reference: https://github.com/code-corhuila/dlc-clinical-portal/pull/
 - final verification passed.
 
 No terminal logs or timestamps are invented for this historical note.
+
+## DEV-CLIN-PORTAL-SECURITY-001
+
+- **Issue:** #10 — chore(security): assess high-severity source-map-js vulnerability
+- **Environment:** Dev
+- **Branch:** chore/security-source-map-js
+- **Baseline SHA (source develop):** 22b9d0e73eeff5a2cd44012eb393dd437e6f1e8a
+- **Baseline classification:** SECURITY CHECK-FIRST BASELINE — REPRODUCED (not a functional TDD RED)
+- **Vulnerability:** GHSA-68fv-2mgg-jv7q — severity HIGH; affected range `>=1.0.0 <1.2.2`
+- **Vulnerable version:** `source-map-js@1.2.1`
+- **Fixed version:** `source-map-js@1.2.2`
+- **Direct dependency:** NO
+- **Transitive dependency:** YES (all immediate parents request `^1.2.1`, so `1.2.2` was already allowed)
+- **Dependency paths:**
+  - PROD-declared / build-time: `vite@7.3.6` → `postcss@8.5.28` → `source-map-js`
+  - DEV / test: `jsdom@30.1.1` → `css-tree@3.2.1` → `source-map-js`
+  - DEV / coverage: `@vitest/coverage-v8@5.0.3` → `magicast@0.5.5` → `source-map-js`
+- **Runtime impact:** build/dev/test exposure only — the final deployed image is Nginx static assets with no `node_modules` and no Node runtime, and `source-map-js` is absent from the browser bundle. `npm audit --omit=dev` reported the finding only because `vite` is currently declared in `dependencies`.
+- **Implementation:** minimal lockfile-only remediation via `npm audit fix --package-lock-only`
+- **package.json:** unchanged
+- **package-lock.json:** changed — only the `node_modules/source-map-js` resolution moved `1.2.1` → `1.2.2` (version, resolved, integrity)
+- **No forced upgrade:** `npm audit fix --force` was NOT used; no unrelated dependency versions changed
+- **Before audit result:** full audit FAIL (exit 1, 1 HIGH); `--omit=dev` audit FAIL (exit 1, 1 HIGH)
+- **After audit result:** full audit PASS (exit 0, 0 vulnerabilities); `--omit=dev` audit PASS (exit 0, 0 vulnerabilities)
+- **Full regression:** `npm ci` PASS; `npm run typecheck` PASS; `npm run lint` PASS; `npm run format:check` PASS; `npm test` PASS — 1 test file / 1 test; `npm run test:coverage` PASS (structural only — 100% of 3 files, NOT functional/domain coverage); `npm run build` PASS; `npm run quality` PASS; `git diff --check` PASS
+- **Known local runtime mismatch:** local Node v24.19.0 / npm 11.17.0 versus engines `node >=22 <23`, `npm >=10 <11` — local results are supplementary only; repository-supported runtime is Node 22 / npm 10
+- **Authoritative CI:** GitHub Actions Node 22 — pending until the PR CI run records it
+- **Exact implementation commit:** 5d74603b4253535bd89a9e5c75588a0d64e6109d (`chore(security): remediate source-map-js advisory`)
+- **Evidence classification:** SECURITY REMEDIATION VALIDATION — PASS (not a TDD RED/GREEN cycle)
