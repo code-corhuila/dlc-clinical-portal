@@ -39,7 +39,25 @@ These commands are used to validate changes. Not all are tests; they are classif
 
 Tooling/configuration changes use a reproducible check-first equivalent. If a historical `RED` did not actually occur, classify the baseline transparently as:
 
-**RETROSPECTIVE BASELINE / RED-EQUIVALENT**
+**RETROSPECTIVE BASELINE / NON-TDD SUPPORTING EVIDENCE**
+
+This classification:
+
+- does **NOT** satisfy chronological TDD and does **NOT** replace a real `RED`;
+- cannot be used to claim that a functional HU followed TDD;
+- exists only to preserve truthful supporting evidence for historical non-functional tooling/configuration/quality/docs work where chronological `RED` did not actually occur;
+- must never be used for domain, application, UI behavior, API behavior, or other functional changes;
+- is review governance, not a substitute for TDD.
+
+Future functional Clinical HUs MUST use actual chronological `RED` → `GREEN` → `REFACTOR` → `REGRESSION`.
+
+Objective eligibility criteria — a change may use this supporting-evidence classification only when **ALL** are true:
+
+1. no business/domain behavior is introduced or changed;
+2. no functional user-facing behavior is introduced or changed;
+3. the change is limited to tooling/configuration/quality/docs or equivalent non-functional infrastructure;
+4. the evidence explicitly states that historical `RED` did not occur;
+5. the PR reviewer accepts the classification.
 
 Never describe it as historical `RED`.
 
