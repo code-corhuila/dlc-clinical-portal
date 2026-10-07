@@ -4,14 +4,14 @@ Records are append-only historical evidence unless a factual correction is requi
 
 ## QA-CLIN-PORTAL-QUALITY-001
 
-**Environment:** QA promotion  
-**Change:** Frontend Quality gates  
-**Source PR:** #11  
-**Promotion PR:** #13  
-**Base QA:** 4d20dd90425cd4c0b8fb4c212d0099b7c8f5d23d  
-**Promotion branch used:** promotion/clinical-portal-quality  
-**Exact tested promotion SHA:** 267f03583dadc08793fdc09da0a01fc6708c69c5  
-**QA merge commit:** b197e865295e6306f15264c4466f08dcfcf20d0a  
+- **Environment:** QA promotion
+- **Change:** Frontend Quality gates
+- **Source PR:** #11
+- **Promotion PR:** #13
+- **Base QA:** 4d20dd90425cd4c0b8fb4c212d0099b7c8f5d23d
+- **Promotion branch used:** promotion/clinical-portal-quality
+- **Exact tested promotion SHA:** 267f03583dadc08793fdc09da0a01fc6708c69c5
+- **QA merge commit:** b197e865295e6306f15264c4466f08dcfcf20d0a
 
 **Validation classification:** FRESH QA REGRESSION / PROMOTION VALIDATION
 
