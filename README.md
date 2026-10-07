@@ -52,20 +52,22 @@ Testing Library provides the current test harness.
 | --- | --- |
 | `npm run typecheck` | TypeScript project references and types. |
 | `npm run lint` | TypeScript/React static checks through ESLint. |
-| `npm run format:check` | Prettier formatting for the Quality configuration files. |
+| `npm run format:check` | Prettier formatting for Clinical portal source files and supported project configuration files. |
 | `npm test` | The Vitest regression suite. |
 | `npm run test:coverage` | The Vitest regression suite with V8 coverage reporting. |
 | `npm run build` | Type checking followed by the Vite production build. |
 | `npm run quality` | Typecheck, lint, formatting, tests, coverage and build in that order. |
 
-Coverage is currently restricted to `src/clinical` and excludes test harness files. It reports
-the structural Clinical source scope only; it must not be read as complete functional Clinical
-coverage. No arbitrary coverage threshold is configured yet because there is no Clinical
-domain or application behavior from which to establish a meaningful business baseline.
+Coverage is currently restricted to `src/clinical` and excludes test harness files. It measures
+three structural Clinical source files — `ClinicalPortal.tsx`, `ClinicalPortalComposition.tsx`
+and `ClinicalPortalPage.tsx` — rather than complete functional or domain coverage. No arbitrary
+coverage threshold is configured yet because there is no Clinical domain or application behavior
+from which to establish a meaningful business baseline.
 
-The format check intentionally covers the Quality configuration files. Pre-existing source
-formatting outside that scope should be handled in a dedicated formatting change, not mixed
-with functional work.
+The format check covers `src/**/*.{ts,tsx,css}`, root `*.{js,ts,json,html}` project files,
+`.prettierrc.json` and `.github/workflows/*.{yml,yaml}`. `package-lock.json` remains excluded
+because it is generated dependency metadata. This is a controlled Quality scope, not a claim
+that every repository file is governed by Prettier.
 
 Functional user stories must follow real chronological test-first development:
 
