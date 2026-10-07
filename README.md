@@ -96,6 +96,11 @@ The authoritative specifications and governance live in
 [`dlc-docs`](https://github.com/code-corhuila/dlc-docs). Read the Clinical scope, frontend and
 integration rules, and repository/PR regulations before implementing a flow.
 
+## Quality and validation documentation
+
+- `docs/quality/testing-strategy.md` — testing and validation strategy.
+- `docs/quality/validation-evidence.md` — persistent validation evidence registry.
+
 ## Branching
 
 Three permanent branches. **None of them accepts a direct commit** — you enter through a child
