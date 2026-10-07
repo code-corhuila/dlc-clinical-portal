@@ -4,7 +4,9 @@
   background: #f4f8f9;
 }
 
-body { margin: 0; }
+body {
+  margin: 0;
+}
 
 .portal-placeholder {
   max-width: 44rem;

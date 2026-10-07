@@ -6,6 +6,8 @@ describe('ClinicalPortal', () => {
   it('renders the Clinical portal foundation placeholder', () => {
     render(<ClinicalPortal />);
 
-    expect(screen.getByRole('heading', { name: 'Clinical portal' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Clinical portal' }),
+    ).toBeInTheDocument();
   });
 });
