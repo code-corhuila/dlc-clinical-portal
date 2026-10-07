@@ -1,5 +1,14 @@
 # Clinical Portal Testing Strategy
 
+## Governance authority
+
+Project-wide testing and TDD policy is defined by `dlc-docs`. The authoritative documents are:
+
+- [dlc-docs/11-quality/testing-strategy.md](https://github.com/code-corhuila/dlc-docs/blob/main/11-quality/testing-strategy.md)
+- [dlc-docs/11-quality/tdd-guide.md](https://github.com/code-corhuila/dlc-docs/blob/main/11-quality/tdd-guide.md)
+
+This Clinical Portal document does **NOT** replace or supersede those documents. It only maps project-wide policy to the commands, tooling, validation flow and evidence practices used by `dlc-clinical-portal`. It is repository-specific operational guidance, not a competing project-wide policy.
+
 ## Purpose
 
 This document defines how changes in `dlc-clinical-portal` are validated and how evidence is preserved. It is a living registry of the quality workflow, not a replacement for executable tests or CI.
