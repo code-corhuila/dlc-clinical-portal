@@ -1,6 +1,15 @@
 # Clinical Portal Validation Evidence
 
-Records are append-only historical evidence unless a factual correction is required. Do not rewrite old PASS/FAIL history because later executions change.
+This registry follows an **append-oriented review convention**, not a technically immutable log:
+
+- old PASS/FAIL records should not be rewritten merely because later executions produce different results;
+- factual mistakes MAY be corrected;
+- factual corrections must clearly identify the affected evidence record and the reason for the correction;
+- a newer validation MAY supersede an earlier one;
+- when superseding, the new record must reference the previous Evidence ID;
+- Git history, PRs and GitHub Actions remain the supporting execution trace.
+
+This convention is enforced through review and governance. There is currently **no dedicated CI mechanism** that makes old Markdown evidence technically immutable.
 
 ## QA-CLIN-PORTAL-QUALITY-001
 
@@ -12,6 +21,14 @@ Records are append-only historical evidence unless a factual correction is requi
 - **Promotion branch used:** promotion/clinical-portal-quality
 - **Exact tested promotion SHA:** 267f03583dadc08793fdc09da0a01fc6708c69c5
 - **QA merge commit:** b197e865295e6306f15264c4466f08dcfcf20d0a
+
+### Verifiable references
+
+- Source Quality PR #11: https://github.com/code-corhuila/dlc-clinical-portal/pull/11
+- QA promotion PR #13: https://github.com/code-corhuila/dlc-clinical-portal/pull/13
+- Exact tested promotion commit: https://github.com/code-corhuila/dlc-clinical-portal/commit/267f03583dadc08793fdc09da0a01fc6708c69c5
+- QA merge commit: https://github.com/code-corhuila/dlc-clinical-portal/commit/b197e865295e6306f15264c4466f08dcfcf20d0a
+- GitHub Actions CI run #10: https://github.com/code-corhuila/dlc-clinical-portal/actions/runs/37579428186
 
 **Validation classification:** FRESH QA REGRESSION / PROMOTION VALIDATION
 
@@ -68,7 +85,14 @@ PR #11 recorded:
 
 **Test-first classification:** RETROSPECTIVE BASELINE / RED-EQUIVALENT
 
-Explanation: the baseline was reproduced after the original local Quality implementation. Therefore it is supporting evidence of the pre-Quality state, but it is NOT claimed as chronological historical `RED`.
+This is **NOT** a claim of chronological historical `RED`. "RED-EQUIVALENT" here does **not** mean a functional test historically failed before implementation. It means the pre-Quality baseline lacked the Quality capabilities/checks that this change was introducing, and that missing capability was reproduced retrospectively.
+
+Reproduced pre-Quality baseline:
+
+- Quality commands introduced later did **not yet exist / were unavailable** on the detached pre-Quality baseline: `npm run lint`, `npm run format:check`, `npm run test:coverage`, `npm run quality`;
+- existing commands remained green: `npm run typecheck`, `npm test`, `npm run build`.
+
+Verifiable reference: https://github.com/code-corhuila/dlc-clinical-portal/pull/11
 
 **Known formatting-gate probe evidence:**
 
