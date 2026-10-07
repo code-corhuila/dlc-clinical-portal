@@ -13,8 +13,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "format": "prettier --write eslint.config.js .prettierrc.json package.json vitest.config.ts .github/workflows/ci.yml",
-    "format:check": "prettier --check eslint.config.js .prettierrc.json package.json vitest.config.ts .github/workflows/ci.yml",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "quality": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:coverage && npm run build"
