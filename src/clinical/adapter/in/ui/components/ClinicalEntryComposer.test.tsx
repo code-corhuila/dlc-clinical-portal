@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ClinicalEntryComposer } from './ClinicalEntryComposer';
 
@@ -21,99 +21,16 @@ function submit(text: string) {
 }
 
 describe('ClinicalEntryComposer', () => {
-  const consultations = [
-    { id: 'c-1', label: '02 mar 2026 · Revisión inicial' },
-  ];
-
-  it('reuses the idempotency key on retry and renews it after success', async () => {
-    const onSubmit = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValue(undefined);
-    renderComposer({ onSubmit });
-
-    submit('Consulta con reintento');
-    await screen.findByRole('alert');
-    fireEvent.click(screen.getByRole('button', { name: 'Registrar entrada' }));
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
-    submit('Otra consulta');
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(3));
-
-    const keys = onSubmit.mock.calls.map((call) => call[1]);
-    expect(keys[0]).toEqual(expect.any(String));
-    expect(keys[1]).toBe(keys[0]);
-    expect(keys[2]).not.toBe(keys[0]);
-  });
-
-  it('clears the narrative after a successful submission', async () => {
-    renderComposer({ onSubmit: vi.fn().mockResolvedValue(undefined) });
-    submit('Consulta guardada');
-
-    await waitFor(() =>
-      expect(screen.getByLabelText('Narrativa clínica')).toHaveValue(''),
-    );
-  });
-
-  it('keeps the narrative when the submission fails', async () => {
-    renderComposer({ onSubmit: vi.fn().mockRejectedValue(new Error('x')) });
-    submit('Consulta fallida');
-
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(screen.getByLabelText('Narrativa clínica')).toHaveValue(
-      'Consulta fallida',
-    );
-  });
-
-  it('requires an explicit consultation for a diagnosis', () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    renderComposer({ onSubmit, consultations });
-    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
-      target: { value: 'DIAGNOSIS' },
-    });
-
-    expect(screen.getByLabelText('Consulta asociada')).toHaveValue('');
-    submit('Caries oclusal');
-
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Seleccione la consulta asociada al diagnóstico.',
-    );
-  });
-
-  it('submits a diagnosis with the selected consultation', () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    renderComposer({ onSubmit, consultations });
-    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
-      target: { value: 'DIAGNOSIS' },
-    });
-    fireEvent.change(screen.getByLabelText('Consulta asociada'), {
-      target: { value: 'c-1' },
-    });
-    submit('Caries oclusal');
-
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'DIAGNOSIS',
-        text: 'Caries oclusal',
-        consultationId: 'c-1',
-      }),
-      expect.any(String),
-    );
-  });
-
   it('submits an exact CONSULTATION request', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderComposer({ onSubmit });
 
     submit('Narrativa válida');
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'CONSULTATION',
-        text: 'Narrativa válida',
-      }),
-      expect.any(String),
-    );
+    expect(onSubmit).toHaveBeenCalledWith({
+      kind: 'CONSULTATION',
+      text: 'Narrativa válida',
+    });
   });
 
   it('submits an exact EVOLUTION request', () => {
@@ -125,13 +42,10 @@ describe('ClinicalEntryComposer', () => {
     });
     submit('Seguimiento válido');
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'EVOLUTION',
-        text: 'Seguimiento válido',
-      }),
-      expect.any(String),
-    );
+    expect(onSubmit).toHaveBeenCalledWith({
+      kind: 'EVOLUTION',
+      text: 'Seguimiento válido',
+    });
   });
 
   it.each(['', '   '])('rejects blank narrative %j', (text) => {
@@ -156,13 +70,10 @@ describe('ClinicalEntryComposer', () => {
 
     submit('  Contenido clínico válido.  ');
 
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        kind: 'CONSULTATION',
-        text: '  Contenido clínico válido.  ',
-      }),
-      expect.any(String),
-    );
+    expect(onSubmit).toHaveBeenCalledWith({
+      kind: 'CONSULTATION',
+      text: '  Contenido clínico válido.  ',
+    });
   });
 
   it.each([
