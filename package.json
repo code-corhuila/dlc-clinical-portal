@@ -13,10 +13,11 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "eslint .",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "gates": "node scripts/pr-gates.mjs",
     "quality": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:coverage && npm run build"
   },
   "dependencies": {

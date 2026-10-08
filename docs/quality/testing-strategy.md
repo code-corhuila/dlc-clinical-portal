@@ -26,6 +26,23 @@ These commands are used to validate changes. Not all are tests; they are classif
 - `npm run build` — Production build validation
 - `npm run quality` — Aggregate repository quality command
 - `git diff --check` — Whitespace/diff hygiene
+- `node scripts/pr-gates.mjs <lines|branch|commits|pr|arch>` — Pull Request gates, executed by `ci.yml`
+
+## PR gates
+
+`scripts/pr-gates.mjs` reuses the controls the norm already defines; it does not create a new validation framework. `ci.yml` executes every gate on each Pull Request.
+
+| Gate | Control reused | Kind |
+| --- | --- | --- |
+| `lines` | norm 9.2 — 400 computable lines; tests and generated files excluded | deterministic |
+| `branch` | norm 6.3.1 / 6.3.3 — child prefix against its parent branch | deterministic |
+| `commits` | norm 8.1 / 15.2 — Conventional Commits subject | deterministic |
+| `pr` | norm 9.1 — required PR sections plus task, HU or Issue reference | deterministic |
+| `arch` | Anexo H — HTTP client, token storage, cross-context imports | errors deterministic, warnings heuristic |
+
+Deterministic findings block the Pull Request. `arch` warnings are heuristics that require human review; no static analysis replaces a review of DDD, SDD, SOLID or Clean Code. The `pr` gate proves only that the required text is present, never that a functional requirement was fulfilled.
+
+`branch` reports `qa` against `qa/*` as an unresolved conflict: it creates no exception and asserts no compliance until a human decision is recorded.
 
 ## TDD for functional changes
 

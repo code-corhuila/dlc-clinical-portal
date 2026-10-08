@@ -171,3 +171,56 @@ No terminal logs or timestamps are invented for this historical note.
 - **Authoritative CI:** GitHub Actions Node 22 — pending until the PR CI run records it
 - **Exact implementation commit:** 5d74603b4253535bd89a9e5c75588a0d64e6109d (`chore(security): remediate source-map-js advisory`)
 - **Evidence classification:** SECURITY REMEDIATION VALIDATION — PASS (not a TDD RED/GREEN cycle)
+
+## DEV-CLIN-PORTAL-PRGATES-001
+
+- **Change / task:** TAREA 01 — missing Pull Request quality gates. No functional HU; HU-CLN-001 is out of scope.
+- **Issue:** PENDING — no issue or Pull Request was opened; commit, push and PR are not authorized in this task.
+- **Repository:** dlc-clinical-portal · **Environment:** Dev
+- **Branch:** `chore/clinical-pr-gates`, created from `origin/develop` at `c2cb6a41ee2b49b766bac98cedab5c1ebd8ed3fb`
+- **Exact tested SHA:** PENDING — no commit exists yet; this increment is validated on the working tree only.
+- **Objective:** detect PRs over 400 computable lines, wrong branches, non-conforming commits, missing traceability and portal architecture violations, reusing the controls that already exist.
+- **Validation type:** TOOLING/QUALITY — CHECK-FIRST / NON-TDD SUPPORTING EVIDENCE.
+- **Preconditions:** clean tree on `develop`, `git fetch origin`, local Node v24.19.0 / npm 11.17.0. CI runtime stays Node 22.
+- **TDD note:** implementation and tests were written in the same change; the first execution reported 1 failing assertion (RED) corrected to GREEN. Because the implementation preceded the test run, chronological RED-first TDD is **not** claimed here.
+
+**Commands, expected result, actual result:**
+
+| Command | Expected | Actual | Result |
+| --- | --- | --- | --- |
+| `npm run typecheck` | exit 0 | exit 0 | PASS |
+| `npm run lint` | exit 0 | exit 0 | PASS |
+| `npm run format:check` | exit 0 | all matched files use Prettier style | PASS |
+| `npm test` | suite passes | 2 files, 29 tests passed | PASS |
+| `npm run test:coverage` | exit 0 | 100% statements/lines/functions, structural only (3 files) | PASS |
+| `npm run build` | exit 0 | exit 0, `dist/` produced | PASS |
+| `npm run quality` | exit 0 | exit 0 | PASS |
+| `git diff --check` | no output | no output | PASS |
+| `pr-gates lines --base origin/develop --head WORKTREE` | total ≤ 400 | 386/400 computable, 269 test lines excluded, run after `git add -N .` | PASS |
+| `pr-gates lines --limit 386` | accept the exact total | `386/386 computable … lines: PASS`, exit 0 | PASS |
+| `pr-gates lines --limit 385` | reject when the total exceeds the limit | `386/385 computable … lines: FAIL`, exit 1 | PASS |
+| `pr-gates branch --base develop --head chore/clinical-pr-gates` | no findings | 0 findings | PASS |
+| `pr-gates branch --base qa --head feat/cln-001` | wrong target detected | `BRANCH_WRONG_TARGET — feat/ → develop`, FAIL | PASS |
+| `pr-gates branch --base qa --head qa/hu-001` | conflict reported, no compliance claimed | `QA_NOMENCLATURE_UNRESOLVED`, FAIL | PASS |
+| `pr-gates commits --base origin/develop~6 --head origin/develop` | non-conforming subjects detected | 6 `COMMIT_SUBJECT` findings | PASS |
+| `pr-gates commits --base origin/develop --head chore/clinical-pr-gates` | no commits yet | 0 findings (empty range) | PASS |
+| `pr-gates pr --body <filled body>` | 0 findings | `pr: PASS` | PASS |
+| `pr-gates pr --body .github/pull_request_template.md` | unfilled traceability detected | 3 findings, FAIL | PASS |
+| `pr-gates arch` | no violation under `src/` | 0 findings | PASS |
+
+**Measured size of this increment (norm 9.2):** 386 computable lines (insertions + deletions across 7 files); `scripts/pr-gates.test.mjs` adds 269 test lines that norm 9.2 excludes. Limit 400, PASS. Measured with `git add -N .` so untracked files appear in `git diff origin/develop`; the index was restored with `git reset` (no commit).
+
+**Final audit finding D1 (fixed, non-blocking):** `refs()` only stripped `remotes/origin/`, never `origin/`, so remote refs kept their prefix. In CI only the PR head branch exists locally, which made `QA_REF_NAMESPACE_COLLISION` unreachable. Fixed by normalizing `^(remotes\/)?origin\/` in `parseRefList`; three regression tests added (tests 15–17 of `scripts/pr-gates.test.mjs`). No behaviour changed for the other gates; total grew 377 → 386 computable lines (5 from the fix, 4 from the audit paragraphs above). The protection `QA_NOMENCLATURE_UNRESOLVED` never depended on this path and still fails as specified.
+
+**Validation on Node 22.13.1:** the only Node 22 binary available locally is `C:\Users\bonil\AppData\Local\ms-playwright-go\1.50.1\node.exe` (read-only use, nothing installed). `npm run quality` and all five gates were executed with it: exit 0, 29 tests passed, `386/400 lines: PASS`. npm stays 11.17.0 — npm 10 is not available locally and was not installed, so the npm half of `engines` remains validated only by the pending GitHub Actions run.
+
+**Known limitations:**
+
+- Local results use Node 24.19.0 / npm 11.17.0 against engines `node >=22 <23`, `npm >=10 <11`: supplementary only. The authoritative Node 22 GitHub Actions run is PENDING. The `lines` and `commits` gates resolve `origin/<head>`, so a Pull Request from a fork would need `refs/pull/*/head` fetched first.
+- The `pr` gate proves that the required text is present; it never proves that a functional requirement was fulfilled.
+- `arch` warnings are heuristic and never replace human review of DDD, SDD, SOLID or Clean Code. Binary files count as 0 lines; `package-lock.json`, `coverage/` and `dist/` are excluded as generated.
+- Norm audit 15.2 over the whole `origin/develop` history returns 6 `Merge pull request` subjects; the gate audits only the Pull Request range, so that historical finding stays open.
+- The `qa` vs `qa/*` ref namespace conflict is unresolved: the gate reports it, creates no exception and asserts no compliance. A `promotion/*` feeder fails `BRANCH_UNKNOWN_PREFIX` (norm 6.3.3) and needs a human decision.
+- No commit, push, Pull Request, merge or cherry-pick was performed, and no file outside `dlc-clinical-portal` was modified.
+
+**Conclusion:** PASS for local tooling validation. GitHub Actions, commit SHA traceability and the Pull Request itself remain PENDING until authorization is granted.

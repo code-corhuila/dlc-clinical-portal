@@ -8,6 +8,14 @@ Link the applicable issue in `dlc-docs`, or explain why no story applies.
 
 Include local results and the `ci.yml` result.
 
+## Evidence
+
+Record ID and path in `docs/quality/validation-evidence.md`, branch and exact tested SHA.
+
+## Known limitations
+
+What this change does not prove or does not cover yet.
+
 ## Promotion trail
 
 Required only for PRs to `qa` or `main`. List each `cherry-pick -x` source commit.
