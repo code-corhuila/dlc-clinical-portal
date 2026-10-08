@@ -1,0 +1,92 @@
+/* Clinical record slice — tokens from the approved design system. */
+
+.cr-card {
+  background: #fff;
+  border: 1px solid #eef2f4;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+}
+
+.cr-title {
+  font-size: 18px;
+  margin: 0 0 1rem;
+}
+
+.cr-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cr-entry {
+  border-top: 1px solid #eef2f4;
+  font-size: 14px;
+  padding: 12px 0;
+}
+.cr-entry__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  justify-content: space-between;
+}
+.cr-entry__kind {
+  background: #e8f7f5;
+  border-radius: 4px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 600;
+}
+.cr-label {
+  color: #66737a;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.cr-entry__text {
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+.cr-state {
+  text-align: center;
+}
+.cr-state__title {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.cr-state__text {
+  color: #66737a;
+  font-size: 14px;
+  margin: 0 auto;
+  max-width: 46ch;
+}
+.cr-skeleton__row {
+  background: #eef2f4;
+  border-radius: 4px;
+  display: block;
+  height: 14px;
+  margin: 0 auto 8px;
+}
+
+.cr-button {
+  background: #147a6e;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 16px;
+  padding: 10px 16px;
+}
+.cr-button:focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .cr-entry__header {
+    flex-direction: column;
+  }
+}
