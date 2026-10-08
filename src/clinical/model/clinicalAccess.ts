@@ -12,3 +12,15 @@ export function resolveClinicalAccess(
 
   return authorizedRole && clinicalReadAuthorized ? 'granted' : 'denied';
 }
+
+/** Write permission is separate from clinical read permission. */
+export function resolveClinicalWriteAccess(
+  role: ClinicalRole | null,
+  clinicalWriteAuthorized?: boolean,
+): ClinicalAccessDecision {
+  const authorizedRole = role === 'DENTIST' || role === 'ADMINISTRATOR';
+
+  return authorizedRole && clinicalWriteAuthorized === true
+    ? 'granted'
+    : 'denied';
+}

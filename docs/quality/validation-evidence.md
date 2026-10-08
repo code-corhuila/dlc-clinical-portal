@@ -278,3 +278,15 @@ No terminal logs or timestamps are invented for this historical note.
 **Integration dependencies:** `dlc-front` (session, role and explicit clinical authorization, `shell/apiClient`), owner API `GET /api/v1/clinical-records/{id}/entries`, Figma visual validation, and the CI run on Node 22 / npm 10.
 
 **Conclusion:** PASS for local functional validation. Commit SHA, GitHub Actions, the `pr` gate over a real PR body and the Pull Request itself remain PENDING until authorized.
+
+## DEV-CLIN-PORTAL-ENTRY-002
+
+- **HU / Issue / Base:** HU-CLN-001 · #3 · `99570f15f0cffc57f2ae230b515a4aeb37e64441`; branch `feat/hu-cln-001-entry-composer`.
+- **Objective:** frontend-only, authorized composer for CONSULTATION and EVOLUTION requests; no HTTP, persistence, author/time, or success simulation.
+- **Contract:** request body is exactly `{ kind, text }`; validation rejects blank/whitespace-only text and text over 10000 characters without changing valid content.
+
+**TDD chronology:** Minimal importable scaffold rendered `null`; `ClinicalEntryComposer.test.tsx` then produced a genuine behavioral RED (13/13 failures, missing controls and authorization states). GREEN implemented the validator, write gate, form and injectable async port; 14/14 composer tests passed. REFACTOR ran Prettier only.
+
+**Validation:** typecheck, lint, format, composer test (14/14), source suite (4 files/32 tests), build, `git diff --check`, and arch/branch/commit gates PASS. Source coverage is 98.3% statements, 98.41% branches, 100% functions/lines. Complete diff is 202/400 computable lines. Full `npm test` / `npm run quality` are BLOCKED by unchanged base file `scripts/pr-gates.test.mjs`: Vitest/Vite on Windows throws `SyntaxError: Invalid or unexpected token` with zero gate tests executed on Node 24 and available Node 22.13.1; the exact `--environment node` invocation also fails, so jsdom alone does not explain it. `node --check` and direct Node import pass; a lockfile-faithful `npm ci` did not change the result. This is not a composer failure.
+
+**Limitations:** Host must supply a real authorized submission port and record writability; server remains authoritative for patient/assignment/encounter checks and assigns author/time. Demo wiring and Figma comparison are PENDING; no production fixture fallback exists.
