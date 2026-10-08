@@ -224,3 +224,48 @@ No terminal logs or timestamps are invented for this historical note.
 - No commit, push, Pull Request, merge or cherry-pick was performed, and no file outside `dlc-clinical-portal` was modified.
 
 **Conclusion:** PASS for local tooling validation. GitHub Actions, commit SHA traceability and the Pull Request itself remain PENDING until authorization is granted.
+
+## DEV-CLIN-PORTAL-RECORD-001
+
+- **HU / Issue:** HU-CLN-001, increment 01 (Clinical record: UI states and read-only entries) · `code-corhuila/dlc-clinical-portal#3` — this increment contributes to the issue and does not complete the HU.
+- **Repository / Branch / Base:** dlc-clinical-portal · Dev · `feat/hu-cln-001-record-states` created from `origin/develop` at `a1d457fd14d024f560ee4db6b33c9fc7ba4c0b17` (verified after `git fetch origin`; no permanent branch touched).
+- **Exact tested SHA:** PENDING — no commit, push or PR was authorized; every result below was produced on the working tree.
+- **Objective:** read-only presentation slice rendering loading, empty, data, forbidden and retryable-error states for CONSULTATION and EVOLUTION entries with author/time, plus a display-only clinical access gate.
+- **Validation type / Preconditions:** FUNCTIONAL UI — test-first attempt plus behavioral retry regression · clean tree · local Node v24.19.0 / npm 11.17.0 against engines `node >=22 <23`, `npm >=10 <11` (CI on Node 22 remains authoritative).
+
+**TDD chronology (actual, never reconstructed):**
+
+| Step | Execution and actual result |
+| --- | --- |
+| TEST-FIRST BLOCKED | Wrote `ClinicalRecordEntries.test.tsx` (12 tests) and `ClinicalPortalPage.test.tsx` (2) before implementation; `npm test` ran zero new tests because `fixtures/clinicalFixtures` imports could not resolve while 29 existing tests passed; this is not behavioral RED. Raw output: `%TEMP%\opencode\hu-cln-001-red-01.txt`. |
+| BEHAVIORAL RED | Retry regression test then failed: an error without `onRetry` rendered `Reintentar` (1 failed, 12 passed). |
+| GREEN | Added `model/`, `fixtures/`, component, styles and page wiring. Run 1: 6 failures because React Testing Library never auto-cleans (vitest has no globals) → `src/test/setup.ts` now calls `cleanup()`; run 2: 1 failure (`screen.container` removed in RTL 16) → used the render result; run 3: 42/42 passed. |
+| REFACTOR | `npm run format`, compact styles and signatures without behavior change; renamed `clinicalAuthorization` → `clinicalReadAuthorized` after `arch` read it as `Authorization:`; a real regression was caught by the suite — the two-argument `resolveClinicalAccess` kept an object call site so every state resolved to *denied* (8 failures) → call site fixed → 43/43. |
+| REGRESSION | Complete `npm run quality` re-run plus every applicable gate (table below): retry fixed; 46 tests passed with 100% structural coverage. |
+
+**Commands, expected result, actual result:**
+
+| Command | Expected | Actual | Result |
+| --- | --- | --- | --- |
+| `npm run typecheck` | exit 0 | exit 0 | PASS |
+| `npm run lint` | exit 0 | exit 0 | PASS |
+| `npm run format:check` | exit 0 | all matched files Prettier-clean | PASS |
+| `npm test` | suite passes | 4 files, 46 tests passed | PASS |
+| `npm run test:coverage` | exit 0 | 100% stmts/branches/funcs/lines (structural, `src/clinical/**`) | PASS |
+| `npm run build` and `npm run quality` | exit 0 | exit 0, `dist/` produced | PASS |
+| `npm run gates -- --help` | usage text | `unknown command: --help`, exit 1 (no help subcommand) | REPORTED |
+| `pr-gates lines --base origin/develop --head WORKTREE` | ≤ 400 | 353/400 before this entry, tests excluded | PASS |
+| `pr-gates arch`, `branch --base develop --head feat/hu-cln-001-record-states`, `commits` | 0 findings | 0, 0, 0 (empty commit range) | PASS |
+| `git diff --check` | no output | exit 0, no output | PASS |
+
+**Size and files (norm 9.2):** 353 computable lines before this entry (measured with `git add -N .`, index restored with `git reset`); 219 excluded test lines (179 + 33 + 7). Counted: `.env.example`, `src/vite-env.d.ts`, `src/test/setup.ts`, `src/clinical/model/{clinicalEntry,clinicalAccess,clinicalRecordView}.ts`, `src/clinical/fixtures/clinicalFixtures.ts`, `src/clinical/adapter/in/ui/components/{ClinicalRecordEntries.tsx,clinical-record.css}`, `src/clinical/adapter/in/ui/pages/ClinicalPortalPage.tsx`; new tests are excluded and the original `ClinicalPortal.test.tsx` smoke test stays unchanged (root heading).
+
+**Local demo:** `cd clinical-workspace/dlc-clinical-portal` → `$env:VITE_CLINICAL_DEMO='true'; npm run dev` → http://localhost:4173/ (`VITE_PORT`, `strictPort`). A headless Edge screenshot verified the Data state: white card, teal `Consulta`/`Evolución` badges, labels `Autor`, `Fecha y hora`, `Texto`, the real `authorId`, `createdAt` only on the entry that has it. Flag off (default) keeps the federation placeholder; a fresh `dist/` contains no fixture string and no `VITE_CLINICAL_DEMO`, so the demo stays disabled in production builds.
+
+**Visual comparison:** Figma node `88:659` could not be read (no Figma access in this environment); the approved wireframes and design-system tokens were used instead. Mockup visual validation is PENDING and is not claimed.
+
+**Known limitations:** no HTTP, session, IAM, amendments or writes; `shell/apiClient` is still an empty contract; the display gate never replaces server authorization; the demo simulates an authorized Dentist and is labeled as a demonstration; dates render as raw ISO (locale formatting pending UX); only CONSULTATION and EVOLUTION get Spanish labels while other contract kinds keep their verbatim value; issue #3's authoring, amendment and integration outcomes remain open.
+
+**Integration dependencies:** `dlc-front` (session, role and explicit clinical authorization, `shell/apiClient`), owner API `GET /api/v1/clinical-records/{id}/entries`, Figma visual validation, and the CI run on Node 22 / npm 10.
+
+**Conclusion:** PASS for local functional validation. Commit SHA, GitHub Actions, the `pr` gate over a real PR body and the Pull Request itself remain PENDING until authorized.
