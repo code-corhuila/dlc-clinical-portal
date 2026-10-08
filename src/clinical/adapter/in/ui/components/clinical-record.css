@@ -1,92 +1,182 @@
 /* Clinical record slice — tokens from the approved design system. */
 
 .cr-card {
-  background: #fff;
-  border: 1px solid #eef2f4;
+  background: #ffffff;
+  border: 1px solid #d6dee2;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
-  margin: 1.5rem 0;
-  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  margin: 24px 0;
+  padding: 24px;
+  font-family: Inter, system-ui, sans-serif;
+  color: #1f2933;
 }
 
 .cr-title {
   font-size: 18px;
-  margin: 0 0 1rem;
+  font-weight: 600;
+  margin: 0 0 24px;
+  color: #1f2933;
 }
 
 .cr-entries {
   list-style: none;
   margin: 0;
   padding: 0;
+  position: relative;
 }
 
 .cr-entry {
-  border-top: 1px solid #eef2f4;
+  position: relative;
+  padding: 0 0 24px 32px;
   font-size: 14px;
-  padding: 12px 0;
 }
+
+.cr-entry:last-child {
+  padding-bottom: 0;
+}
+
+.cr-entry__timeline-marker {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #0f766e;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* Optional vertical line connecting entries
+.cr-entry:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 16px;
+  bottom: -2px;
+  width: 2px;
+  background: #EEF2F4;
+}
+*/
+
+.cr-entry__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .cr-entry__header {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: 8px 16px;
   justify-content: space-between;
+  align-items: flex-start;
 }
-.cr-entry__kind {
-  background: #e8f7f5;
-  border-radius: 4px;
+
+.cr-entry__header-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.cr-entry__time {
   color: #0f766e;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.cr-entry__kind {
+  background: #eef2f4;
+  color: #0f766e;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
+  padding: 4px 8px;
 }
+
+.cr-entry__author code {
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  font-family: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
 .cr-label {
-  color: #66737a;
-  font-size: 12px;
-  font-weight: 600;
-  margin-right: 6px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
+
 .cr-entry__text {
+  font-size: 14px;
   line-height: 1.5;
-  margin: 8px 0 0;
+  color: #1f2933;
+  margin: 0;
 }
 
 .cr-state {
   text-align: center;
+  padding: 32px 0;
 }
+
 .cr-state__title {
   font-size: 16px;
+  font-weight: 600;
   margin: 0 0 8px;
 }
+
 .cr-state__text {
   color: #66737a;
   font-size: 14px;
   margin: 0 auto;
   max-width: 46ch;
 }
+
 .cr-skeleton__row {
   background: #eef2f4;
   border-radius: 4px;
   display: block;
   height: 14px;
   margin: 0 auto 8px;
+  max-width: 300px;
 }
 
 .cr-button {
-  background: #147a6e;
+  background: #0f766e;
   border: 0;
   border-radius: 8px;
-  color: #fff;
+  color: #ffffff;
   cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
   margin-top: 16px;
-  padding: 10px 16px;
+  padding: 10px 24px;
+  transition: background-color 0.2s;
 }
+
+.cr-button:hover {
+  background: #115e59;
+}
+
 .cr-button:focus-visible {
   outline: 2px solid #1554a3;
   outline-offset: 2px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .cr-entry__header {
     flex-direction: column;
+    align-items: flex-start;
   }
 }
