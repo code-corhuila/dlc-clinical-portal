@@ -1,11 +1,24 @@
 import type { ClinicalEntryPage } from '../model/clinicalEntry';
 import type { ClinicalRecordStatus } from '../model/clinicalRecordView';
-import { portFailureMessage } from '../model/portFailure';
 
 /** Host-provided read boundary; it deliberately contains no HTTP details. */
 export interface ClinicalRecordEntriesPort {
   findRecordId(patientId: string): Promise<string>;
   readEntries(recordId: string): Promise<ClinicalEntryPage>;
+}
+
+interface PortFailure {
+  readonly code?: string;
+  readonly message?: string;
+}
+
+function normalizePortFailure(error: unknown): PortFailure {
+  if (typeof error !== 'object' || error === null) return {};
+  const values = error as Record<string, unknown>;
+  return {
+    code: typeof values.code === 'string' ? values.code : undefined,
+    message: typeof values.message === 'string' ? values.message : undefined,
+  };
 }
 
 /**
@@ -28,18 +41,14 @@ export class ClinicalRecordEntriesWorkflow {
       if (generation === this.generation) this.status = { kind: 'ready', page };
     } catch (error: unknown) {
       if (generation !== this.generation) return;
-      const code = (error as { code?: unknown } | null)?.code;
-      // C06: a cancelled request is obsolete; a newer one owns the view.
-      if (code === 'CANCELLED') return;
+      const failure = normalizePortFailure(error);
       this.status =
-        code === 'FORBIDDEN'
+        failure.code === 'FORBIDDEN'
           ? { kind: 'forbidden' }
           : {
               kind: 'error',
-              message: portFailureMessage(
-                error,
-                'No fue posible cargar el registro clínico.',
-              ),
+              message:
+                failure.message ?? 'No fue posible cargar el registro clínico.',
             };
     }
   }
