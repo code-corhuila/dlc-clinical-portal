@@ -1,50 +1,75 @@
 .cec-card {
-  background: #fff;
-  border: 1px solid #eef2f4;
+  background: #ffffff;
+  border: 1px solid #d6dee2;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
-  margin: 1.5rem 0;
-  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  margin: 24px 0;
+  padding: 24px;
+  font-family: Inter, system-ui, sans-serif;
+  color: #1f2933;
 }
 
 .cec-card h2 {
   font-size: 18px;
-  margin: 0 0 1rem;
+  font-weight: 600;
+  margin: 0 0 16px;
 }
 
 .cec-card form {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   max-width: 46rem;
 }
 
 .cec-card label {
+  color: #1f2933;
   font-size: 14px;
   font-weight: 600;
+  margin-bottom: -8px;
 }
 
 .cec-card select,
 .cec-card textarea {
-  border: 1px solid #66737a;
-  border-radius: 4px;
-  font: inherit;
-  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  color: #1f2933;
+  padding: 12px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.cec-card select:focus,
+.cec-card textarea:focus {
+  border-color: #0f766e;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2);
 }
 
 .cec-card textarea {
-  min-height: 8rem;
+  min-height: 120px;
   resize: vertical;
 }
 
 .cec-card button {
-  background: #147a6e;
+  background: #0f766e;
   border: 0;
   border-radius: 8px;
-  color: #fff;
+  color: #ffffff;
   cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
-  justify-self: start;
-  padding: 10px 16px;
+  align-self: flex-start;
+  padding: 12px 24px;
+  transition: background-color 0.2s;
+}
+
+.cec-card button:hover:not(:disabled) {
+  background: #115e59;
 }
 
 .cec-card button:disabled {
@@ -55,4 +80,11 @@
 .cec-card :focus-visible {
   outline: 2px solid #1554a3;
   outline-offset: 2px;
+}
+
+#entry-message {
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
 }
