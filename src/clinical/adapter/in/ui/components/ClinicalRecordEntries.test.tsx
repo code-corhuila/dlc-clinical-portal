@@ -93,7 +93,7 @@ describe('ClinicalRecordEntries', () => {
   });
 
   describe('data state', () => {
-    it('renders a CONSULTATION entry with text, author and createdAt', () => {
+    it('renders a CONSULTATION entry with text, author and formatted createdAt', () => {
       renderEntries({ status: readyStatus([consultationEntry]) });
 
       expect(screen.getByText('Consulta')).toBeInTheDocument();
@@ -101,9 +101,18 @@ describe('ClinicalRecordEntries', () => {
       expect(screen.getByText('Autor')).toBeInTheDocument();
       expect(screen.getByText(consultationEntry.authorId)).toBeInTheDocument();
       expect(screen.getByText('Fecha y hora')).toBeInTheDocument();
-      expect(
-        screen.getByText(consultationEntry.createdAt as string),
-      ).toBeInTheDocument();
+
+      const timeElement = screen.getByText((_, element) => {
+        return (
+          element?.tagName.toLowerCase() === 'time' &&
+          element?.getAttribute('datetime') === consultationEntry.createdAt
+        );
+      });
+      expect(timeElement).toBeInTheDocument();
+      expect(timeElement.getAttribute('datetime')).toBe(
+        consultationEntry.createdAt,
+      );
+      expect(timeElement.textContent).toBe('02 mar 2026, 14:30 UTC');
     });
 
     it('renders an EVOLUTION entry with its text and author', () => {
