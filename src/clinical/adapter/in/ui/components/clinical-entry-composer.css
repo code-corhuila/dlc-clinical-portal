@@ -1,0 +1,58 @@
+.cec-card {
+  background: #fff;
+  border: 1px solid #eef2f4;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 10%);
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+}
+
+.cec-card h2 {
+  font-size: 18px;
+  margin: 0 0 1rem;
+}
+
+.cec-card form {
+  display: grid;
+  gap: 8px;
+  max-width: 46rem;
+}
+
+.cec-card label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cec-card select,
+.cec-card textarea {
+  border: 1px solid #66737a;
+  border-radius: 4px;
+  font: inherit;
+  padding: 8px;
+}
+
+.cec-card textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.cec-card button {
+  background: #147a6e;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  justify-self: start;
+  padding: 10px 16px;
+}
+
+.cec-card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.cec-card :focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
