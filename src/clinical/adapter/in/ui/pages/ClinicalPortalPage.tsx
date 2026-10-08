@@ -1,5 +1,6 @@
 import { demoRecordStatus } from '../../../../fixtures/clinicalFixtures';
 import { ClinicalRecordEntries } from '../components/ClinicalRecordEntries';
+import { ClinicalEntryComposer } from '../components/ClinicalEntryComposer';
 
 /**
  * Current inbound UI adapter for the Clinical remote.
@@ -13,22 +14,35 @@ export function ClinicalPortalPage() {
       className="portal-placeholder"
       aria-labelledby="clinical-portal-title"
     >
-      <h1 id="clinical-portal-title">Clinical portal</h1>
-      {demoEnabled && (
-        <p>Modo demostración: datos sintéticos; sin integración con el API.</p>
+      <h1 id="clinical-portal-title">
+        {demoEnabled ? 'Historia clínica' : 'Clinical portal'}
+      </h1>
+      {demoEnabled ? (
+        <>
+          <p>
+            Modo demostración: datos sintéticos; sin integración con el API.
+          </p>
+          <ClinicalRecordEntries
+            role="DENTIST"
+            clinicalReadAuthorized
+            status={demoRecordStatus}
+          />
+          <ClinicalEntryComposer
+            role="DENTIST"
+            clinicalWriteAuthorized
+            recordWritable
+            onSubmit={undefined}
+          />
+        </>
+      ) : (
+        <>
+          <p>The Clinical remote is available for federation.</p>
+          <p>
+            Domain workflows require the shared client and session supplied by{' '}
+            <code>dlc-front</code>.
+          </p>
+        </>
       )}
-      {demoEnabled && (
-        <ClinicalRecordEntries
-          role="DENTIST"
-          clinicalReadAuthorized
-          status={demoRecordStatus}
-        />
-      )}
-      <p>The Clinical remote is available for federation.</p>
-      <p>
-        Domain workflows require the shared client and session supplied by{' '}
-        <code>dlc-front</code>.
-      </p>
     </main>
   );
 }
