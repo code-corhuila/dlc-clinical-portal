@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import './clinical-record.css';
 import {
   resolveClinicalAccess,
   type ClinicalRole,
 } from '../../../../model/clinicalAccess';
 import type { ClinicalEntry } from '../../../../model/clinicalEntry';
-import { AmendEntryForm } from './AmendEntryForm';
-import { ClinicalIcon } from './ClinicalIcon';
 import {
   clinicalEntryLabel,
   toClinicalRecordViewModel,
@@ -14,39 +11,12 @@ import {
   type ClinicalRecordViewModel,
 } from '../../../../model/clinicalRecordView';
 
-function formatDate(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    if (Number.isNaN(date.getTime())) return isoString;
-    return new Intl.DateTimeFormat('es', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC',
-      timeZoneName: 'short',
-    }).format(date);
-  } catch {
-    return isoString;
-  }
-}
-
 export interface ClinicalRecordEntriesProps {
   readonly role: ClinicalRole | null;
   readonly clinicalReadAuthorized?: boolean;
   readonly status: ClinicalRecordStatus;
   readonly onRetry?: () => void;
-  readonly authorName?: (authorId: string) => string;
-  readonly children?: React.ReactNode;
-  readonly onAmend?: AmendHandler;
 }
-
-type AmendHandler = (
-  entry: ClinicalEntry,
-  correction: { text: string; reason: string },
-  idempotencyKey: string,
-) => Promise<void>;
 
 /** Read-only clinical record slice; denied access wins before any narrative. */
 export function ClinicalRecordEntries({
@@ -54,50 +24,23 @@ export function ClinicalRecordEntries({
   clinicalReadAuthorized,
   status,
   onRetry,
-  authorName = (authorId) => authorId,
-  children,
-  onAmend,
 }: ClinicalRecordEntriesProps) {
   const view = toClinicalRecordViewModel(
     resolveClinicalAccess(role, clinicalReadAuthorized === true),
     status,
   );
 
-  const [kind, setKind] = useState('ALL');
-
   return (
     <section className="cr-card" aria-labelledby="clinical-record-title">
-      <div className="cr-card__header">
-        <h2 className="cr-title" id="clinical-record-title">
-          <ClinicalIcon name="evolution" />
-          Evolución
-        </h2>
-        {view.state === 'data' && (
-          <select
-            aria-label="Filtrar evolución"
-            value={kind}
-            onChange={(event) => setKind(event.target.value)}
-          >
-            <option value="ALL">Todas</option>
-            <option value="CONSULTATION">Consulta</option>
-            <option value="DIAGNOSIS">Diagnóstico</option>
-            <option value="EVOLUTION">Evolución</option>
-          </select>
-        )}
-      </div>
-      {renderState(view, authorName, onRetry, onAmend, kind)}
-      {(view.state === 'data' || view.state === 'empty') && children}
+      <h2 className="cr-title" id="clinical-record-title">
+        Registro clínico
+      </h2>
+      {renderState(view, onRetry)}
     </section>
   );
 }
 
-function renderState(
-  view: ClinicalRecordViewModel,
-  authorName: (authorId: string) => string,
-  onRetry?: () => void,
-  onAmend?: AmendHandler,
-  kind = 'ALL',
-) {
+function renderState(view: ClinicalRecordViewModel, onRetry?: () => void) {
   switch (view.state) {
     case 'loading':
       return (
@@ -140,100 +83,34 @@ function renderState(
     case 'data':
       return (
         <ul className="cr-entries">
-          {view.entries
-            .filter((entry) => kind === 'ALL' || entry.kind === kind)
-            .map((entry) => (
-              <Entry
-                key={entry.id}
-                entry={entry}
-                author={authorName(entry.authorId)}
-                consultation={view.entries.find(
-                  (item) => item.id === entry.consultationId,
-                )}
-                corrected={view.entries.some(
-                  (item) => item.amendsEntryId === entry.id,
-                )}
-                onAmend={onAmend}
-              />
-            ))}
+          {view.entries.map((entry) => (
+            <Entry key={entry.id} entry={entry} />
+          ))}
         </ul>
       );
   }
 }
 
-function Entry({
-  entry,
-  author,
-  consultation,
-  corrected,
-  onAmend,
-}: {
-  readonly entry: ClinicalEntry;
-  readonly author: string;
-  readonly consultation?: ClinicalEntry;
-  readonly corrected: boolean;
-  readonly onAmend?: AmendHandler;
-}) {
-  const [amending, setAmending] = useState(false);
+function Entry({ entry }: { readonly entry: ClinicalEntry }) {
   return (
     <li className="cr-entry">
-      <div className="cr-entry__timeline-marker" aria-hidden="true"></div>
-      <div className="cr-entry__content">
-        <div className="cr-entry__header">
-          <div className="cr-entry__header-left">
-            {entry.createdAt !== undefined && (
-              <span>
-                <span className="cr-label">Fecha y hora</span>
-                <time className="cr-entry__time" dateTime={entry.createdAt}>
-                  {formatDate(entry.createdAt)}
-                </time>
-              </span>
-            )}
-            <span className="cr-entry__kind">
-              {clinicalEntryLabel(entry.kind)}
-            </span>
-            {corrected && <span className="cr-entry__kind">Corregida</span>}
-          </div>
-          <div className="cr-entry__author">
-            <span className="cr-label">Autor</span>
-            <code>{author}</code>
-          </div>
-        </div>
-        <p className="cr-entry__text">
-          <span className="cr-label">Texto</span>
-          {entry.text}
-        </p>
-        {consultation?.createdAt && (
-          <p className="cr-entry__link">
-            Vinculado a la consulta del {formatDate(consultation.createdAt)}
-          </p>
-        )}
-        {entry.amendsEntryId && (
-          <p className="cr-entry__link">
-            Corrección de una entrada anterior · Motivo: {entry.amendmentReason}
-          </p>
-        )}
-        {onAmend && !amending && (
-          <button
-            type="button"
-            className="cr-entry__amend"
-            onClick={() => setAmending(true)}
-          >
-            Corregir entrada
-          </button>
-        )}
-        {onAmend && amending && (
-          <AmendEntryForm
-            entryId={entry.id}
-            initialText={entry.text}
-            onCancel={() => setAmending(false)}
-            onSave={async (correction, idempotencyKey) => {
-              await onAmend(entry, correction, idempotencyKey);
-              setAmending(false);
-            }}
-          />
+      <div className="cr-entry__header">
+        <span className="cr-entry__kind">{clinicalEntryLabel(entry.kind)}</span>
+        <span>
+          <span className="cr-label">Autor</span>
+          <code>{entry.authorId}</code>
+        </span>
+        {entry.createdAt !== undefined && (
+          <span>
+            <span className="cr-label">Fecha y hora</span>
+            <time dateTime={entry.createdAt}>{entry.createdAt}</time>
+          </span>
         )}
       </div>
+      <p className="cr-entry__text">
+        <span className="cr-label">Texto</span>
+        {entry.text}
+      </p>
     </li>
   );
 }

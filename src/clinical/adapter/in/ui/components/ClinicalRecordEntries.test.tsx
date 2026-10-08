@@ -93,70 +93,25 @@ describe('ClinicalRecordEntries', () => {
   });
 
   describe('data state', () => {
-    it('shows the consultation a diagnosis is linked to', () => {
-      renderEntries({
-        status: readyStatus([
-          consultationEntry,
-          {
-            ...evolutionEntry,
-            id: 'diagnosis-1',
-            kind: 'DIAGNOSIS',
-            text: 'Caries oclusal',
-            consultationId: consultationEntry.id,
-          },
-        ]),
-      });
-
-      expect(
-        screen.getByText('Diagnóstico', { selector: '.cr-entry__kind' }),
-      ).toBeInTheDocument();
-      expect(screen.getByText(/Vinculado a la consulta del/)).toHaveTextContent(
-        '2026',
-      );
-    });
-
-    it('renders a CONSULTATION entry with text, author and formatted createdAt', () => {
+    it('renders a CONSULTATION entry with text, author and createdAt', () => {
       renderEntries({ status: readyStatus([consultationEntry]) });
 
-      expect(
-        screen.getByText('Consulta', { selector: '.cr-entry__kind' }),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Consulta')).toBeInTheDocument();
       expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
       expect(screen.getByText('Autor')).toBeInTheDocument();
       expect(screen.getByText(consultationEntry.authorId)).toBeInTheDocument();
       expect(screen.getByText('Fecha y hora')).toBeInTheDocument();
-
-      const timeElement = screen.getByText((_, element) => {
-        return (
-          element?.tagName.toLowerCase() === 'time' &&
-          element?.getAttribute('datetime') === consultationEntry.createdAt
-        );
-      });
-      expect(timeElement).toBeInTheDocument();
-      expect(timeElement.getAttribute('datetime')).toBe(
-        consultationEntry.createdAt,
-      );
-      expect(timeElement.textContent).toBe('02 mar 2026, 14:30 UTC');
+      expect(
+        screen.getByText(consultationEntry.createdAt as string),
+      ).toBeInTheDocument();
     });
 
     it('renders an EVOLUTION entry with its text and author', () => {
       renderEntries({ status: readyStatus([evolutionEntry]) });
 
-      expect(
-        screen.getByText('Evolución', { selector: '.cr-entry__kind' }),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Evolución')).toBeInTheDocument();
       expect(screen.getByText(evolutionEntry.text)).toBeInTheDocument();
       expect(screen.getByText(evolutionEntry.authorId)).toBeInTheDocument();
-    });
-
-    it('shows an injected author display name', () => {
-      renderEntries({
-        status: readyStatus([evolutionEntry]),
-        authorName: () => 'Profesional asignado',
-      });
-
-      expect(screen.getByText('Profesional asignado')).toBeInTheDocument();
-      expect(screen.queryByText(evolutionEntry.authorId)).toBeNull();
     });
 
     it('omits the date field when createdAt is not present', () => {
@@ -175,9 +130,7 @@ describe('ClinicalRecordEntries', () => {
       });
 
       expect(screen.getByText('ALLERGY')).toBeInTheDocument();
-      expect(
-        screen.queryByText('Consulta', { selector: '.cr-entry__kind' }),
-      ).toBeNull();
+      expect(screen.queryByText('Consulta')).toBeNull();
     });
   });
 
