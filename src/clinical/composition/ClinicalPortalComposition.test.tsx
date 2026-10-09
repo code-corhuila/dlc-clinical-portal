@@ -138,6 +138,43 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.queryByText(/\$|Costo|Total/)).toBeNull();
   });
 
+  it('plans procedures from the catalog without prices', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    fireEvent.change(screen.getByLabelText('Motivo clínico'), {
+      target: { value: 'Caries en pieza 18' },
+    });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Resina simple' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Planificar tratamiento' }),
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'Resina simple' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('cell', { name: 'Caries en pieza 18' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\$|Costo|Total/)).toBeNull();
+  });
+
+  it('shows a validation message when no procedure is selected', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    fireEvent.change(screen.getByLabelText('Motivo clínico'), {
+      target: { value: 'Control' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Planificar tratamiento' }),
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Seleccione al menos un procedimiento.',
+    );
+  });
+
   it('keeps the plan readable but not editable without write authorization', async () => {
     renderDemo();
 

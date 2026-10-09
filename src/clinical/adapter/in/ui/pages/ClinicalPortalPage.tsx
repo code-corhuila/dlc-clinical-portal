@@ -32,6 +32,7 @@ export interface ClinicalPortalPageProps {
   readonly treatments?: {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
+    readonly appointmentId?: string;
   };
 }
 
@@ -191,12 +192,27 @@ export function ClinicalPortalPage({
               key={`${patientId}:${role}:${clinicalReadAuthorized}:${clinicalWriteAuthorized}`}
               load={loadTreatments}
               catalog={treatments.catalog}
+              appointmentId={treatments.appointmentId}
               diagnoses={
                 status.kind === 'ready'
                   ? status.page.data
                       .filter((entry) => entry.kind === 'DIAGNOSIS')
                       .map((entry) => ({ id: entry.id, label: entry.text }))
                   : []
+              }
+              onPlan={
+                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                'granted'
+                  ? (draft) =>
+                      treatments.plan.plan(
+                        {
+                          patientId,
+                          role,
+                          clinicalAuthorized: clinicalWriteAuthorized,
+                        },
+                        draft,
+                      )
+                  : undefined
               }
             />
           )}

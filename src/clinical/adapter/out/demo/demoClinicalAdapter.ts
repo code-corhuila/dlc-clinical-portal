@@ -30,6 +30,12 @@ export const demoProcedureCatalog = [
   { code: 'D7140', label: 'Extracción simple' },
 ] as const;
 
+/** Synthetic EN_ATENCION appointment per assigned patient. */
+export const demoAppointments: Record<string, string> = {
+  'patient-a': 'appointment-a',
+  'patient-b': 'appointment-b',
+};
+
 const records: Record<string, string> = {
   'patient-a': 'record-a',
   'patient-b': 'record-b',
@@ -85,6 +91,24 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     async listTreatments(patientId) {
       if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
       return treatments[patientId];
+    },
+    async planTreatment(request) {
+      const list = treatments[request.patientId];
+      if (!list) throw { code: 'FORBIDDEN' };
+      const id = `treatment-${request.patientId}-${list.length + 1}`;
+      const treatment: Treatment = {
+        ...request,
+        id,
+        status: 'PLANNED',
+        procedures: request.procedures.map((item, index) => ({
+          ...item,
+          id: `${id}-procedure-${index + 1}`,
+          status: 'PLANNED',
+        })),
+        version: 1,
+      };
+      treatments[request.patientId] = [...list, treatment];
+      return treatment;
     },
     async readPatient(patientId) {
       const patient = patients[patientId];

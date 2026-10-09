@@ -20,13 +20,87 @@ const treatment: Treatment = {
 };
 
 function port(): TreatmentPort {
-  return { listTreatments: vi.fn().mockResolvedValue([treatment]) };
+  return {
+    listTreatments: vi.fn().mockResolvedValue([treatment]),
+    planTreatment: vi.fn().mockResolvedValue(treatment),
+  };
 }
 
 const access = (role: ClinicalRole | null, authorized: boolean) => ({
   patientId: 'patient-1',
   role,
   clinicalAuthorized: authorized,
+});
+
+const plan = {
+  clinicalReason: 'Dolor agudo',
+  procedures: [{ procedureCode: 'D1110', appointmentId: 'appointment-1' }],
+};
+
+describe('TreatmentPlan planning', () => {
+  it('plans a treatment for the patient without monetary fields', async () => {
+    const treatments = port();
+
+    await new TreatmentPlan(treatments).plan(access('DENTIST', true), plan);
+
+    expect(treatments.planTreatment).toHaveBeenCalledWith({
+      patientId: 'patient-1',
+      ...plan,
+    });
+  });
+
+  it('accepts a diagnosis instead of a clinical reason', async () => {
+    const treatments = port();
+    const byDiagnosis = {
+      diagnosisId: 'diagnosis-1',
+      procedures: plan.procedures,
+    };
+
+    await new TreatmentPlan(treatments).plan(
+      access('DENTIST', true),
+      byDiagnosis,
+    );
+
+    expect(treatments.planTreatment).toHaveBeenCalledWith({
+      patientId: 'patient-1',
+      ...byDiagnosis,
+    });
+  });
+
+  it.each<[string, ClinicalRole | null, boolean]>([
+    ['a secretary assistant', 'SECRETARY_ASSISTANT', true],
+    ['an administrator without write authorization', 'ADMINISTRATOR', false],
+  ])('denies %s planning', async (_, role, authorized) => {
+    const treatments = port();
+
+    await expect(
+      new TreatmentPlan(treatments).plan(access(role, authorized), plan),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(treatments.planTreatment).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['without diagnosis or clinical reason', { ...plan, clinicalReason: ' ' }],
+    ['without procedures', { ...plan, procedures: [] }],
+    [
+      'with an empty procedure code',
+      {
+        ...plan,
+        procedures: [{ procedureCode: '', appointmentId: 'appointment-1' }],
+      },
+    ],
+    [
+      'without an appointment',
+      { ...plan, procedures: [{ procedureCode: 'D1110', appointmentId: '' }] },
+    ],
+  ])('rejects a plan %s', async (_, invalid) => {
+    const treatments = port();
+
+    await expect(
+      new TreatmentPlan(treatments).plan(access('DENTIST', true), invalid),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(treatments.planTreatment).not.toHaveBeenCalled();
+  });
 });
 
 describe('TreatmentPlan', () => {

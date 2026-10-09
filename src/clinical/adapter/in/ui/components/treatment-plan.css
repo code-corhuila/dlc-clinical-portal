@@ -31,3 +31,64 @@
   border-bottom: 1px solid #eef2f4;
   padding: 10px 12px;
 }
+
+.tp-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eef2f4;
+}
+
+.tp-form label,
+.tp-form legend {
+  font-weight: 600;
+}
+
+.tp-form select,
+.tp-form input:not([type='checkbox']) {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.tp-form fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.tp-form fieldset label {
+  display: flex;
+  gap: 6px;
+  font-weight: 400;
+}
+
+.tp-form p[role='alert'] {
+  margin: 0;
+  color: #b42318;
+}
+
+.tp-form button {
+  justify-self: end;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tp-form button:hover {
+  background: #115e59;
+}
+
+.tp-form :focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
