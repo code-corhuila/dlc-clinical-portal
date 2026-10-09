@@ -1,13 +1,4 @@
-:root {
-  font-family: Inter, system-ui, sans-serif;
-  color: #173b4d;
-  background: #f4f8f9;
-}
-
-body {
-  margin: 0;
-}
-
+/* Clinical remote styles: scoped by cl-/cr-/tp-/cc-/db- prefixes, no globals. */
 .portal-placeholder {
   box-sizing: border-box;
   max-width: 1200px;
