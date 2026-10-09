@@ -95,6 +95,20 @@ Do not call databases or bypass `dlc-api-gateway` and the authorization boundary
 | `./ClinicalPortal` | Patient clinical record (`/app/patients/:patientId`) | Placeholder until the shell supplies client and session |
 | `./ClinicalDashboard` | `/app/dashboard` (Clinical Analytics, ADR-006) | Placeholder: "requires the shared session supplied by dlc-front" |
 
+### Mounting in dlc-front (front-only delivery)
+
+`npm run build:demo` builds the remote with synthetic data (`.env.demo`); `npm run build` stays free of
+synthetic data. The shell consumes it with Module Federation:
+
+| Setting | Value |
+|---|---|
+| Remote name | `dlc_clinical_portal`, entry `<remote origin>/remoteEntry.js` (`type: "module"`) |
+| Exposes | `./ClinicalPortal` (`ClinicalPortal`), `./ClinicalDashboard` (`ClinicalDashboard`) |
+| Shared | `react` and `react-dom` as singletons |
+
+The remote is built with a relative `base` and `bundleAllCSS`, so its scoped CSS loads from the remote
+origin with each exposed module; it sets no global `:root`/`body` rules.
+
 ### Synthetic demo
 
 Development only; it is never part of a production build.
