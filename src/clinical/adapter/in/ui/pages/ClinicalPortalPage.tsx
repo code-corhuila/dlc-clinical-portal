@@ -16,6 +16,7 @@ import type { PatientForCare } from '../../../../model/patientForCare';
 import { ClinicalRecordEntries } from '../components/ClinicalRecordEntries';
 import { ClinicalEntryComposer } from '../components/ClinicalEntryComposer';
 import { PatientHeader } from '../components/PatientHeader';
+import { DiagnosesCard } from '../components/DiagnosesCard';
 import { QuickNoteForm } from '../components/QuickNoteForm';
 import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
@@ -196,137 +197,144 @@ export function ClinicalPortalPage({
               }
             />
           )}
-          <ClinicalRecordEntries
-            role={role}
-            clinicalReadAuthorized={clinicalReadAuthorized}
-            status={status}
-            authorName={authorName}
-            onAmend={
-              canWrite && amender
-                ? async (entry, correction) => {
-                    await amender.execute(
-                      { role, clinicalWriteAuthorized },
-                      entry,
-                      correction,
-                    );
-                    setRetry((value) => value + 1);
-                  }
-                : undefined
-            }
-            onRetry={
-              allowed && patientId
-                ? () => setRetry((value) => value + 1)
-                : undefined
-            }
-          >
-            {canWrite && submitEntry && (
-              <QuickNoteForm onSubmit={submitEntry} />
+          <div className="cl-main">
+            {treatments && loadTreatments && allowed && patientId && (
+              <TreatmentPlanCard
+                key={`${patientId}:${role}:${clinicalReadAuthorized}:${clinicalWriteAuthorized}`}
+                load={loadTreatments}
+                catalog={treatments.catalog}
+                appointmentId={treatments.appointmentId}
+                diagnoses={
+                  status.kind === 'ready'
+                    ? status.page.data
+                        .filter((entry) => entry.kind === 'DIAGNOSIS')
+                        .map((entry) => ({ id: entry.id, label: entry.text }))
+                    : []
+                }
+                onComplete={
+                  treatments.completer &&
+                  resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                    'granted'
+                    ? async (treatment, procedureId, extras) =>
+                        await treatments.completer!.execute(
+                          { role, clinicalWriteAuthorized },
+                          { procedureId, treatmentVersion: treatment.version },
+                          extras,
+                        )
+                    : undefined
+                }
+                onRefreshClosure={
+                  treatments.tracking &&
+                  ((closure) =>
+                    treatments.tracking!.read(
+                      { role, clinicalReadAuthorized, clinicalWriteAuthorized },
+                      closure.id,
+                    ))
+                }
+                onRetryClosure={
+                  treatments.tracking &&
+                  resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                    'granted'
+                    ? (closure, reason) =>
+                        treatments.tracking!.retry(
+                          {
+                            role,
+                            clinicalReadAuthorized,
+                            clinicalWriteAuthorized,
+                          },
+                          closure,
+                          reason,
+                        )
+                    : undefined
+                }
+                onStart={
+                  resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                  'granted'
+                    ? (treatment) =>
+                        treatments.plan.start(
+                          {
+                            patientId,
+                            role,
+                            clinicalAuthorized: clinicalWriteAuthorized,
+                          },
+                          treatment,
+                        )
+                    : undefined
+                }
+                onPlan={
+                  resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                  'granted'
+                    ? (draft) =>
+                        treatments.plan.plan(
+                          {
+                            patientId,
+                            role,
+                            clinicalAuthorized: clinicalWriteAuthorized,
+                          },
+                          draft,
+                        )
+                    : undefined
+                }
+              />
             )}
-          </ClinicalRecordEntries>
-          {treatments && loadTreatments && allowed && patientId && (
-            <TreatmentPlanCard
-              key={`${patientId}:${role}:${clinicalReadAuthorized}:${clinicalWriteAuthorized}`}
-              load={loadTreatments}
-              catalog={treatments.catalog}
-              appointmentId={treatments.appointmentId}
-              diagnoses={
-                status.kind === 'ready'
-                  ? status.page.data
-                      .filter((entry) => entry.kind === 'DIAGNOSIS')
-                      .map((entry) => ({ id: entry.id, label: entry.text }))
-                  : []
-              }
-              onComplete={
-                treatments.completer &&
-                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
-                  'granted'
-                  ? async (treatment, procedureId, extras) =>
-                      await treatments.completer!.execute(
-                        { role, clinicalWriteAuthorized },
-                        { procedureId, treatmentVersion: treatment.version },
-                        extras,
-                      )
-                  : undefined
-              }
-              onRefreshClosure={
-                treatments.tracking &&
-                ((closure) =>
-                  treatments.tracking!.read(
-                    { role, clinicalReadAuthorized, clinicalWriteAuthorized },
-                    closure.id,
-                  ))
-              }
-              onRetryClosure={
-                treatments.tracking &&
-                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
-                  'granted'
-                  ? (closure, reason) =>
-                      treatments.tracking!.retry(
-                        {
-                          role,
-                          clinicalReadAuthorized,
-                          clinicalWriteAuthorized,
-                        },
-                        closure,
-                        reason,
-                      )
-                  : undefined
-              }
-              onStart={
-                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
-                'granted'
-                  ? (treatment) =>
-                      treatments.plan.start(
-                        {
-                          patientId,
-                          role,
-                          clinicalAuthorized: clinicalWriteAuthorized,
-                        },
-                        treatment,
-                      )
-                  : undefined
-              }
-              onPlan={
-                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
-                'granted'
-                  ? (draft) =>
-                      treatments.plan.plan(
-                        {
-                          patientId,
-                          role,
-                          clinicalAuthorized: clinicalWriteAuthorized,
-                        },
-                        draft,
-                      )
-                  : undefined
-              }
-            />
-          )}
-          <ClinicalEntryComposer
-            role={role}
-            clinicalWriteAuthorized={clinicalWriteAuthorized}
-            recordWritable={status.kind === 'ready'}
-            consultations={consultations}
-            onSubmit={submitEntry}
-          />
-          {declarer && allowed && patientId && (
-            <CareCompletionCard
-              key={`${patientId}:${role}:${clinicalWriteAuthorized}`}
+            <ClinicalEntryComposer
+              role={role}
+              clinicalWriteAuthorized={clinicalWriteAuthorized}
+              recordWritable={status.kind === 'ready'}
               consultations={consultations}
-              onDeclare={
-                role === 'DENTIST' && canWrite
-                  ? (consultationId) =>
-                      declarer.execute(
-                        { patientId, role, clinicalWriteAuthorized },
-                        {
-                          consultationId,
-                          appointmentId: treatments?.appointmentId ?? '',
-                        },
-                      )
+              onSubmit={submitEntry}
+            />
+          </div>
+          <aside className="cl-aside">
+            {allowed && status.kind === 'ready' && (
+              <DiagnosesCard entries={status.page.data} />
+            )}
+            <ClinicalRecordEntries
+              role={role}
+              clinicalReadAuthorized={clinicalReadAuthorized}
+              status={status}
+              authorName={authorName}
+              onAmend={
+                canWrite && amender
+                  ? async (entry, correction) => {
+                      await amender.execute(
+                        { role, clinicalWriteAuthorized },
+                        entry,
+                        correction,
+                      );
+                      setRetry((value) => value + 1);
+                    }
                   : undefined
               }
-            />
-          )}
+              onRetry={
+                allowed && patientId
+                  ? () => setRetry((value) => value + 1)
+                  : undefined
+              }
+            >
+              {canWrite && submitEntry && (
+                <QuickNoteForm onSubmit={submitEntry} />
+              )}
+            </ClinicalRecordEntries>
+            {declarer && allowed && patientId && (
+              <CareCompletionCard
+                key={`${patientId}:${role}:${clinicalWriteAuthorized}`}
+                consultations={consultations}
+                onDeclare={
+                  role === 'DENTIST' && canWrite
+                    ? (consultationId) =>
+                        declarer.execute(
+                          { patientId, role, clinicalWriteAuthorized },
+                          {
+                            consultationId,
+                            appointmentId: treatments?.appointmentId ?? '',
+                          },
+                        )
+                    : undefined
+                }
+              />
+            )}
+          </aside>
         </div>
       ) : (
         <>

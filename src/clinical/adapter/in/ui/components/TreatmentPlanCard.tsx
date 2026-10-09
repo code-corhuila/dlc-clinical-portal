@@ -65,6 +65,7 @@ export function TreatmentPlanCard({
     procedureId: string;
   }>();
   const [notice, setNotice] = useState<string>();
+  const [planning, setPlanning] = useState(false);
   const [tracked, setTracked] = useState<readonly CareClosure[]>([]);
   const [unpriced, setUnpriced] = useState<
     readonly (ExtraItem & { procedure: string; appointmentId: string })[]
@@ -113,6 +114,7 @@ export function TreatmentPlanCard({
         })),
       });
       setReason('');
+      setPlanning(false);
       setCodes([]);
       setVersion((value) => value + 1);
     } catch (error) {
@@ -275,7 +277,16 @@ export function TreatmentPlanCard({
           }}
         />
       )}
-      {onPlan && treatments && (
+      {onPlan && treatments && !planning && (
+        <button
+          type="button"
+          className="tp-start"
+          onClick={() => setPlanning(true)}
+        >
+          Planificar nuevo tratamiento
+        </button>
+      )}
+      {onPlan && treatments && planning && (
         <form className="tp-form" onSubmit={plan} noValidate>
           <label htmlFor="treatment-diagnosis">Diagnóstico asociado</label>
           <select
@@ -320,6 +331,9 @@ export function TreatmentPlanCard({
           {message && <p role="alert">{message}</p>}
           <button type="submit" disabled={pending}>
             Planificar tratamiento
+          </button>
+          <button type="button" onClick={() => setPlanning(false)}>
+            Cancelar
           </button>
         </form>
       )}
