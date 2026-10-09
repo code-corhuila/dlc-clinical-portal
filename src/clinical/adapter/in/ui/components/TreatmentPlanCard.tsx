@@ -36,6 +36,7 @@ export interface TreatmentPlanCardProps {
   readonly onRetryClosure?: (
     closure: CareClosure,
     reason: string,
+    idempotencyKey: string,
   ) => Promise<CareClosure>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly loadPrices?: () => Promise<PriceEstimate>;

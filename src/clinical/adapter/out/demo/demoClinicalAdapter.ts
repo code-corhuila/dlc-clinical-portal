@@ -89,6 +89,12 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   const closedRecords = new Set(['record-d']);
   /** Idempotency-Key replay: a repeated intent has no second effect. */
   const applied = new Set<string>();
+  /** Responses of keyed intents, replayed when the same key arrives again. */
+  const replies = new Map<string, Promise<unknown>>();
+  function replay<T>(key: string, effect: () => Promise<T>): Promise<T> {
+    if (!replies.has(key)) replies.set(key, effect());
+    return replies.get(key) as Promise<T>;
+  }
   const versions: Record<string, number> = {};
   const version = (recordId: string) => versions[recordId] ?? 1;
   const entries: Record<string, ClinicalEntry[]> = {
@@ -194,29 +200,31 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
       closures[closureId] = { ...next, needsPrice };
       return next;
     },
-    async retryCareClosure(closureId, request) {
-      const closure = closures[closureId];
-      if (!closure) throw { code: 'NOT_FOUND' };
-      if (
-        closure.status === 'CLOSURE_COMPLETED' ||
-        closure.version !== request.expectedVersion
-      )
-        throw {
-          code: 'CONFLICT',
-          message: 'El cierre cambió. Actualice su estado antes de reintentar.',
+    retryCareClosure: (closureId, request, idempotencyKey) =>
+      replay(idempotencyKey, async () => {
+        const closure = closures[closureId];
+        if (!closure) throw { code: 'NOT_FOUND' };
+        if (
+          closure.status === 'CLOSURE_COMPLETED' ||
+          closure.version !== request.expectedVersion
+        )
+          throw {
+            code: 'CONFLICT',
+            message:
+              'El cierre cambió. Actualice su estado antes de reintentar.',
+          };
+        const retried: CareClosure = {
+          id: closure.id,
+          procedureId: closure.procedureId,
+          appointmentId: closure.appointmentId,
+          status: 'CLOSURE_PENDING',
+          appointmentOutcome: closure.appointmentOutcome,
+          billingOutcome: 'PENDING',
+          version: closure.version + 1,
         };
-      const retried: CareClosure = {
-        id: closure.id,
-        procedureId: closure.procedureId,
-        appointmentId: closure.appointmentId,
-        status: 'CLOSURE_PENDING',
-        appointmentOutcome: closure.appointmentOutcome,
-        billingOutcome: 'PENDING',
-        version: closure.version + 1,
-      };
-      closures[closureId] = { ...retried, needsPrice: false };
-      return retried;
-    },
+        closures[closureId] = { ...retried, needsPrice: false };
+        return retried;
+      }),
     async completeProcedure(procedureId, request) {
       const list = Object.values(treatments).find((items) =>
         items.some((item) => item.procedures.some((p) => p.id === procedureId)),
@@ -388,41 +396,44 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
       if (!entries[recordId]) throw { code: 'NOT_FOUND' };
       return version(recordId);
     },
-    async declareCareCompleted(recordId, request) {
-      const linked = entries[recordId]?.some(
-        (entry) =>
-          entry.kind === 'CONSULTATION' && entry.id === request.consultationId,
-      );
-      if (
-        !linked ||
-        closedRecords.has(recordId) ||
-        version(recordId) !== request.expectedVersion
-      )
-        throw {
-          code: 'CONFLICT',
-          message: 'La atención no admite la declaración en su estado actual.',
+    declareCareCompleted: (recordId, request, idempotencyKey) =>
+      replay(idempotencyKey, async () => {
+        const linked = entries[recordId]?.some(
+          (entry) =>
+            entry.kind === 'CONSULTATION' &&
+            entry.id === request.consultationId,
+        );
+        if (
+          !linked ||
+          closedRecords.has(recordId) ||
+          version(recordId) !== request.expectedVersion
+        )
+          throw {
+            code: 'CONFLICT',
+            message:
+              'La atención no admite la declaración en su estado actual.',
+          };
+        const patientId = Object.keys(records).find(
+          (id) => records[id] === recordId,
+        )!;
+        closedRecords.add(recordId);
+        versions[recordId] = version(recordId) + 1;
+        return {
+          id: `completion-${recordId}`,
+          clinicalRecordId: recordId,
+          consultationId: request.consultationId,
+          appointmentId: request.appointmentId,
+          patientId,
+          dentistId: 'demo-dentist',
+          procedureIds: treatments[patientId].flatMap((treatment) =>
+            treatment.procedures
+              .filter((procedure) => procedure.status === 'COMPLETED')
+              .map((procedure) => procedure.id),
+          ),
+          manualChargeIds: [],
+          completedAt: '2026-10-09T10:00:00.000Z',
         };
-      const patientId = Object.keys(records).find(
-        (id) => records[id] === recordId,
-      )!;
-      closedRecords.add(recordId);
-      versions[recordId] = version(recordId) + 1;
-      return {
-        id: `completion-${recordId}`,
-        clinicalRecordId: recordId,
-        consultationId: request.consultationId,
-        appointmentId: request.appointmentId,
-        patientId,
-        dentistId: 'demo-dentist',
-        procedureIds: treatments[patientId].flatMap((treatment) =>
-          treatment.procedures
-            .filter((procedure) => procedure.status === 'COMPLETED')
-            .map((procedure) => procedure.id),
-        ),
-        manualChargeIds: [],
-        completedAt: '2026-10-09T10:00:00.000Z',
-      };
-    },
+      }),
     authorName: (authorId) => authors[authorId] ?? authorId,
   };
 }
