@@ -3,6 +3,7 @@ import { ClinicalDemoPage } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
 import {
   createDemoClinicalAdapter,
+  demoAppointments,
   demoProcedureCatalog,
 } from '../adapter/out/demo/demoClinicalAdapter';
 import { TreatmentPlan } from '../application/treatmentPlan';
@@ -37,6 +38,7 @@ function ClinicalDemoComposition() {
       patientReader={patientReader}
       treatmentPlan={treatmentPlan}
       catalog={demoProcedureCatalog}
+      appointments={demoAppointments}
     />
   );
 }

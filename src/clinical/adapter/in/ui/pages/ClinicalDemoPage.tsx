@@ -13,6 +13,7 @@ export interface ClinicalDemoPageProps {
   readonly patientReader: ReadPatientForCare;
   readonly treatmentPlan: TreatmentPlan;
   readonly catalog: readonly { code: string; label: string }[];
+  readonly appointments: Readonly<Record<string, string>>;
 }
 
 /** Dev-only context controls; dependencies are injected by composition. */
@@ -23,6 +24,7 @@ export function ClinicalDemoPage({
   patientReader,
   treatmentPlan,
   catalog,
+  appointments,
 }: ClinicalDemoPageProps) {
   const [patientId, setPatientId] = useState('patient-a');
   const [role, setRole] = useState<ClinicalRole>('DENTIST');
@@ -79,7 +81,11 @@ export function ClinicalDemoPage({
         writer={writer}
         authorName={authorName}
         patientReader={patientReader}
-        treatments={{ plan: treatmentPlan, catalog }}
+        treatments={{
+          plan: treatmentPlan,
+          catalog,
+          appointmentId: appointments[patientId],
+        }}
       />
     </section>
   );
