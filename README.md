@@ -133,8 +133,6 @@ never stores, edits or sends money (CLN-006) — COP amounts are exact decimal s
 
 ### Known limitations
 
-- On Windows, `scripts/pr-gates.mjs` checked out with CRLF breaks `npm test`/coverage locally;
-  Linux CI is authoritative.
 - Documentation gaps: no Billing manual-charge route/handoff contract, no query contract for earlier
   care-completion declarations or closures, and HU-CLN-003 indicators pending refinement.
 
