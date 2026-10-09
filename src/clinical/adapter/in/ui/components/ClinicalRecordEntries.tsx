@@ -112,6 +112,9 @@ function renderState(
               key={entry.id}
               entry={entry}
               author={authorName(entry.authorId)}
+              consultation={view.entries.find(
+                (item) => item.id === entry.consultationId,
+              )}
             />
           ))}
         </ul>
@@ -122,9 +125,11 @@ function renderState(
 function Entry({
   entry,
   author,
+  consultation,
 }: {
   readonly entry: ClinicalEntry;
   readonly author: string;
+  readonly consultation?: ClinicalEntry;
 }) {
   return (
     <li className="cr-entry">
@@ -153,6 +158,11 @@ function Entry({
           <span className="cr-label">Texto</span>
           {entry.text}
         </p>
+        {consultation?.createdAt && (
+          <p className="cr-entry__link">
+            Vinculado a la consulta del {formatDate(consultation.createdAt)}
+          </p>
+        )}
       </div>
     </li>
   );

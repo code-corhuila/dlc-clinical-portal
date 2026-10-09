@@ -76,11 +76,21 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     },
     async appendEntry(recordId, request) {
       if (!entries[recordId]) throw { code: 'FORBIDDEN' };
+      const linked = entries[recordId].some(
+        (entry) =>
+          entry.kind === 'CONSULTATION' && entry.id === request.consultationId,
+      );
+      if (request.kind === 'DIAGNOSIS' && !linked)
+        throw {
+          code: 'CONFLICT',
+          message: 'La consulta no pertenece a este registro clínico.',
+        };
       const entry: ClinicalEntry = {
         id: `demo-${recordId}-${entries[recordId].length + 1}`,
         recordId,
         kind: request.kind,
         text: request.text,
+        consultationId: request.consultationId,
         authorId: 'demo-dentist',
         createdAt: '2026-10-08T12:00:00.000Z',
         version: 1,
