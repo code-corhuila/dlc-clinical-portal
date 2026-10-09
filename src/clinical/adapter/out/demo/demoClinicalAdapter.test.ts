@@ -254,6 +254,57 @@ describe('demoClinicalAdapter', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
+  it('declares care completion once and then rejects late writes', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const record = await adapter.findRecordId('patient-a');
+    const [consultation] = (await adapter.readEntries(record)).data;
+    const version = await adapter.readRecordVersion(record);
+
+    await expect(
+      adapter.declareCareCompleted(record, {
+        consultationId: consultation.id,
+        appointmentId: 'appointment-a',
+        expectedVersion: version + 1,
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const completion = await adapter.declareCareCompleted(record, {
+      consultationId: consultation.id,
+      appointmentId: 'appointment-a',
+      expectedVersion: version,
+    });
+
+    expect(completion).toMatchObject({
+      clinicalRecordId: record,
+      consultationId: consultation.id,
+      patientId: 'patient-a',
+      manualChargeIds: [],
+    });
+    await expect(
+      adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    await expect(
+      adapter.declareCareCompleted(record, {
+        consultationId: consultation.id,
+        appointmentId: 'appointment-a',
+        expectedVersion: await adapter.readRecordVersion(record),
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const fresh = createDemoClinicalAdapter();
+    await expect(
+      fresh.appendEntry(record, { kind: 'EVOLUTION', text: 'Abierta' }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('increments the record version on every write', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const record = await adapter.findRecordId('patient-b');
+    const before = await adapter.readRecordVersion(record);
+
+    await adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Control' });
+
+    expect(await adapter.readRecordVersion(record)).toBe(before + 1);
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 
