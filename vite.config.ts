@@ -6,11 +6,16 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
 
   return {
+    // Relative base: when dlc-front mounts the remote, CSS and chunks resolve
+    // against the remote origin instead of the host page.
+    base: './',
     plugins: [
       react(),
       federation({
         name: 'dlc_clinical_portal',
         filename: 'remoteEntry.js',
+        // Ship the portal CSS with every exposed module when dlc-front mounts it.
+        bundleAllCSS: true,
         exposes: {
           './ClinicalPortal': './src/clinical/ClinicalPortal.tsx',
           './ClinicalDashboard': './src/clinical/ClinicalDashboard.tsx',
