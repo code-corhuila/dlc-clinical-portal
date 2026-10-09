@@ -480,3 +480,10 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD chronology:** genuine RED: 7 tests failed first (six completion flows now driven by the checkbox, and the filter). Lookups were narrowed where the UI added same-named elements: the kind badge (`.cr-entry__kind`) versus filter options, and `/^Limpieza profunda/` versus the checkbox cell named "Completar Limpieza profunda".
 - **Validation:** focused Clinical suite 20 files / 209 tests PASS; typecheck, lint, format, build and `git diff --check` PASS; production bundle contains no synthetic strings. Windows `npm test` keeps the known `scripts/pr-gates.test.mjs` SyntaxError. Browser (1280 px, DOM + screenshot): checkbox disabled before start, enabled in progress, opens the form, checked and disabled after completion; filter present.
 - **Observation:** the closure notice and follow-up panel render above the table; ordering them below is a pending cosmetic adjustment.
+
+## DEV-CLIN-PORTAL-PLAN-NOTICE-ORDER-021
+
+- **Story:** HU-CLN-001 presentation (code-corhuila/dlc-clinical-portal#3). Branch `fix/clinical-plan-notice-order` from `origin/develop` `cc01175` (20b merged in #41).
+- **Change:** the closure notice, the closure follow-up panel and the extras pending pricing now render below the plan table and total, matching mockup page 29's reading order. No behavior change.
+- **TDD:** genuine RED: a DOM-order test (`compareDocumentPosition`) failed while those blocks rendered above the table; GREEN moved the block.
+- **Validation:** focused Clinical suite 20 files / 210 tests PASS; typecheck, lint, format, build and `git diff --check` PASS. Windows `npm test` keeps the known `scripts/pr-gates.test.mjs` SyntaxError.

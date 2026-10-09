@@ -374,6 +374,16 @@ describe('ClinicalPortalComposition', () => {
     return screen.findByRole('region', { name: 'Seguimiento del cierre' });
   }
 
+  it('shows the closure notice and follow-up below the plan table', async () => {
+    const panel = await completeProcedure(false);
+
+    const table = screen.getByRole('table');
+    const notice = screen.getByText(/Cierre pendiente: Citas y Facturación/);
+    const follows = Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(table.compareDocumentPosition(notice) & follows).toBeTruthy();
+    expect(table.compareDocumentPosition(panel) & follows).toBeTruthy();
+  });
+
   it('follows a care closure until both outcomes complete', async () => {
     const panel = await completeProcedure(false);
 
