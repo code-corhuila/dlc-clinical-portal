@@ -518,3 +518,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Mount verification (probe host outside the repository):** a minimal Module Federation host on port 4180 consumed the `build:demo` remote served on 4174, like `dlc-front` will. Findings fixed during the probe: without `bundleAllCSS` no portal CSS reached the host; with absolute asset URLs the CSS was requested from the host origin (SPA fallback returned HTML). After the fixes, CSS and chunks load from the remote origin; the clinical record (plan with COP estimate, diagnoses, Evolución, filter, dialogs) and the dashboard (KPIs, 7-bar chart) render styled and work; the host's own font stays intact.
 - **TDD:** genuine RED: demo-build tests for the portal and dashboard failed while the gate required `DEV`; "normal production build stays free of synthetic data" passed before and after (regression). Styling/federation configuration was verified through builds and the probe host (no unit RED).
 - **Validation (Windows):** focused Clinical suite 217 tests PASS; `npm test` PASS; typecheck, lint, format, `npm run build` (no synthetic strings) and `npm run build:demo` PASS.
+
+## DEV-CLIN-PORTAL-MOCKUP-POLISH-026
+
+- **Story:** HU-CLN-001 presentation (code-corhuila/dlc-clinical-portal#3), mockup page 29, front-only delivery. Branch `feat/clinical-mockup-polish-26` from `origin/develop` `c1fdab1`.
+- **Changes (no invented data):** decorative inline SVG icons (`aria-hidden`) in the plan, diagnoses and Evolución titles and in the patient header (phone, ID, "Nueva entrada"); the plan header shows "Estado: …" for the treatment in progress, else the next planned one; diagnoses show an alert icon and "Detectado: <recorded date>" with the linked consultation; the new-entry button uses the mockup's light style; a timeline connector joins Evolución entries.
+- **Still different by contract/domain:** patient age, photo and readable ID (Patients), per-procedure notes, diagnosis active/monitoring state, attachments and "Guardar registro".
+- **TDD:** genuine RED for the plan status header and the detection date (2 tests); icons and CSS are visual-only.
+- **Validation (Windows):** focused Clinical suite 219 tests PASS; `npm test` PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS. Browser screenshot at 1400 px compared with mockup page 29.

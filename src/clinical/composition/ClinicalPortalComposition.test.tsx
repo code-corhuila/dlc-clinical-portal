@@ -551,6 +551,41 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
   });
 
+  it('shows the current treatment status in the plan header', async () => {
+    renderDemo();
+
+    const plan = await screen.findByRole('region', {
+      name: 'Plan de Tratamiento y Procedimientos',
+    });
+    expect(await screen.findByText('Estado: Planificado')).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+
+    expect(await screen.findByText('Estado: En curso')).toBeInTheDocument();
+    expect(plan).toContainElement(screen.getByText('Estado: En curso'));
+  });
+
+  it('shows when each diagnosis was detected', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    openComposer();
+    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
+      target: { value: 'DIAGNOSIS' },
+    });
+    fireEvent.change(screen.getByLabelText('Consulta asociada'), {
+      target: { value: consultationEntry.id },
+    });
+    addEntry('Caries oclusal profunda');
+
+    const card = await screen.findByRole('region', { name: 'Diagnósticos' });
+    expect(
+      await screen.findByText(/Detectado: 08 oct 2026/),
+    ).toBeInTheDocument();
+    expect(card).toHaveTextContent('Consulta del 2026-03-02');
+  });
+
   it('keeps the planning form closed until requested', async () => {
     renderDemo();
 

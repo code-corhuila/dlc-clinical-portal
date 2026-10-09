@@ -11,6 +11,7 @@ import {
   type ExtraItemDraft,
 } from '../../../../model/procedureCompletion';
 import { CompleteProcedureForm } from './CompleteProcedureForm';
+import { ClinicalIcon } from './ClinicalIcon';
 import { CareClosureTracker } from './CareClosureTracker';
 import type { PriceEstimate } from '../../../../application/billingEstimate';
 import { formatCop, sumCop } from '../../../../model/copMoney';
@@ -102,6 +103,11 @@ export function TreatmentPlanCard({
     };
   }, [loadPrices]);
 
+  // Mockup header status: the treatment in progress, else the next planned one.
+  const current =
+    treatments?.find((item) => item.status === 'IN_PROGRESS') ??
+    treatments?.find((item) => item.status === 'PLANNED') ??
+    treatments?.at(-1);
   const priced = (treatments ?? [])
     .filter((treatment) => treatment.status !== 'CANCELLED')
     .flatMap((treatment) => treatment.procedures)
@@ -152,7 +158,17 @@ export function TreatmentPlanCard({
 
   return (
     <section className="tp-card" aria-labelledby="treatment-plan-title">
-      <h2 id="treatment-plan-title">Plan de Tratamiento y Procedimientos</h2>
+      <div className="tp-header">
+        <h2 id="treatment-plan-title">
+          <ClinicalIcon name="plan" />
+          Plan de Tratamiento y Procedimientos
+        </h2>
+        {current && (
+          <span className="tp-status">
+            Estado: {TREATMENT_STATUS_LABELS[current.status]}
+          </span>
+        )}
+      </div>
       {startError && <p role="alert">{startError}</p>}
       {failed ? (
         <p role="alert">No fue posible cargar el plan de tratamiento.</p>
