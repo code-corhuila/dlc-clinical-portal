@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { demoRecordStatus } from '../../../../fixtures/clinicalFixtures';
 import {
   ClinicalRecordEntriesWorkflow,
   type ClinicalRecordEntriesPort,
 } from '../../../../application/clinicalRecordEntriesWorkflow';
+import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
 import {
   resolveClinicalAccess,
   type ClinicalRole,
@@ -16,7 +16,10 @@ export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
   readonly role?: ClinicalRole | null;
   readonly clinicalReadAuthorized?: boolean;
+  readonly clinicalWriteAuthorized?: boolean;
   readonly readPort?: ClinicalRecordEntriesPort;
+  readonly writer?: RecordClinicalEntry;
+  readonly authorName?: (authorId: string) => string;
 }
 
 interface RecordView {
@@ -32,10 +35,11 @@ export function ClinicalPortalPage({
   patientId,
   role = null,
   clinicalReadAuthorized = false,
+  clinicalWriteAuthorized = false,
   readPort,
+  writer,
+  authorName,
 }: ClinicalPortalPageProps) {
-  const demoEnabled =
-    import.meta.env.DEV && import.meta.env.VITE_CLINICAL_DEMO === 'true';
   const request = useRef(0);
   const [retry, setRetry] = useState(0);
   const [view, setView] = useState<RecordView>({
@@ -84,7 +88,7 @@ export function ClinicalPortalPage({
       aria-labelledby="clinical-portal-title"
     >
       <h1 id="clinical-portal-title">
-        {demoEnabled ? 'Historia clínica' : 'Clinical portal'}
+        {bound ? 'Historia clínica' : 'Clinical portal'}
       </h1>
       {bound ? (
         <>
@@ -92,29 +96,28 @@ export function ClinicalPortalPage({
             role={role}
             clinicalReadAuthorized={clinicalReadAuthorized}
             status={status}
+            authorName={authorName}
             onRetry={
               allowed && patientId
                 ? () => setRetry((value) => value + 1)
                 : undefined
             }
           />
-          <ClinicalEntryComposer role={role} onSubmit={undefined} />
-        </>
-      ) : demoEnabled ? (
-        <>
-          <p>
-            Modo demostración: datos sintéticos; sin integración con el API.
-          </p>
-          <ClinicalRecordEntries
-            role="DENTIST"
-            clinicalReadAuthorized
-            status={demoRecordStatus}
-          />
           <ClinicalEntryComposer
-            role="DENTIST"
-            clinicalWriteAuthorized
-            recordWritable
-            onSubmit={undefined}
+            role={role}
+            clinicalWriteAuthorized={clinicalWriteAuthorized}
+            recordWritable={status.kind === 'ready'}
+            onSubmit={
+              writer && patientId
+                ? async (entry) => {
+                    await writer.execute(
+                      { patientId, role, clinicalWriteAuthorized },
+                      entry,
+                    );
+                    setRetry((value) => value + 1);
+                  }
+                : undefined
+            }
           />
         </>
       ) : (

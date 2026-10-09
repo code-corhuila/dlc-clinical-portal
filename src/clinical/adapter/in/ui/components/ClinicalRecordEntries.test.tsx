@@ -123,6 +123,16 @@ describe('ClinicalRecordEntries', () => {
       expect(screen.getByText(evolutionEntry.authorId)).toBeInTheDocument();
     });
 
+    it('shows an injected author display name', () => {
+      renderEntries({
+        status: readyStatus([evolutionEntry]),
+        authorName: () => 'Profesional asignado',
+      });
+
+      expect(screen.getByText('Profesional asignado')).toBeInTheDocument();
+      expect(screen.queryByText(evolutionEntry.authorId)).toBeNull();
+    });
+
     it('omits the date field when createdAt is not present', () => {
       const { container } = renderEntries({
         status: readyStatus([evolutionEntry]),

@@ -7,12 +7,15 @@ import {
 import { ClinicalPortalPage } from './ClinicalPortalPage';
 import type { ClinicalRecordEntriesPort } from '../../../../application/clinicalRecordEntriesWorkflow';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
+import { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
 
 interface BoundPageProps {
   readonly patientId: string | null;
   readonly role: ClinicalRole | null;
   readonly clinicalReadAuthorized: boolean;
   readonly readPort: ClinicalRecordEntriesPort;
+  readonly clinicalWriteAuthorized?: boolean;
+  readonly writer?: RecordClinicalEntry;
 }
 
 describe('ClinicalPortalPage', () => {
@@ -31,13 +34,66 @@ describe('ClinicalPortalPage', () => {
     expect(screen.queryByText(/Modo demostraci/)).toBeNull();
   });
 
-  it('shows the synthetic clinical record demo only with the dev flag', () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-    render(<ClinicalPortalPage />);
+  it('does not derive write access from read authorization', async () => {
+    const port: ClinicalRecordEntriesPort = {
+      findRecordId: async () => 'record-1',
+      readEntries: async () => ({
+        data: [consultationEntry],
+        meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      }),
+    };
+    const BoundPage =
+      ClinicalPortalPage as unknown as React.ComponentType<BoundPageProps>;
+    render(
+      <BoundPage
+        patientId="patient-1"
+        role="DENTIST"
+        clinicalReadAuthorized
+        readPort={port}
+      />,
+    );
 
-    expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
-    expect(screen.getByText(evolutionEntry.text)).toBeInTheDocument();
-    expect(screen.getByText(/Modo demostraci/)).toBeInTheDocument();
+    expect(await screen.findByText(consultationEntry.text)).toBeInTheDocument();
+    expect(screen.getByText('Acceso no autorizado')).toBeInTheDocument();
+  });
+
+  it('submits through the injected use case with the write context', async () => {
+    const entries = [consultationEntry];
+    const port = {
+      findRecordId: vi.fn().mockResolvedValue('record-1'),
+      readEntries: async () => ({
+        data: [...entries],
+        meta: { page: 1, limit: 20, total: entries.length, totalPages: 1 },
+      }),
+      appendEntry: vi.fn(
+        async (_recordId: string, request: { text: string }) => {
+          entries.push({ ...evolutionEntry, id: 'new', text: request.text });
+        },
+      ),
+    };
+    const BoundPage =
+      ClinicalPortalPage as unknown as React.ComponentType<BoundPageProps>;
+    render(
+      <BoundPage
+        patientId="patient-1"
+        role="DENTIST"
+        clinicalReadAuthorized
+        clinicalWriteAuthorized
+        readPort={port}
+        writer={new RecordClinicalEntry(port)}
+      />,
+    );
+    await screen.findByText(consultationEntry.text);
+    fireEvent.change(screen.getByLabelText('Narrativa clínica'), {
+      target: { value: 'Nota inyectada' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar entrada' }));
+
+    expect(await screen.findByText('Nota inyectada')).toBeInTheDocument();
+    expect(port.appendEntry).toHaveBeenCalledWith('record-1', {
+      kind: 'CONSULTATION',
+      text: 'Nota inyectada',
+    });
   });
 
   it('loads authorized entries from an explicit patient context and typed port', async () => {

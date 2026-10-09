@@ -34,6 +34,7 @@ export interface ClinicalRecordEntriesProps {
   readonly clinicalReadAuthorized?: boolean;
   readonly status: ClinicalRecordStatus;
   readonly onRetry?: () => void;
+  readonly authorName?: (authorId: string) => string;
 }
 
 /** Read-only clinical record slice; denied access wins before any narrative. */
@@ -42,6 +43,7 @@ export function ClinicalRecordEntries({
   clinicalReadAuthorized,
   status,
   onRetry,
+  authorName = (authorId) => authorId,
 }: ClinicalRecordEntriesProps) {
   const view = toClinicalRecordViewModel(
     resolveClinicalAccess(role, clinicalReadAuthorized === true),
@@ -53,12 +55,16 @@ export function ClinicalRecordEntries({
       <h2 className="cr-title" id="clinical-record-title">
         Registro clínico
       </h2>
-      {renderState(view, onRetry)}
+      {renderState(view, authorName, onRetry)}
     </section>
   );
 }
 
-function renderState(view: ClinicalRecordViewModel, onRetry?: () => void) {
+function renderState(
+  view: ClinicalRecordViewModel,
+  authorName: (authorId: string) => string,
+  onRetry?: () => void,
+) {
   switch (view.state) {
     case 'loading':
       return (
@@ -102,14 +108,24 @@ function renderState(view: ClinicalRecordViewModel, onRetry?: () => void) {
       return (
         <ul className="cr-entries">
           {view.entries.map((entry) => (
-            <Entry key={entry.id} entry={entry} />
+            <Entry
+              key={entry.id}
+              entry={entry}
+              author={authorName(entry.authorId)}
+            />
           ))}
         </ul>
       );
   }
 }
 
-function Entry({ entry }: { readonly entry: ClinicalEntry }) {
+function Entry({
+  entry,
+  author,
+}: {
+  readonly entry: ClinicalEntry;
+  readonly author: string;
+}) {
   return (
     <li className="cr-entry">
       <div className="cr-entry__timeline-marker" aria-hidden="true"></div>
@@ -130,7 +146,7 @@ function Entry({ entry }: { readonly entry: ClinicalEntry }) {
           </div>
           <div className="cr-entry__author">
             <span className="cr-label">Autor</span>
-            <code>{entry.authorId}</code>
+            <code>{author}</code>
           </div>
         </div>
         <p className="cr-entry__text">
