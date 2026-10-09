@@ -234,6 +234,70 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.queryByText(/\$|Costo|Total|Precio/)).toBeNull();
   });
 
+  it('lists recorded extras pending pricing in Billing', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Agregar material o necesidad' }),
+    );
+    fireEvent.change(screen.getByLabelText('Cantidad'), {
+      target: { value: '2' },
+    });
+    fireEvent.change(screen.getByLabelText('Descripción'), {
+      target: { value: 'Anestesia adicional' },
+    });
+    fireEvent.change(screen.getByLabelText('Justificación clínica'), {
+      target: { value: 'Sensibilidad persistente' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Registrar procedimiento completado',
+      }),
+    );
+
+    const pending = await screen.findByRole('region', {
+      name: 'Extras pendientes de precio en Facturación',
+    });
+    expect(pending).toHaveTextContent('Anestesia adicional');
+    expect(pending).toHaveTextContent('Material adicional');
+    expect(pending).toHaveTextContent('Cantidad: 2');
+    expect(pending).toHaveTextContent('Limpieza profunda');
+    expect(pending).toHaveTextContent('Cita: appointment-a');
+    expect(pending).toHaveTextContent(/Ref\.: [0-9a-f-]{36}/);
+    expect(pending).not.toHaveTextContent(/\$|Precio:|Total/);
+  });
+
+  it('shows no pending pricing list when no extras were recorded', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Registrar procedimiento completado',
+      }),
+    );
+
+    expect(await screen.findByText(/Cierre pendiente/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', {
+        name: 'Extras pendientes de precio en Facturación',
+      }),
+    ).toBeNull();
+  });
+
   it('rejects an extra without clinical justification', async () => {
     renderDemo();
 
