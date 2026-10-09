@@ -2,6 +2,8 @@ import type { ClinicalRecordEntriesPort } from '../../../application/clinicalRec
 import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
 import type { PatientForCarePort } from '../../../application/readPatientForCare';
 import type { PatientForCare } from '../../../model/patientForCare';
+import type { TreatmentPort } from '../../../application/treatmentPlan';
+import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
   ClinicalEntryPage,
@@ -16,9 +18,17 @@ export interface DemoClinicalAdapter
   extends
     ClinicalRecordEntriesPort,
     ClinicalEntryWritePort,
-    PatientForCarePort {
+    PatientForCarePort,
+    TreatmentPort {
   authorName(authorId: string): string;
 }
+
+/** Synthetic Billing catalog references: codes and names only, never prices. */
+export const demoProcedureCatalog = [
+  { code: 'D1110', label: 'Limpieza profunda' },
+  { code: 'D2391', label: 'Resina simple' },
+  { code: 'D7140', label: 'Extracción simple' },
+] as const;
 
 const records: Record<string, string> = {
   'patient-a': 'record-a',
@@ -51,7 +61,31 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'record-a': [{ ...consultationEntry, recordId: 'record-a' }],
     'record-b': [{ ...evolutionEntry, recordId: 'record-b' }],
   };
+  const treatments: Record<string, Treatment[]> = {
+    'patient-a': [
+      {
+        id: 'treatment-a-1',
+        patientId: 'patient-a',
+        clinicalReason: 'Profilaxis de control',
+        status: 'PLANNED',
+        procedures: [
+          {
+            id: 'procedure-a-1',
+            procedureCode: 'D1110',
+            appointmentId: 'appointment-a',
+            status: 'PLANNED',
+          },
+        ],
+        version: 1,
+      },
+    ],
+    'patient-b': [],
+  };
   return {
+    async listTreatments(patientId) {
+      if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
+      return treatments[patientId];
+    },
     async readPatient(patientId) {
       const patient = patients[patientId];
       if (!patient) throw { code: 'FORBIDDEN' };
