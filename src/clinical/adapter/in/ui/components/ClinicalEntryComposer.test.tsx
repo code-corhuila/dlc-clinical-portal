@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ClinicalEntryComposer } from './ClinicalEntryComposer';
 
@@ -24,6 +24,25 @@ describe('ClinicalEntryComposer', () => {
   const consultations = [
     { id: 'c-1', label: '02 mar 2026 · Revisión inicial' },
   ];
+
+  it('clears the narrative after a successful submission', async () => {
+    renderComposer({ onSubmit: vi.fn().mockResolvedValue(undefined) });
+    submit('Consulta guardada');
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Narrativa clínica')).toHaveValue(''),
+    );
+  });
+
+  it('keeps the narrative when the submission fails', async () => {
+    renderComposer({ onSubmit: vi.fn().mockRejectedValue(new Error('x')) });
+    submit('Consulta fallida');
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByLabelText('Narrativa clínica')).toHaveValue(
+      'Consulta fallida',
+    );
+  });
 
   it('requires an explicit consultation for a diagnosis', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);

@@ -95,6 +95,32 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.getByText('Diagnóstico')).toBeInTheDocument();
   });
 
+  it('adds a quick evolution note from the Evolución card', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    expect(
+      screen.getByRole('heading', { name: 'Evolución' }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nota rápida'), {
+      target: { value: 'Control sin dolor' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar nota' }));
+
+    expect(await screen.findByText('Control sin dolor')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nota rápida')).toHaveValue('');
+    expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
+  });
+
+  it('hides the quick note without write authorization', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.click(screen.getByLabelText('Autorización clínica de escritura'));
+
+    expect(screen.queryByLabelText('Nota rápida')).toBeNull();
+  });
+
   it('keeps read access while write authorization is withdrawn', async () => {
     renderDemo();
 
