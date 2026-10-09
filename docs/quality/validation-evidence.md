@@ -493,3 +493,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Branch / base:** `chore/clinical-readme-status` from `origin/develop` `6d3d3ec`.
 - **Change (documentation only, DoD "Service README updated when the public interface or behavior changes"):** replaces the outdated "Foundation status" and coverage text with the current status (four HUs implemented on synthetic data, not integrated, none Done), the federated exposes (`./ClinicalPortal`, `./ClinicalDashboard`), demo usage and synthetic patients, the hexagonal ports to implement at integration with their owner contracts, enforced rules and known limitations.
 - **Verification of facts stated:** coverage ~95% of statements measured locally on `src/clinical`; sibling repositories checked read-only on GitHub: `dlc-front` `develop` contains only empty scaffolding (no shared client, session or mount), `dlc-clinical-api` `develop` contains no source. No code changed, so no TDD cycle applies.
+
+## DEV-CLIN-PORTAL-WINDOWS-GATE-EOL-023
+
+- **Branch / base:** `fix/windows-gate-line-endings` from `origin/develop` `6d3d3ec`.
+- **Root cause (reproduced):** with `core.autocrlf=true`, Windows checks out `scripts/pr-gates.mjs` with CRLF; its first line is a shebang, and `#!/usr/bin/env node\r` makes the Vitest transform fail with `SyntaxError: Invalid or unexpected token`. Probes on LF copies: converting only `pr-gates.mjs` to LF makes all 28 gate tests pass.
+- **Fix:** `.gitattributes` with `*.mjs text eol=lf`, so every checkout keeps LF for Node ESM scripts. The validator logic and its tests are unchanged (no content diff in `scripts/`; the repository already stored them as LF).
+- **TDD:** RED was the existing failing `npm test`/coverage on Windows (`scripts/pr-gates.test.mjs` SyntaxError). GREEN after the attribute and working-copy normalization.
+- **Validation (Windows):** `npm test` 21 files / 238 tests PASS (210 Clinical + 28 gate); `npm run test:coverage` PASS, ~95% statements on `src/clinical`; typecheck, lint, format and build PASS. The "known Windows failure" noted in earlier evidence records is resolved from this revision on.
