@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { ClinicalCareCompletion } from '../../../../model/careCompletion';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { useIntentKey } from './useIntentKey';
 
 export interface CareCompletionCardProps {
   readonly consultations: readonly { id: string; label: string }[];
   readonly onDeclare?: (
     consultationId: string,
+    idempotencyKey: string,
   ) => Promise<ClinicalCareCompletion>;
 }
 
@@ -18,13 +20,15 @@ export function CareCompletionCard({
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
   const [completion, setCompletion] = useState<ClinicalCareCompletion>();
+  // Declaring closes the record, so the key is never renewed for this card.
+  const [intentKey] = useIntentKey();
 
   async function declare() {
     if (!onDeclare || pending) return;
     setPending(true);
     setMessage(undefined);
     try {
-      setCompletion(await onDeclare(consultationId));
+      setCompletion(await onDeclare(consultationId, intentKey));
     } catch (error) {
       setMessage(
         portFailureMessage(error, 'No fue posible declarar el cierre clínico.'),

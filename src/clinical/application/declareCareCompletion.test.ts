@@ -29,6 +29,7 @@ const access = (role: ClinicalRole | null, authorized: boolean) => ({
   patientId: 'patient-1',
   role,
   clinicalWriteAuthorized: authorized,
+  idempotencyKey: 'intent-1',
 });
 
 const declaration = {
@@ -46,10 +47,14 @@ describe('DeclareCareCompletion', () => {
         declaration,
       ),
     ).resolves.toEqual(completion);
-    expect(completions.declareCareCompleted).toHaveBeenCalledWith('record-1', {
-      ...declaration,
-      expectedVersion: 4,
-    });
+    expect(completions.declareCareCompleted).toHaveBeenCalledWith(
+      'record-1',
+      {
+        ...declaration,
+        expectedVersion: 4,
+      },
+      'intent-1',
+    );
   });
 
   it.each<[string, ClinicalRole | null, boolean]>([
@@ -88,5 +93,32 @@ describe('DeclareCareCompletion', () => {
       ),
     ).rejects.toMatchObject({ code: 'INVALID' });
     expect(completions.findRecordId).not.toHaveBeenCalled();
+  });
+
+  it('forwards the intent Idempotency-Key with the declaration', async () => {
+    const completions = port();
+
+    await new DeclareCareCompletion(completions).execute(
+      { ...access('DENTIST', true), idempotencyKey: 'intent-7' },
+      declaration,
+    );
+
+    expect(completions.declareCareCompleted).toHaveBeenCalledWith(
+      'record-1',
+      { ...declaration, expectedVersion: 4 },
+      'intent-7',
+    );
+  });
+
+  it('rejects a declaration without an Idempotency-Key', async () => {
+    const completions = port();
+
+    await expect(
+      new DeclareCareCompletion(completions).execute(
+        { ...access('DENTIST', true), idempotencyKey: '' },
+        declaration,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(completions.declareCareCompleted).not.toHaveBeenCalled();
   });
 });
