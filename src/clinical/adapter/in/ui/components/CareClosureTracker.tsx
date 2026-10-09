@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { portFailureMessage } from '../../../../model/portFailure';
 import type { CareClosure } from '../../../../model/procedureCompletion';
 
@@ -17,6 +17,7 @@ export interface CareClosureTrackerProps {
   readonly onRetry?: (
     closure: CareClosure,
     reason: string,
+    idempotencyKey: string,
   ) => Promise<CareClosure>;
   readonly onChange: (closure: CareClosure) => void;
 }
@@ -31,6 +32,14 @@ export function CareClosureTracker({
 }: CareClosureTrackerProps) {
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string>();
+  // One key per failed closure version: kept across retries of that failure.
+  const intentKeys = useRef(new Map<string, string>());
+  const intentKey = ({ id, version }: CareClosure) => {
+    const failure = `${id}:${version}`;
+    if (!intentKeys.current.has(failure))
+      intentKeys.current.set(failure, crypto.randomUUID());
+    return intentKeys.current.get(failure)!;
+  };
 
   async function run(action: () => Promise<CareClosure>) {
     setMessage(undefined);
@@ -85,7 +94,13 @@ export function CareClosureTracker({
                 <button
                   type="button"
                   onClick={() =>
-                    run(() => onRetry(closure, reasons[closure.id] ?? ''))
+                    run(() =>
+                      onRetry(
+                        closure,
+                        reasons[closure.id] ?? '',
+                        intentKey(closure),
+                      ),
+                    )
                   }
                 >
                   Reintentar cierre

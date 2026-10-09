@@ -297,17 +297,25 @@ describe('demoClinicalAdapter', () => {
     const version = await adapter.readRecordVersion(record);
 
     await expect(
-      adapter.declareCareCompleted(record, {
+      adapter.declareCareCompleted(
+        record,
+        {
+          consultationId: consultation.id,
+          appointmentId: 'appointment-a',
+          expectedVersion: version + 1,
+        },
+        'k-declare-1',
+      ),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const completion = await adapter.declareCareCompleted(
+      record,
+      {
         consultationId: consultation.id,
         appointmentId: 'appointment-a',
-        expectedVersion: version + 1,
-      }),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    const completion = await adapter.declareCareCompleted(record, {
-      consultationId: consultation.id,
-      appointmentId: 'appointment-a',
-      expectedVersion: version,
-    });
+        expectedVersion: version,
+      },
+      'k-declare-2',
+    );
 
     expect(completion).toMatchObject({
       clinicalRecordId: record,
@@ -319,11 +327,15 @@ describe('demoClinicalAdapter', () => {
       adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }, 'k-11'),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     await expect(
-      adapter.declareCareCompleted(record, {
-        consultationId: consultation.id,
-        appointmentId: 'appointment-a',
-        expectedVersion: await adapter.readRecordVersion(record),
-      }),
+      adapter.declareCareCompleted(
+        record,
+        {
+          consultationId: consultation.id,
+          appointmentId: 'appointment-a',
+          expectedVersion: await adapter.readRecordVersion(record),
+        },
+        'k-declare-3',
+      ),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     const fresh = createDemoClinicalAdapter();
     await expect(
@@ -384,15 +396,23 @@ describe('demoClinicalAdapter', () => {
       failureReason: 'Facturación requiere el precio manual de los extras.',
     });
     await expect(
-      adapter.retryCareClosure(closure.id, {
-        reason: 'Precio registrado',
-        expectedVersion: failed.version + 1,
-      }),
+      adapter.retryCareClosure(
+        closure.id,
+        {
+          reason: 'Precio registrado',
+          expectedVersion: failed.version + 1,
+        },
+        'k-retry-1',
+      ),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
-    const retried = await adapter.retryCareClosure(closure.id, {
-      reason: 'Precio registrado',
-      expectedVersion: failed.version,
-    });
+    const retried = await adapter.retryCareClosure(
+      closure.id,
+      {
+        reason: 'Precio registrado',
+        expectedVersion: failed.version,
+      },
+      'k-retry-2',
+    );
     expect(retried).toMatchObject({ status: 'CLOSURE_PENDING' });
     expect(await adapter.readCareClosure(closure.id)).toMatchObject({
       status: 'CLOSURE_COMPLETED',
@@ -458,5 +478,24 @@ describe('demoClinicalAdapter', () => {
       'Dr. Mateo López',
     );
     expect(adapter.authorName('other-author')).toBe('other-author');
+  });
+
+  it('replays a repeated care-completion intent without a second effect', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const record = await adapter.findRecordId('patient-a');
+    const [consultation] = (await adapter.readEntries(record)).data;
+    const request = {
+      consultationId: consultation.id,
+      appointmentId: 'appointment-a',
+      expectedVersion: await adapter.readRecordVersion(record),
+    };
+
+    const first = await adapter.declareCareCompleted(record, request, 'k-dec');
+    const replay = await adapter.declareCareCompleted(record, request, 'k-dec');
+
+    expect(replay).toEqual(first);
+    expect(await adapter.readRecordVersion(record)).toBe(
+      request.expectedVersion + 1,
+    );
   });
 });

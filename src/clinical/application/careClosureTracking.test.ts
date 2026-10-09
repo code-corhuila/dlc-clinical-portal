@@ -30,6 +30,7 @@ const access = (role: ClinicalRole | null, read: boolean, write: boolean) => ({
   role,
   clinicalReadAuthorized: read,
   clinicalWriteAuthorized: write,
+  idempotencyKey: 'intent-1',
 });
 
 describe('CareClosureTracking', () => {
@@ -65,10 +66,14 @@ describe('CareClosureTracking', () => {
       'Precio registrado en Facturación',
     );
 
-    expect(closures.retryCareClosure).toHaveBeenCalledWith('closure-1', {
-      reason: 'Precio registrado en Facturación',
-      expectedVersion: 2,
-    });
+    expect(closures.retryCareClosure).toHaveBeenCalledWith(
+      'closure-1',
+      {
+        reason: 'Precio registrado en Facturación',
+        expectedVersion: 2,
+      },
+      'intent-1',
+    );
   });
 
   it('rejects a retry without write authorization', async () => {
@@ -99,6 +104,35 @@ describe('CareClosureTracking', () => {
         access('DENTIST', true, true),
         closure,
         reason,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(closures.retryCareClosure).not.toHaveBeenCalled();
+  });
+
+  it('forwards the intent Idempotency-Key with the retry', async () => {
+    const closures = port();
+
+    await new CareClosureTracking(closures).retry(
+      { ...access('DENTIST', true, true), idempotencyKey: 'intent-9' },
+      failed,
+      'Precio cargado',
+    );
+
+    expect(closures.retryCareClosure).toHaveBeenCalledWith(
+      'closure-1',
+      { reason: 'Precio cargado', expectedVersion: 2 },
+      'intent-9',
+    );
+  });
+
+  it('rejects a retry without an Idempotency-Key', async () => {
+    const closures = port();
+
+    await expect(
+      new CareClosureTracking(closures).retry(
+        { ...access('DENTIST', true, true), idempotencyKey: '' },
+        failed,
+        'Precio cargado',
       ),
     ).rejects.toMatchObject({ code: 'INVALID' });
     expect(closures.retryCareClosure).not.toHaveBeenCalled();
