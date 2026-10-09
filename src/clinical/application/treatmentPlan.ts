@@ -1,12 +1,19 @@
 import {
   resolveClinicalAccess,
+  resolveClinicalWriteAccess,
   type ClinicalRole,
 } from '../model/clinicalAccess';
-import type { Treatment } from '../model/treatment';
+import {
+  validateTreatmentDraft,
+  type PlanTreatmentRequest,
+  type Treatment,
+  type TreatmentDraft,
+} from '../model/treatment';
 
 /** Host-provided treatments boundary; it deliberately contains no HTTP details. */
 export interface TreatmentPort {
   listTreatments(patientId: string): Promise<readonly Treatment[]>;
+  planTreatment(request: PlanTreatmentRequest): Promise<Treatment>;
 }
 
 export interface TreatmentAccess {
@@ -15,7 +22,7 @@ export interface TreatmentAccess {
   readonly clinicalAuthorized: boolean;
 }
 
-/** Reads the patient's treatment plan for an authorized clinical reader. */
+/** Reads and plans treatments; read and write permissions are checked apart. */
 export class TreatmentPlan {
   constructor(private readonly port: TreatmentPort) {}
 
@@ -26,5 +33,16 @@ export class TreatmentPlan {
     )
       throw { code: 'FORBIDDEN' };
     return this.port.listTreatments(access.patientId);
+  }
+
+  async plan(access: TreatmentAccess, draft: TreatmentDraft): Promise<void> {
+    if (
+      resolveClinicalWriteAccess(access.role, access.clinicalAuthorized) !==
+      'granted'
+    )
+      throw { code: 'FORBIDDEN' };
+    const message = validateTreatmentDraft(draft);
+    if (message) throw { code: 'INVALID', message };
+    await this.port.planTreatment({ patientId: access.patientId, ...draft });
   }
 }
