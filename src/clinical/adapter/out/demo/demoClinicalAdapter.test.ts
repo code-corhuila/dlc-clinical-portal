@@ -135,6 +135,30 @@ describe('demoClinicalAdapter', () => {
     expect(JSON.stringify(planned)).not.toMatch(/price|amount|cost/i);
   });
 
+  it('starts a planned treatment once and rejects stale versions', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const [planned] = await adapter.listTreatments('patient-a');
+
+    await expect(
+      adapter.startTreatment(planned.id, planned.version + 1),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const started = await adapter.startTreatment(planned.id, planned.version);
+
+    expect(started).toMatchObject({
+      status: 'IN_PROGRESS',
+      version: planned.version + 1,
+    });
+    expect((await adapter.listTreatments('patient-a'))[0].status).toBe(
+      'IN_PROGRESS',
+    );
+    await expect(
+      adapter.startTreatment(started.id, started.version),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    await expect(
+      adapter.startTreatment('unknown-treatment', 1),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 
