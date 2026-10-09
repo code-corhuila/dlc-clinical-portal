@@ -291,3 +291,19 @@
   outline: 2px solid #1554a3;
   outline-offset: 2px;
 }
+
+.cr-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cr-card__header select {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: #0f766e;
+  font: inherit;
+  font-size: 12px;
+}

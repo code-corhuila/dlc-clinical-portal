@@ -61,12 +61,28 @@ export function ClinicalRecordEntries({
     status,
   );
 
+  const [kind, setKind] = useState('ALL');
+
   return (
     <section className="cr-card" aria-labelledby="clinical-record-title">
-      <h2 className="cr-title" id="clinical-record-title">
-        Evolución
-      </h2>
-      {renderState(view, authorName, onRetry, onAmend)}
+      <div className="cr-card__header">
+        <h2 className="cr-title" id="clinical-record-title">
+          Evolución
+        </h2>
+        {view.state === 'data' && (
+          <select
+            aria-label="Filtrar evolución"
+            value={kind}
+            onChange={(event) => setKind(event.target.value)}
+          >
+            <option value="ALL">Todas</option>
+            <option value="CONSULTATION">Consulta</option>
+            <option value="DIAGNOSIS">Diagnóstico</option>
+            <option value="EVOLUTION">Evolución</option>
+          </select>
+        )}
+      </div>
+      {renderState(view, authorName, onRetry, onAmend, kind)}
       {(view.state === 'data' || view.state === 'empty') && children}
     </section>
   );
@@ -77,6 +93,7 @@ function renderState(
   authorName: (authorId: string) => string,
   onRetry?: () => void,
   onAmend?: AmendHandler,
+  kind = 'ALL',
 ) {
   switch (view.state) {
     case 'loading':
@@ -120,20 +137,22 @@ function renderState(
     case 'data':
       return (
         <ul className="cr-entries">
-          {view.entries.map((entry) => (
-            <Entry
-              key={entry.id}
-              entry={entry}
-              author={authorName(entry.authorId)}
-              consultation={view.entries.find(
-                (item) => item.id === entry.consultationId,
-              )}
-              corrected={view.entries.some(
-                (item) => item.amendsEntryId === entry.id,
-              )}
-              onAmend={onAmend}
-            />
-          ))}
+          {view.entries
+            .filter((entry) => kind === 'ALL' || entry.kind === kind)
+            .map((entry) => (
+              <Entry
+                key={entry.id}
+                entry={entry}
+                author={authorName(entry.authorId)}
+                consultation={view.entries.find(
+                  (item) => item.id === entry.consultationId,
+                )}
+                corrected={view.entries.some(
+                  (item) => item.amendsEntryId === entry.id,
+                )}
+                onAmend={onAmend}
+              />
+            ))}
         </ul>
       );
   }
