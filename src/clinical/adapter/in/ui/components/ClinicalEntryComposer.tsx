@@ -6,6 +6,7 @@ import {
   type ClinicalEntryRequest,
   type ClinicalEntryRequestKind,
 } from '../../../../model/clinicalEntryRequest';
+import { portFailureMessage } from '../../../../model/portFailure';
 import './clinical-entry-composer.css';
 
 export interface ClinicalEntryComposerProps {
@@ -47,9 +48,12 @@ export function ClinicalEntryComposer({
     try {
       await onSubmit(request);
       setText('');
-    } catch {
+    } catch (error) {
       setMessage(
-        'No fue posible enviar la entrada clínica. Inténtelo de nuevo.',
+        portFailureMessage(
+          error,
+          'No fue posible enviar la entrada clínica. Inténtelo de nuevo.',
+        ),
       );
     } finally {
       setSubmitting(false);

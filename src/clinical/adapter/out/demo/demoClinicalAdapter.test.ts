@@ -159,6 +159,54 @@ describe('demoClinicalAdapter', () => {
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
+  it('amends an entry by appending a linked correction', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const record = await adapter.findRecordId('patient-a');
+    const [original] = (await adapter.readEntries(record)).data;
+
+    await expect(
+      adapter.amendEntry(original.id, {
+        text: 'Corrección',
+        reason: 'Pieza equivocada',
+        expectedVersion: original.version + 1,
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    await adapter.amendEntry(original.id, {
+      text: 'Corrección',
+      reason: 'Pieza equivocada',
+      expectedVersion: original.version,
+    });
+
+    const entries = (await adapter.readEntries(record)).data;
+    expect(entries[0]).toEqual(original);
+    expect(entries.at(-1)).toMatchObject({
+      kind: original.kind,
+      text: 'Corrección',
+      amendsEntryId: original.id,
+      amendmentReason: 'Pieza equivocada',
+    });
+  });
+
+  it('rejects writes to the closed encounter of patient D', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const record = await adapter.findRecordId('patient-d');
+    const [entry] = (await adapter.readEntries(record)).data;
+
+    await expect(
+      adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }),
+    ).rejects.toMatchObject({
+      code: 'CONFLICT',
+      message: 'La atención está cerrada; no admite nuevos registros.',
+    });
+    await expect(
+      adapter.amendEntry(entry.id, {
+        text: 'Cambio',
+        reason: 'Motivo',
+        expectedVersion: entry.version,
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 

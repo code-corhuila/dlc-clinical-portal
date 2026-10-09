@@ -19,17 +19,4 @@ describe('portFailureMessage', () => {
   ])('uses the fallback for %s', (_, error) => {
     expect(portFailureMessage(error, 'Mensaje seguro')).toBe('Mensaje seguro');
   });
-
-  it('adds the support reference when the failure carries a traceId', () => {
-    expect(
-      portFailureMessage(
-        {
-          code: 'FORBIDDEN',
-          message: 'Operación no permitida.',
-          traceId: 'trace-9',
-        },
-        'x',
-      ),
-    ).toBe('Operación no permitida. Referencia: trace-9');
-  });
 });

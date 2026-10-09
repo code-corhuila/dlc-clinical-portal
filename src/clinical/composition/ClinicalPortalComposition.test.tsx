@@ -247,6 +247,58 @@ describe('ClinicalPortalComposition', () => {
     ).toBeNull();
   });
 
+  it('amends an entry while preserving the original', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.click(screen.getByRole('button', { name: 'Corregir entrada' }));
+    fireEvent.change(screen.getByLabelText('Texto corregido'), {
+      target: { value: 'Consulta corregida' },
+    });
+    fireEvent.change(screen.getByLabelText('Motivo de la corrección'), {
+      target: { value: 'Pieza equivocada' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar corrección' }));
+
+    expect(
+      await screen.findByText(/Motivo: Pieza equivocada/),
+    ).toBeInTheDocument();
+    const texts = [...document.querySelectorAll('.cr-entry__text')].map(
+      (element) => element.textContent,
+    );
+    expect(texts).toEqual([
+      `Texto${consultationEntry.text}`,
+      'TextoConsulta corregida',
+    ]);
+    expect(screen.getByText('Corregida')).toBeInTheDocument();
+  });
+
+  it('does not offer corrections without write authorization', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.click(screen.getByLabelText('Autorización clínica de escritura'));
+
+    expect(
+      screen.queryByRole('button', { name: 'Corregir entrada' }),
+    ).toBeNull();
+  });
+
+  it('shows why a closed encounter rejects new entries', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.change(screen.getByLabelText('Paciente'), {
+      target: { value: 'patient-d' },
+    });
+    await screen.findByRole('button', { name: 'Registrar entrada' });
+    addEntry('Nota tardía');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La atención está cerrada; no admite nuevos registros.',
+    );
+  });
+
   it('keeps read access while write authorization is withdrawn', async () => {
     renderDemo();
 

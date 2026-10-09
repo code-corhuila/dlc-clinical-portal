@@ -235,3 +235,59 @@
   color: #b42318;
   font-size: 13px;
 }
+
+.cr-entry__amend {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cr-amend {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.cr-amend textarea,
+.cr-amend input {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
+
+.cr-amend p {
+  margin: 0;
+  color: #b42318;
+}
+
+.cr-amend div {
+  display: flex;
+  gap: 8px;
+}
+
+.cr-amend button {
+  border: 1px solid #0f766e;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  color: #0f766e;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cr-amend button[type='submit'] {
+  background: #0f766e;
+  color: #fff;
+}
+
+.cr-entry__amend:focus-visible,
+.cr-amend :focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}

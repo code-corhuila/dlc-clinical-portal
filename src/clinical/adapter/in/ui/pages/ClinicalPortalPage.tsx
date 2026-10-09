@@ -19,6 +19,7 @@ import { PatientHeader } from '../components/PatientHeader';
 import { QuickNoteForm } from '../components/QuickNoteForm';
 import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
+import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
@@ -29,6 +30,7 @@ export interface ClinicalPortalPageProps {
   readonly writer?: RecordClinicalEntry;
   readonly authorName?: (authorId: string) => string;
   readonly patientReader?: ReadPatientForCare;
+  readonly amender?: AmendClinicalEntry;
   readonly treatments?: {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
@@ -61,6 +63,7 @@ export function ClinicalPortalPage({
   authorName,
   patientReader,
   treatments,
+  amender,
 }: ClinicalPortalPageProps) {
   const request = useRef(0);
   const [retry, setRetry] = useState(0);
@@ -177,6 +180,18 @@ export function ClinicalPortalPage({
             clinicalReadAuthorized={clinicalReadAuthorized}
             status={status}
             authorName={authorName}
+            onAmend={
+              canWrite && amender
+                ? async (entry, correction) => {
+                    await amender.execute(
+                      { role, clinicalWriteAuthorized },
+                      entry,
+                      correction,
+                    );
+                    setRetry((value) => value + 1);
+                  }
+                : undefined
+            }
             onRetry={
               allowed && patientId
                 ? () => setRetry((value) => value + 1)

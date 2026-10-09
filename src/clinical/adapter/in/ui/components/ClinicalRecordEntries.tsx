@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import './clinical-record.css';
 import {
   resolveClinicalAccess,
   type ClinicalRole,
 } from '../../../../model/clinicalAccess';
 import type { ClinicalEntry } from '../../../../model/clinicalEntry';
+import { AmendEntryForm } from './AmendEntryForm';
 import {
   clinicalEntryLabel,
   toClinicalRecordViewModel,
@@ -36,7 +38,13 @@ export interface ClinicalRecordEntriesProps {
   readonly onRetry?: () => void;
   readonly authorName?: (authorId: string) => string;
   readonly children?: React.ReactNode;
+  readonly onAmend?: AmendHandler;
 }
+
+type AmendHandler = (
+  entry: ClinicalEntry,
+  correction: { text: string; reason: string },
+) => Promise<void>;
 
 /** Read-only clinical record slice; denied access wins before any narrative. */
 export function ClinicalRecordEntries({
@@ -46,6 +54,7 @@ export function ClinicalRecordEntries({
   onRetry,
   authorName = (authorId) => authorId,
   children,
+  onAmend,
 }: ClinicalRecordEntriesProps) {
   const view = toClinicalRecordViewModel(
     resolveClinicalAccess(role, clinicalReadAuthorized === true),
@@ -57,7 +66,7 @@ export function ClinicalRecordEntries({
       <h2 className="cr-title" id="clinical-record-title">
         Evolución
       </h2>
-      {renderState(view, authorName, onRetry)}
+      {renderState(view, authorName, onRetry, onAmend)}
       {(view.state === 'data' || view.state === 'empty') && children}
     </section>
   );
@@ -67,6 +76,7 @@ function renderState(
   view: ClinicalRecordViewModel,
   authorName: (authorId: string) => string,
   onRetry?: () => void,
+  onAmend?: AmendHandler,
 ) {
   switch (view.state) {
     case 'loading':
@@ -118,6 +128,10 @@ function renderState(
               consultation={view.entries.find(
                 (item) => item.id === entry.consultationId,
               )}
+              corrected={view.entries.some(
+                (item) => item.amendsEntryId === entry.id,
+              )}
+              onAmend={onAmend}
             />
           ))}
         </ul>
@@ -129,11 +143,16 @@ function Entry({
   entry,
   author,
   consultation,
+  corrected,
+  onAmend,
 }: {
   readonly entry: ClinicalEntry;
   readonly author: string;
   readonly consultation?: ClinicalEntry;
+  readonly corrected: boolean;
+  readonly onAmend?: AmendHandler;
 }) {
+  const [amending, setAmending] = useState(false);
   return (
     <li className="cr-entry">
       <div className="cr-entry__timeline-marker" aria-hidden="true"></div>
@@ -151,6 +170,7 @@ function Entry({
             <span className="cr-entry__kind">
               {clinicalEntryLabel(entry.kind)}
             </span>
+            {corrected && <span className="cr-entry__kind">Corregida</span>}
           </div>
           <div className="cr-entry__author">
             <span className="cr-label">Autor</span>
@@ -165,6 +185,31 @@ function Entry({
           <p className="cr-entry__link">
             Vinculado a la consulta del {formatDate(consultation.createdAt)}
           </p>
+        )}
+        {entry.amendsEntryId && (
+          <p className="cr-entry__link">
+            Corrección de una entrada anterior · Motivo: {entry.amendmentReason}
+          </p>
+        )}
+        {onAmend && !amending && (
+          <button
+            type="button"
+            className="cr-entry__amend"
+            onClick={() => setAmending(true)}
+          >
+            Corregir entrada
+          </button>
+        )}
+        {onAmend && amending && (
+          <AmendEntryForm
+            entryId={entry.id}
+            initialText={entry.text}
+            onCancel={() => setAmending(false)}
+            onSave={async (correction) => {
+              await onAmend(entry, correction);
+              setAmending(false);
+            }}
+          />
         )}
       </div>
     </li>
