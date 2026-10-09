@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ClinicalRecordEntriesPort } from '../../../../application/clinicalRecordEntriesWorkflow';
 import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
+import type { ReadPatientForCare } from '../../../../application/readPatientForCare';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
 
@@ -8,6 +9,7 @@ export interface ClinicalDemoPageProps {
   readonly readPort: ClinicalRecordEntriesPort;
   readonly writer: RecordClinicalEntry;
   readonly authorName: (authorId: string) => string;
+  readonly patientReader: ReadPatientForCare;
 }
 
 /** Dev-only context controls; dependencies are injected by composition. */
@@ -15,6 +17,7 @@ export function ClinicalDemoPage({
   readPort,
   writer,
   authorName,
+  patientReader,
 }: ClinicalDemoPageProps) {
   const [patientId, setPatientId] = useState('patient-a');
   const [role, setRole] = useState<ClinicalRole>('DENTIST');
@@ -22,7 +25,7 @@ export function ClinicalDemoPage({
   const [writeAuthorized, setWriteAuthorized] = useState(true);
 
   return (
-    <section aria-label="Controles de demostración clínica">
+    <section className="cl-demo" aria-label="Controles de demostración clínica">
       <p>Modo demostración — datos sintéticos</p>
       <label>
         Paciente
@@ -70,6 +73,7 @@ export function ClinicalDemoPage({
         readPort={readPort}
         writer={writer}
         authorName={authorName}
+        patientReader={patientReader}
       />
     </section>
   );
