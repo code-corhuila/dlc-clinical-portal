@@ -102,9 +102,10 @@
 }
 
 .db-bar > span {
+  position: relative;
   align-self: end;
   border-radius: 4px 4px 0 0;
-  background: #20a99a;
+  background: #d1d5db;
 }
 
 .db-card .db-chart-text {
@@ -146,16 +147,8 @@
   font-weight: 600;
 }
 
-.db-bar > span {
-  background: #d1d5db;
-}
-
 .db-bar[data-peak='true'] > span {
   background: #4b5563;
-}
-
-.db-bar > span {
-  position: relative;
 }
 
 .db-bar b {
