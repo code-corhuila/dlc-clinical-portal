@@ -154,6 +154,13 @@ export function ClinicalPortalPage({
             role={role}
             clinicalWriteAuthorized={clinicalWriteAuthorized}
             recordWritable={status.kind === 'ready'}
+            consultations={
+              status.kind === 'ready'
+                ? status.page.data
+                    .filter((entry) => entry.kind === 'CONSULTATION')
+                    .map((entry) => ({ id: entry.id, label: entry.text }))
+                : []
+            }
             onSubmit={
               writer && patientId
                 ? async (entry) => {
