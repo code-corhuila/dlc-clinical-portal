@@ -23,6 +23,7 @@ function port(): TreatmentPort {
   return {
     listTreatments: vi.fn().mockResolvedValue([treatment]),
     planTreatment: vi.fn().mockResolvedValue(treatment),
+    startTreatment: vi.fn().mockResolvedValue(treatment),
   };
 }
 
@@ -36,6 +37,43 @@ const plan = {
   clinicalReason: 'Dolor agudo',
   procedures: [{ procedureCode: 'D1110', appointmentId: 'appointment-1' }],
 };
+
+describe('TreatmentPlan start', () => {
+  it('starts a planned treatment with its expected version', async () => {
+    const treatments = port();
+
+    await new TreatmentPlan(treatments).start(
+      access('DENTIST', true),
+      treatment,
+    );
+
+    expect(treatments.startTreatment).toHaveBeenCalledWith('treatment-1', 1);
+  });
+
+  it.each<[string, ClinicalRole | null, boolean]>([
+    ['a secretary assistant', 'SECRETARY_ASSISTANT', true],
+    ['a dentist without write authorization', 'DENTIST', false],
+  ])('denies %s starting a treatment', async (_, role, authorized) => {
+    const treatments = port();
+
+    await expect(
+      new TreatmentPlan(treatments).start(access(role, authorized), treatment),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(treatments.startTreatment).not.toHaveBeenCalled();
+  });
+
+  it('only starts PLANNED treatments', async () => {
+    const treatments = port();
+
+    await expect(
+      new TreatmentPlan(treatments).start(access('DENTIST', true), {
+        ...treatment,
+        status: 'IN_PROGRESS',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(treatments.startTreatment).not.toHaveBeenCalled();
+  });
+});
 
 describe('TreatmentPlan planning', () => {
   it('plans a treatment for the patient without monetary fields', async () => {

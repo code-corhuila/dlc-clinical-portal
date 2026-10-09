@@ -92,6 +92,26 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
       if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
       return treatments[patientId];
     },
+    async startTreatment(treatmentId, expectedVersion) {
+      const list = Object.values(treatments).find((items) =>
+        items.some((item) => item.id === treatmentId),
+      );
+      const current = list?.find((item) => item.id === treatmentId);
+      if (!list || !current) throw { code: 'NOT_FOUND' };
+      if (current.version !== expectedVersion || current.status !== 'PLANNED')
+        throw {
+          code: 'CONFLICT',
+          message:
+            'El tratamiento cambió. Recargue el plan antes de iniciarlo.',
+        };
+      const started: Treatment = {
+        ...current,
+        status: 'IN_PROGRESS',
+        version: current.version + 1,
+      };
+      list.splice(list.indexOf(current), 1, started);
+      return started;
+    },
     async planTreatment(request) {
       const list = treatments[request.patientId];
       if (!list) throw { code: 'FORBIDDEN' };
