@@ -49,6 +49,25 @@ describe('ClinicalDashboardPage', () => {
     expect(screen.getByText('Mié: 15')).toBeInTheDocument();
   });
 
+  it('shows revenue compactly as in the mockup and keeps the exact amount accessible', async () => {
+    renderDashboard('ADMINISTRATOR');
+
+    const revenue = await screen.findByRole('region', {
+      name: 'Ingresos del mes',
+    });
+    expect(revenue.querySelector('strong')).toHaveTextContent(/^\$14,5 M/);
+    expect(revenue).toHaveTextContent(/14\.500\.000,00/);
+  });
+
+  it('highlights the busiest day of the week', async () => {
+    renderDashboard('ADMINISTRATOR');
+
+    const chart = await screen.findByRole('img', { name: /Actividad semanal/ });
+    const peak = chart.querySelector('[data-peak="true"]');
+    expect(peak).toHaveTextContent('Mié');
+    expect(chart.querySelectorAll('[data-peak="true"]')).toHaveLength(1);
+  });
+
   it('narrows the dentist dashboard to own scope without revenue', async () => {
     renderDashboard('DENTIST');
 

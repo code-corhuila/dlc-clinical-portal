@@ -24,3 +24,16 @@ export function formatCop(value: string): string {
   }).format(Number(units));
   return `${formatted},${cents}`;
 }
+
+/** Compact display for dashboard cards (e.g. `$14,5 M`); display only, no arithmetic. */
+export function formatCopCompact(value: string): string {
+  toCents(value);
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  })
+    .format(Number(value.split('.')[0]))
+    .replace(/\s/g, ' ');
+}

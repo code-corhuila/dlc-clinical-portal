@@ -534,3 +534,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED: the clinical record ignored the shell patient/role and the dashboard ignored the shell role/staff name (2 tests).
 - **Mount verification:** the probe Module Federation host passed `patientId="patient-b"`, `role="ADMINISTRATOR"` to `./ClinicalPortal` and `role="DENTIST"`, `staffName="Dra. Valentina Ruiz"` to `./ClinicalDashboard` against the `build:demo` remote: patient B as Administrator, and a Dentist dashboard (own 5 appointments, no revenue, personal greeting), styled.
 - **Validation (Windows):** focused Clinical suite 221 tests PASS; `npm test` PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS.
+
+## DEV-CLIN-PORTAL-DASHBOARD-FIDELITY-028
+
+- **Story:** HU-CLN-003 presentation (code-corhuila/dlc-clinical-portal#5), Figma 88:1998. Branch `feat/clinical-dashboard-fidelity-28` from `origin/develop` `9a5fa27`.
+- **Changes (no invented data):** KPI cards with uppercase labels, an icon box and a teal trend line; monthly revenue shown compactly in COP (`$14,5 M`, `formatCopCompact`, display only) with the exact amount kept for screen readers; gray weekly bars with the busiest day highlighted and its count above, the textual alternative visually hidden but accessible; upcoming rows with borders, toned initials avatars, the next time in teal and "Urgente" in red with an alert icon.
+- **Not included (no contract):** the mockup's "This Week" range selector and "View All Appointments" link.
+- **TDD:** genuine RED for the compact COP format, the compact revenue card with the accessible exact amount, and the peak-day marker (3 tests).
+- **Validation (Windows):** `npm test` 252 tests PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS; size gate PASS. Browser screenshot at 1280 px compared with the mockup.
