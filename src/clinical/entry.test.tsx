@@ -129,4 +129,16 @@ describe('Clinical portal entry (composition contract v1)', () => {
     await expect(handle.canLeave()).resolves.toBe(true);
     await handle.unmount();
   });
+
+  it('attaches its release stylesheet inside the host and removes it on unmount', async () => {
+    const target = host();
+    const handle = await mount(target, context('/analytics').value);
+
+    const link = target.querySelector('link[rel="stylesheet"]');
+    expect(link?.getAttribute('href')).toMatch(/entry.css$/);
+    expect(document.head.querySelector('link[href$="entry.css"]')).toBeNull();
+
+    await handle.unmount();
+    expect(target.querySelector('link')).toBeNull();
+  });
 });
