@@ -3,6 +3,7 @@ import type { ClinicalRecordEntriesPort } from '../../../../application/clinical
 import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
 import type { ReadPatientForCare } from '../../../../application/readPatientForCare';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
+import type { CompleteProcedure } from '../../../../application/completeProcedure';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
@@ -13,6 +14,7 @@ export interface ClinicalDemoPageProps {
   readonly authorName: (authorId: string) => string;
   readonly patientReader: ReadPatientForCare;
   readonly treatmentPlan: TreatmentPlan;
+  readonly completer: CompleteProcedure;
   readonly amender: AmendClinicalEntry;
   readonly catalog: readonly { code: string; label: string }[];
   readonly appointments: Readonly<Record<string, string>>;
@@ -25,6 +27,7 @@ export function ClinicalDemoPage({
   authorName,
   patientReader,
   treatmentPlan,
+  completer,
   amender,
   catalog,
   appointments,
@@ -90,6 +93,7 @@ export function ClinicalDemoPage({
         amender={amender}
         treatments={{
           plan: treatmentPlan,
+          completer,
           catalog,
           appointmentId: appointments[patientId],
         }}

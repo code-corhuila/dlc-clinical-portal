@@ -19,6 +19,7 @@ import { PatientHeader } from '../components/PatientHeader';
 import { QuickNoteForm } from '../components/QuickNoteForm';
 import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
+import type { CompleteProcedure } from '../../../../application/completeProcedure';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 
 export interface ClinicalPortalPageProps {
@@ -35,6 +36,7 @@ export interface ClinicalPortalPageProps {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
     readonly appointmentId?: string;
+    readonly completer?: CompleteProcedure;
   };
 }
 
@@ -214,6 +216,19 @@ export function ClinicalPortalPage({
                       .filter((entry) => entry.kind === 'DIAGNOSIS')
                       .map((entry) => ({ id: entry.id, label: entry.text }))
                   : []
+              }
+              onComplete={
+                treatments.completer &&
+                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                  'granted'
+                  ? async (treatment, procedureId, extras) => {
+                      await treatments.completer?.execute(
+                        { role, clinicalWriteAuthorized },
+                        { procedureId, treatmentVersion: treatment.version },
+                        extras,
+                      );
+                    }
+                  : undefined
               }
               onStart={
                 resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
