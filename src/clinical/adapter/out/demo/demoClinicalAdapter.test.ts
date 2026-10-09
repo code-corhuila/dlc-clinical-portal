@@ -207,6 +207,53 @@ describe('demoClinicalAdapter', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
+  it('completes an in-progress procedure and stores extras without money', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const [planned] = await adapter.listTreatments('patient-a');
+    const procedureId = planned.procedures[0].id;
+
+    await expect(
+      adapter.completeProcedure(procedureId, {
+        expectedVersion: planned.version,
+        materialsUsed: [],
+        additionalRequirements: [],
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const started = await adapter.startTreatment(planned.id, planned.version);
+    const closure = await adapter.completeProcedure(procedureId, {
+      expectedVersion: started.version,
+      materialsUsed: [
+        {
+          sourceRecordId: 'source-1',
+          type: 'ADDITIONAL_MATERIAL',
+          quantity: '2',
+          description: 'Resina',
+          clinicalReason: 'Cavidad profunda',
+        },
+      ],
+      additionalRequirements: [],
+    });
+
+    expect(closure).toMatchObject({
+      procedureId,
+      appointmentId: 'appointment-a',
+      status: 'CLOSURE_PENDING',
+      appointmentOutcome: 'PENDING',
+      billingOutcome: 'PENDING',
+    });
+    const [after] = await adapter.listTreatments('patient-a');
+    expect(after.procedures[0].status).toBe('COMPLETED');
+    expect(after.version).toBe(started.version + 1);
+    expect(JSON.stringify(closure)).not.toMatch(/price|amount|cost/i);
+    await expect(
+      adapter.completeProcedure(procedureId, {
+        expectedVersion: after.version,
+        materialsUsed: [],
+        additionalRequirements: [],
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 

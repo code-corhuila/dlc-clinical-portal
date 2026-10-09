@@ -115,3 +115,16 @@
 .tp-card > p[role='alert'] {
   color: #b42318;
 }
+
+.tp-card td .tp-start {
+  display: block;
+  margin-top: 6px;
+}
+
+.tp-extra {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #eef2f4;
+  border-radius: 8px;
+  padding: 12px;
+}

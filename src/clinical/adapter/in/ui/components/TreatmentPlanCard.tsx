@@ -5,6 +5,8 @@ import {
   type TreatmentDraft,
 } from '../../../../model/treatment';
 import { portFailureMessage } from '../../../../model/portFailure';
+import type { ExtraItemDraft } from '../../../../model/procedureCompletion';
+import { CompleteProcedureForm } from './CompleteProcedureForm';
 import './treatment-plan.css';
 
 interface Option {
@@ -16,6 +18,11 @@ export interface TreatmentPlanCardProps {
   readonly load: () => Promise<readonly Treatment[]>;
   readonly onPlan?: (draft: TreatmentDraft) => Promise<void>;
   readonly onStart?: (treatment: Treatment) => Promise<void>;
+  readonly onComplete?: (
+    treatment: Treatment,
+    procedureId: string,
+    extras: readonly ExtraItemDraft[],
+  ) => Promise<void>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
@@ -26,6 +33,7 @@ export function TreatmentPlanCard({
   load,
   onPlan,
   onStart,
+  onComplete,
   catalog,
   diagnoses,
   appointmentId = '',
@@ -39,6 +47,11 @@ export function TreatmentPlanCard({
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
   const [startError, setStartError] = useState<string>();
+  const [completing, setCompleting] = useState<{
+    treatment: Treatment;
+    procedureId: string;
+  }>();
+  const [notice, setNotice] = useState<string>();
   const label = (code: string) =>
     catalog.find((item) => item.code === code)?.label ?? code;
 
@@ -98,6 +111,7 @@ export function TreatmentPlanCard({
     <section className="tp-card" aria-labelledby="treatment-plan-title">
       <h2 id="treatment-plan-title">Plan de Tratamiento y Procedimientos</h2>
       {startError && <p role="alert">{startError}</p>}
+      {notice && <p role="status">{notice}</p>}
       {failed ? (
         <p role="alert">No fue posible cargar el plan de tratamiento.</p>
       ) : !treatments ? (
@@ -118,7 +132,27 @@ export function TreatmentPlanCard({
             {treatments.flatMap((treatment) =>
               treatment.procedures.map((procedure, index) => (
                 <tr key={procedure.id}>
-                  <td>{label(procedure.procedureCode)}</td>
+                  <td>
+                    {label(procedure.procedureCode)}
+                    {procedure.status !== 'PLANNED' &&
+                      ` · ${TREATMENT_STATUS_LABELS[procedure.status]}`}
+                    {onComplete &&
+                      treatment.status === 'IN_PROGRESS' &&
+                      procedure.status !== 'COMPLETED' && (
+                        <button
+                          type="button"
+                          className="tp-start"
+                          onClick={() =>
+                            setCompleting({
+                              treatment,
+                              procedureId: procedure.id,
+                            })
+                          }
+                        >
+                          Completar procedimiento
+                        </button>
+                      )}
+                  </td>
                   {index === 0 && (
                     <>
                       <td rowSpan={treatment.procedures.length}>
@@ -152,6 +186,24 @@ export function TreatmentPlanCard({
             )}
           </tbody>
         </table>
+      )}
+      {onComplete && completing && (
+        <CompleteProcedureForm
+          key={completing.procedureId}
+          onCancel={() => setCompleting(undefined)}
+          onComplete={async (extras) => {
+            await onComplete(
+              completing.treatment,
+              completing.procedureId,
+              extras,
+            );
+            setCompleting(undefined);
+            setNotice(
+              'Cierre pendiente: Citas y Facturación confirmarán el procedimiento. Los extras se valorizan en Facturación.',
+            );
+            setVersion((value) => value + 1);
+          }}
+        />
       )}
       {onPlan && treatments && (
         <form className="tp-form" onSubmit={plan} noValidate>

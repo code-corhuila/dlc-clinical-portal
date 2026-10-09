@@ -7,6 +7,7 @@ import {
   demoProcedureCatalog,
 } from '../adapter/out/demo/demoClinicalAdapter';
 import { TreatmentPlan } from '../application/treatmentPlan';
+import { CompleteProcedure } from '../application/completeProcedure';
 import { AmendClinicalEntry } from '../application/amendClinicalEntry';
 import { RecordClinicalEntry } from '../application/recordClinicalEntry';
 import { ReadPatientForCare } from '../application/readPatientForCare';
@@ -30,6 +31,9 @@ function ClinicalDemoComposition() {
   const [writer] = useState(() => new RecordClinicalEntry(adapter));
   const [patientReader] = useState(() => new ReadPatientForCare(adapter));
   const [treatmentPlan] = useState(() => new TreatmentPlan(adapter));
+  const [completer] = useState(
+    () => new CompleteProcedure(adapter, () => crypto.randomUUID()),
+  );
   const [amender] = useState(() => new AmendClinicalEntry(adapter));
 
   return (
@@ -39,6 +43,7 @@ function ClinicalDemoComposition() {
       authorName={adapter.authorName}
       patientReader={patientReader}
       treatmentPlan={treatmentPlan}
+      completer={completer}
       amender={amender}
       catalog={demoProcedureCatalog}
       appointments={demoAppointments}
