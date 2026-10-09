@@ -478,3 +478,9 @@ No terminal logs or timestamps are invented for this historical note.
 - **Change:** the closure notice, the closure follow-up panel and the extras pending pricing now render below the plan table and total, matching mockup page 29's reading order. No behavior change.
 - **TDD:** genuine RED: a DOM-order test (`compareDocumentPosition`) failed while those blocks rendered above the table; GREEN moved the block.
 - **Validation:** focused Clinical suite 20 files / 210 tests PASS; typecheck, lint, format, build and `git diff --check` PASS. Windows `npm test` keeps the known `scripts/pr-gates.test.mjs` SyntaxError.
+
+## DEV-CLIN-PORTAL-README-STATUS-022
+
+- **Branch / base:** `chore/clinical-readme-status` from `origin/develop` `6d3d3ec`.
+- **Change (documentation only, DoD "Service README updated when the public interface or behavior changes"):** replaces the outdated "Foundation status" and coverage text with the current status (four HUs implemented on synthetic data, not integrated, none Done), the federated exposes (`./ClinicalPortal`, `./ClinicalDashboard`), demo usage and synthetic patients, the hexagonal ports to implement at integration with their owner contracts, enforced rules and known limitations.
+- **Verification of facts stated:** coverage ~95% of statements measured locally on `src/clinical`; sibling repositories checked read-only on GitHub: `dlc-front` `develop` contains only empty scaffolding (no shared client, session or mount), `dlc-clinical-api` `develop` contains no source. No code changed, so no TDD cycle applies.
