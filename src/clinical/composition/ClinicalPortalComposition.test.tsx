@@ -433,6 +433,66 @@ describe('ClinicalPortalComposition', () => {
     );
   });
 
+  it('declares clinical care complete and then rejects late entries', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.change(screen.getByLabelText('Consulta de la atención'), {
+      target: { value: consultationEntry.id },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Declarar atención clínica completada',
+      }),
+    );
+
+    expect(
+      await screen.findByText(/Atención clínica declarada completada/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Finalización administrativa pendiente en Citas/),
+    ).toBeInTheDocument();
+    addEntry('Nota tardía');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La atención está cerrada',
+    );
+  });
+
+  it('requires choosing the consultation before declaring', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Declarar atención clínica completada',
+      }),
+    );
+
+    expect(
+      await screen.findByText('Seleccione la consulta de la atención.'),
+    ).toBeInTheDocument();
+  });
+
+  it('does not let an administrator declare clinical completion', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.change(screen.getByLabelText('Rol'), {
+      target: { value: 'ADMINISTRATOR' },
+    });
+
+    expect(
+      await screen.findByText(
+        'Solo el odontólogo asignado declara el cierre clínico.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'Declarar atención clínica completada',
+      }),
+    ).toBeNull();
+  });
+
   it('keeps read access while write authorization is withdrawn', async () => {
     renderDemo();
 

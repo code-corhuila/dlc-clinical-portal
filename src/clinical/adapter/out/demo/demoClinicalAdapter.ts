@@ -6,6 +6,7 @@ import type { TreatmentPort } from '../../../application/treatmentPlan';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
 import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
 import type { CareClosure } from '../../../model/procedureCompletion';
+import type { CareCompletionPort } from '../../../application/declareCareCompletion';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -24,7 +25,8 @@ export interface DemoClinicalAdapter
     PatientForCarePort,
     TreatmentPort,
     ClinicalEntryAmendPort,
-    ProcedureCompletionPort {
+    ProcedureCompletionPort,
+    CareCompletionPort {
   authorName(authorId: string): string;
 }
 
@@ -47,7 +49,6 @@ const records: Record<string, string> = {
   'patient-d': 'record-d',
 };
 /** Synthetic encounter already closed clinically (HU-XCT-001 owns closure). */
-const closedRecords = new Set(['record-d']);
 const closedMessage = 'La atención está cerrada; no admite nuevos registros.';
 const patients: Record<string, PatientForCare> = {
   'patient-a': {
@@ -79,6 +80,9 @@ const authors: Record<string, string> = {
 };
 
 export function createDemoClinicalAdapter(): DemoClinicalAdapter {
+  const closedRecords = new Set(['record-d']);
+  const versions: Record<string, number> = {};
+  const version = (recordId: string) => versions[recordId] ?? 1;
   const entries: Record<string, ClinicalEntry[]> = {
     'record-a': [{ ...consultationEntry, recordId: 'record-a' }],
     'record-b': [{ ...evolutionEntry, recordId: 'record-b' }],
@@ -239,6 +243,7 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
           version: 1,
         },
       ];
+      versions[recordId] = version(recordId) + 1;
     },
     async appendEntry(recordId, request) {
       if (!entries[recordId]) throw { code: 'FORBIDDEN' };
@@ -264,6 +269,46 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         version: 1,
       };
       entries[recordId] = [...entries[recordId], entry];
+      versions[recordId] = version(recordId) + 1;
+    },
+    async readRecordVersion(recordId) {
+      if (!entries[recordId]) throw { code: 'NOT_FOUND' };
+      return version(recordId);
+    },
+    async declareCareCompleted(recordId, request) {
+      const linked = entries[recordId]?.some(
+        (entry) =>
+          entry.kind === 'CONSULTATION' && entry.id === request.consultationId,
+      );
+      if (
+        !linked ||
+        closedRecords.has(recordId) ||
+        version(recordId) !== request.expectedVersion
+      )
+        throw {
+          code: 'CONFLICT',
+          message: 'La atención no admite la declaración en su estado actual.',
+        };
+      const patientId = Object.keys(records).find(
+        (id) => records[id] === recordId,
+      )!;
+      closedRecords.add(recordId);
+      versions[recordId] = version(recordId) + 1;
+      return {
+        id: `completion-${recordId}`,
+        clinicalRecordId: recordId,
+        consultationId: request.consultationId,
+        appointmentId: request.appointmentId,
+        patientId,
+        dentistId: 'demo-dentist',
+        procedureIds: treatments[patientId].flatMap((treatment) =>
+          treatment.procedures
+            .filter((procedure) => procedure.status === 'COMPLETED')
+            .map((procedure) => procedure.id),
+        ),
+        manualChargeIds: [],
+        completedAt: '2026-10-09T10:00:00.000Z',
+      };
     },
     authorName: (authorId) => authors[authorId] ?? authorId,
   };
