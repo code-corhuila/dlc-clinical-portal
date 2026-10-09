@@ -72,6 +72,31 @@ describe('demoClinicalAdapter', () => {
     });
   });
 
+  it('links a diagnosis only to a consultation of the same record', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const recordA = await adapter.findRecordId('patient-a');
+    const recordB = await adapter.findRecordId('patient-b');
+    const [consultation] = (await adapter.readEntries(recordA)).data;
+
+    await expect(
+      adapter.appendEntry(recordB, {
+        kind: 'DIAGNOSIS',
+        text: 'Cruce de pacientes',
+        consultationId: consultation.id,
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    await adapter.appendEntry(recordA, {
+      kind: 'DIAGNOSIS',
+      text: 'Caries oclusal',
+      consultationId: consultation.id,
+    });
+
+    expect((await adapter.readEntries(recordA)).data.at(-1)).toMatchObject({
+      kind: 'DIAGNOSIS',
+      consultationId: consultation.id,
+    });
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 
