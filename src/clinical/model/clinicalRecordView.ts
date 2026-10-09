@@ -7,6 +7,7 @@ import type {
 
 const CLINICAL_ENTRY_LABELS: Partial<Record<ClinicalEntryKind, string>> = {
   CONSULTATION: 'Consulta',
+  DIAGNOSIS: 'Diagnóstico',
   EVOLUTION: 'Evolución',
 };
 

@@ -73,6 +73,28 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
   });
 
+  it('records a diagnosis linked to the selected consultation', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
+      target: { value: 'DIAGNOSIS' },
+    });
+    fireEvent.change(screen.getByLabelText('Consulta asociada'), {
+      target: {
+        value: screen
+          .getAllByRole('option', { name: /Consulta sintética/ })[0]
+          .getAttribute('value'),
+      },
+    });
+    addEntry('Caries oclusal profunda');
+
+    expect(
+      await screen.findByText('Caries oclusal profunda'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Diagnóstico')).toBeInTheDocument();
+  });
+
   it('keeps read access while write authorization is withdrawn', async () => {
     renderDemo();
 

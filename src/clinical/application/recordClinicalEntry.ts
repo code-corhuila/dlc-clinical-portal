@@ -28,9 +28,9 @@ export class ClinicalEntryWriteError extends Error {
   }
 }
 
-const SUPPORTED_KINDS = ['CONSULTATION', 'EVOLUTION'];
+const SUPPORTED_KINDS = ['CONSULTATION', 'DIAGNOSIS', 'EVOLUTION'];
 
-/** Records CONSULTATION and EVOLUTION entries for an authorized writer. */
+/** Records CONSULTATION, DIAGNOSIS and EVOLUTION entries for an authorized writer. */
 export class RecordClinicalEntry {
   constructor(private readonly port: ClinicalEntryWritePort) {}
 
@@ -52,7 +52,11 @@ export class RecordClinicalEntry {
         'INVALID',
         'Tipo de entrada no admitido.',
       );
-    const valid = validateClinicalEntryRequest(request.kind, request.text);
+    const valid = validateClinicalEntryRequest(
+      request.kind,
+      request.text,
+      request.consultationId,
+    );
     if (typeof valid === 'string')
       throw new ClinicalEntryWriteError('INVALID', valid);
 

@@ -180,3 +180,9 @@
     align-items: flex-start;
   }
 }
+
+.cr-entry__link {
+  margin: 0;
+  color: #66737a;
+  font-size: 12px;
+}
