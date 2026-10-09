@@ -77,11 +77,64 @@ body {
   margin: 0;
 }
 
-/* Page 29: plan and composer in the main column, Evolución beside them. */
-.cl-workspace > .tp-card,
-.cl-workspace > .cec-card,
-.cl-workspace > .cc-card {
-  grid-column: 1;
+/* Page 29: plan and composer in the main column; diagnoses, Evolución and closure beside them. */
+.cl-main,
+.cl-aside {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+  min-width: 0;
+}
+
+.cl-main > *,
+.cl-aside > * {
+  margin: 0;
+}
+
+.cl-workspace .cr-title,
+.cl-workspace .cec-card h2,
+.cl-workspace .tp-card h2,
+.cl-workspace .cc-card h2,
+.dx-card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.dx-card {
+  padding: 24px;
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.dx-card p {
+  margin: 0;
+  color: #66737a;
+}
+
+.dx-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dx-card li {
+  display: grid;
+  gap: 2px;
+  border-left: 3px solid #b42318;
+  border-radius: 4px;
+  background: #fef3f2;
+  padding: 8px 12px;
+}
+
+.dx-card li span {
+  color: #66737a;
+  font-size: 12px;
 }
 
 .cc-card {
@@ -123,11 +176,6 @@ body {
 
 .cc-error {
   color: #b42318;
-}
-
-.cl-workspace > .cr-card {
-  grid-column: 2;
-  grid-row: 2 / span 2;
 }
 
 .cl-patient {
@@ -200,13 +248,6 @@ body {
 @media (max-width: 900px) {
   .cl-workspace {
     grid-template-columns: 1fr;
-  }
-  .cl-workspace > .tp-card,
-  .cl-workspace > .cec-card,
-  .cl-workspace > .cc-card,
-  .cl-workspace > .cr-card {
-    grid-column: auto;
-    grid-row: auto;
   }
   .cl-patient {
     flex-wrap: wrap;
