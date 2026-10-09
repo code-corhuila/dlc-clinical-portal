@@ -7,6 +7,7 @@ import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalE
 import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
 import type { CareClosure } from '../../../model/procedureCompletion';
 import type { CareCompletionPort } from '../../../application/declareCareCompletion';
+import type { CareClosurePort } from '../../../application/careClosureTracking';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -26,7 +27,8 @@ export interface DemoClinicalAdapter
     TreatmentPort,
     ClinicalEntryAmendPort,
     ProcedureCompletionPort,
-    CareCompletionPort {
+    CareCompletionPort,
+    CareClosurePort {
   authorName(authorId: string): string;
 }
 
@@ -111,7 +113,57 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'patient-b': [],
     'patient-d': [],
   };
+  /** Demo convergence: unpriced additional needs fail Billing until a retry. */
+  const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
   return {
+    async readCareClosure(closureId) {
+      const closure = closures[closureId];
+      if (!closure) throw { code: 'NOT_FOUND' };
+      const { needsPrice, ...current } = closure;
+      if (current.status !== 'CLOSURE_PENDING') return current;
+      const next: CareClosure = needsPrice
+        ? {
+            ...current,
+            status: 'CLOSURE_FAILED',
+            appointmentOutcome: 'COMPLETED',
+            billingOutcome: 'PENDING',
+            failureReason:
+              'Facturación requiere el precio manual de los extras.',
+            version: current.version + 1,
+          }
+        : {
+            ...current,
+            status: 'CLOSURE_COMPLETED',
+            appointmentOutcome: 'COMPLETED',
+            billingOutcome: 'COMPLETED',
+            version: current.version + 1,
+          };
+      closures[closureId] = { ...next, needsPrice };
+      return next;
+    },
+    async retryCareClosure(closureId, request) {
+      const closure = closures[closureId];
+      if (!closure) throw { code: 'NOT_FOUND' };
+      if (
+        closure.status === 'CLOSURE_COMPLETED' ||
+        closure.version !== request.expectedVersion
+      )
+        throw {
+          code: 'CONFLICT',
+          message: 'El cierre cambió. Actualice su estado antes de reintentar.',
+        };
+      const retried: CareClosure = {
+        id: closure.id,
+        procedureId: closure.procedureId,
+        appointmentId: closure.appointmentId,
+        status: 'CLOSURE_PENDING',
+        appointmentOutcome: closure.appointmentOutcome,
+        billingOutcome: 'PENDING',
+        version: closure.version + 1,
+      };
+      closures[closureId] = { ...retried, needsPrice: false };
+      return retried;
+    },
     async completeProcedure(procedureId, request) {
       const list = Object.values(treatments).find((items) =>
         items.some((item) => item.procedures.some((p) => p.id === procedureId)),
@@ -146,6 +198,10 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         appointmentOutcome: 'PENDING',
         billingOutcome: 'PENDING',
         version: 1,
+      };
+      closures[closure.id] = {
+        ...closure,
+        needsPrice: request.additionalRequirements.length > 0,
       };
       return closure;
     },

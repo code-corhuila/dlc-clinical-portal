@@ -11,6 +11,8 @@ import {
   type ExtraItemDraft,
 } from '../../../../model/procedureCompletion';
 import { CompleteProcedureForm } from './CompleteProcedureForm';
+import { CareClosureTracker } from './CareClosureTracker';
+import type { CareClosure } from '../../../../model/procedureCompletion';
 import './treatment-plan.css';
 
 interface Option {
@@ -26,7 +28,12 @@ export interface TreatmentPlanCardProps {
     treatment: Treatment,
     procedureId: string,
     extras: readonly ExtraItemDraft[],
-  ) => Promise<readonly ExtraItem[]>;
+  ) => Promise<{ closure: CareClosure; extras: readonly ExtraItem[] }>;
+  readonly onRefreshClosure?: (closure: CareClosure) => Promise<CareClosure>;
+  readonly onRetryClosure?: (
+    closure: CareClosure,
+    reason: string,
+  ) => Promise<CareClosure>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
@@ -38,6 +45,8 @@ export function TreatmentPlanCard({
   onPlan,
   onStart,
   onComplete,
+  onRefreshClosure,
+  onRetryClosure,
   catalog,
   diagnoses,
   appointmentId = '',
@@ -56,6 +65,7 @@ export function TreatmentPlanCard({
     procedureId: string;
   }>();
   const [notice, setNotice] = useState<string>();
+  const [tracked, setTracked] = useState<readonly CareClosure[]>([]);
   const [unpriced, setUnpriced] = useState<
     readonly (ExtraItem & { procedure: string; appointmentId: string })[]
   >([]);
@@ -119,6 +129,26 @@ export function TreatmentPlanCard({
       <h2 id="treatment-plan-title">Plan de Tratamiento y Procedimientos</h2>
       {startError && <p role="alert">{startError}</p>}
       {notice && <p role="status">{notice}</p>}
+      {onRefreshClosure && tracked.length > 0 && (
+        <CareClosureTracker
+          closures={tracked}
+          procedureLabel={(procedureId) =>
+            label(
+              treatments
+                ?.flatMap((item) => item.procedures)
+                .find((item) => item.id === procedureId)?.procedureCode ??
+                procedureId,
+            )
+          }
+          onRefresh={onRefreshClosure}
+          onRetry={onRetryClosure}
+          onChange={(updated) =>
+            setTracked(
+              tracked.map((item) => (item.id === updated.id ? updated : item)),
+            )
+          }
+        />
+      )}
       {unpriced.length > 0 && (
         <section
           className="tp-unpriced"
@@ -220,7 +250,7 @@ export function TreatmentPlanCard({
           key={completing.procedureId}
           onCancel={() => setCompleting(undefined)}
           onComplete={async (extras) => {
-            const recorded = await onComplete(
+            const { closure, extras: recorded } = await onComplete(
               completing.treatment,
               completing.procedureId,
               extras,
@@ -236,6 +266,7 @@ export function TreatmentPlanCard({
                 appointmentId: procedure.appointmentId,
               })),
             ]);
+            setTracked([...tracked, closure]);
             setCompleting(undefined);
             setNotice(
               'Cierre pendiente: Citas y Facturación confirmarán el procedimiento. Los extras se valorizan en Facturación.',
