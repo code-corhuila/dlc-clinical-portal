@@ -35,4 +35,22 @@ describe('ClinicalDashboard (federated entry for /app/dashboard)', () => {
       await screen.findByRole('heading', { name: 'Panel' }),
     ).toBeInTheDocument();
   });
+
+  it('uses the role and staff name supplied by the shell', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+    render(
+      <ClinicalDashboard
+        role="DENTIST"
+        staffId="demo-dentist"
+        staffName="Dra. Valentina Ruiz"
+      />,
+    );
+
+    expect(
+      await screen.findByText(/Bienvenida de nuevo, Dra. Valentina Ruiz/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'Ingresos del mes' }),
+    ).toBeNull();
+  });
 });

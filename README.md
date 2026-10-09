@@ -106,6 +106,17 @@ synthetic data. The shell consumes it with Module Federation:
 | Exposes | `./ClinicalPortal` (`ClinicalPortal`), `./ClinicalDashboard` (`ClinicalDashboard`) |
 | Shared | `react` and `react-dom` as singletons |
 
+Both exposed components accept the same optional props (`ClinicalShellContext`), supplied by the shell:
+
+| Prop | Source in dlc-front | Demo values |
+|---|---|---|
+| `patientId` | Route `/app/patients/:patientId` (`ClinicalPortal` only) | `patient-a`, `patient-b`, `patient-c` (unassigned), `patient-d` (closed encounter) |
+| `role` | Session role | `DENTIST`, `ADMINISTRATOR`, `SECRETARY_ASSISTANT` |
+| `staffId`, `staffName` | Signed-in staff | Any; the dashboard greets `staffName` and scopes a Dentist by `staffId` |
+
+In the demo build these props set the initial selection and the demo selector stays usable; a change of
+`patientId` or `role` from the shell resets the view so no data from the previous context remains.
+
 The remote is built with a relative `base` and `bundleAllCSS`, so its scoped CSS loads from the remote
 origin with each exposed module; it sets no global `:root`/`body` rules.
 
