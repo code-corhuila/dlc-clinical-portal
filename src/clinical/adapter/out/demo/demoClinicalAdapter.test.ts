@@ -113,6 +113,28 @@ describe('demoClinicalAdapter', () => {
     expect(JSON.stringify(treatment)).not.toMatch(/price|amount|cost/i);
   });
 
+  it('plans treatments per patient and denies the unassigned patient', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const before = await adapter.listTreatments('patient-a');
+
+    const planned = await adapter.planTreatment({
+      patientId: 'patient-a',
+      clinicalReason: 'Dolor agudo',
+      procedures: [{ procedureCode: 'D2391', appointmentId: 'appointment-a' }],
+    });
+
+    expect(planned).toMatchObject({ status: 'PLANNED', version: 1 });
+    expect(planned.procedures[0]).toMatchObject({ status: 'PLANNED' });
+    expect(await adapter.listTreatments('patient-a')).toHaveLength(
+      before.length + 1,
+    );
+    expect(await adapter.listTreatments('patient-b')).toEqual([]);
+    await expect(
+      adapter.planTreatment({ ...planned, patientId: 'patient-c' }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(JSON.stringify(planned)).not.toMatch(/price|amount|cost/i);
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 
