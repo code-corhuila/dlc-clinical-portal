@@ -98,7 +98,20 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   const versions: Record<string, number> = {};
   const version = (recordId: string) => versions[recordId] ?? 1;
   const entries: Record<string, ClinicalEntry[]> = {
-    'record-a': [{ ...consultationEntry, recordId: 'record-a' }],
+    'record-a': [
+      { ...consultationEntry, recordId: 'record-a' },
+      ...[
+        'Caries oclusal profunda - Pieza 18',
+        'Gingivitis leve localizada',
+      ].map((text, index): ClinicalEntry => ({
+        ...consultationEntry,
+        id: `diagnosis-a-${index + 1}`,
+        recordId: 'record-a',
+        kind: 'DIAGNOSIS',
+        text,
+        consultationId: consultationEntry.id,
+      })),
+    ],
     'record-b': [{ ...evolutionEntry, recordId: 'record-b' }],
     'record-d': [
       { ...consultationEntry, id: 'consultation-d', recordId: 'record-d' },
@@ -112,12 +125,12 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         clinicalReason: 'Profilaxis de control',
         status: 'PLANNED',
         procedures: [
-          {
-            id: 'procedure-a-1',
-            procedureCode: 'D1110',
+          ...['D1110', 'D2391', 'D7140'].map((procedureCode, index) => ({
+            id: `procedure-a-${index + 1}`,
+            procedureCode,
             appointmentId: 'appointment-a',
-            status: 'PLANNED',
-          },
+            status: 'PLANNED' as const,
+          })),
         ],
         version: 1,
       },

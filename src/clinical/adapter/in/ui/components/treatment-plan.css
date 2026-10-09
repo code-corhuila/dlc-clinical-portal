@@ -116,9 +116,10 @@
   color: #b42318;
 }
 
-.tp-card td .tp-start {
+.tp-row-status {
   display: block;
-  margin-top: 6px;
+  color: #66737a;
+  font-size: 12px;
 }
 
 .tp-extra {
