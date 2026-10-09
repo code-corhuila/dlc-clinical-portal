@@ -17,6 +17,8 @@ import { ClinicalRecordEntries } from '../components/ClinicalRecordEntries';
 import { ClinicalEntryComposer } from '../components/ClinicalEntryComposer';
 import { PatientHeader } from '../components/PatientHeader';
 import { QuickNoteForm } from '../components/QuickNoteForm';
+import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
+import type { TreatmentPlan } from '../../../../application/treatmentPlan';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
@@ -27,6 +29,10 @@ export interface ClinicalPortalPageProps {
   readonly writer?: RecordClinicalEntry;
   readonly authorName?: (authorId: string) => string;
   readonly patientReader?: ReadPatientForCare;
+  readonly treatments?: {
+    readonly plan: TreatmentPlan;
+    readonly catalog: readonly { code: string; label: string }[];
+  };
 }
 
 interface PatientView {
@@ -53,6 +59,7 @@ export function ClinicalPortalPage({
   writer,
   authorName,
   patientReader,
+  treatments,
 }: ClinicalPortalPageProps) {
   const request = useRef(0);
   const [retry, setRetry] = useState(0);
@@ -126,6 +133,19 @@ export function ClinicalPortalPage({
           setRetry((value) => value + 1);
         }
       : undefined;
+  const treatmentPlan = treatments?.plan;
+  const loadTreatments = useMemo(
+    () =>
+      treatmentPlan && patientId
+        ? () =>
+            treatmentPlan.list({
+              patientId,
+              role,
+              clinicalAuthorized: clinicalReadAuthorized,
+            })
+        : undefined,
+    [clinicalReadAuthorized, patientId, role, treatmentPlan],
+  );
   const canWrite =
     writer !== undefined &&
     status.kind === 'ready' &&
@@ -166,6 +186,20 @@ export function ClinicalPortalPage({
               <QuickNoteForm onSubmit={submitEntry} />
             )}
           </ClinicalRecordEntries>
+          {treatments && loadTreatments && allowed && patientId && (
+            <TreatmentPlanCard
+              key={`${patientId}:${role}:${clinicalReadAuthorized}:${clinicalWriteAuthorized}`}
+              load={loadTreatments}
+              catalog={treatments.catalog}
+              diagnoses={
+                status.kind === 'ready'
+                  ? status.page.data
+                      .filter((entry) => entry.kind === 'DIAGNOSIS')
+                      .map((entry) => ({ id: entry.id, label: entry.text }))
+                  : []
+              }
+            />
+          )}
           <ClinicalEntryComposer
             role={role}
             clinicalWriteAuthorized={clinicalWriteAuthorized}

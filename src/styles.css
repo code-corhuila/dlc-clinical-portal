@@ -77,9 +77,15 @@ body {
   margin: 0;
 }
 
-/* Page 29: main column first, Evolución card in the side column. */
+/* Page 29: plan and composer in the main column, Evolución beside them. */
+.cl-workspace > .tp-card,
 .cl-workspace > .cec-card {
-  order: -1;
+  grid-column: 1;
+}
+
+.cl-workspace > .cr-card {
+  grid-column: 2;
+  grid-row: 2 / span 2;
 }
 
 .cl-patient {
@@ -153,8 +159,11 @@ body {
   .cl-workspace {
     grid-template-columns: 1fr;
   }
-  .cl-workspace > .cec-card {
-    order: 0;
+  .cl-workspace > .tp-card,
+  .cl-workspace > .cec-card,
+  .cl-workspace > .cr-card {
+    grid-column: auto;
+    grid-row: auto;
   }
   .cl-patient {
     flex-wrap: wrap;
