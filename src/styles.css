@@ -79,8 +79,50 @@ body {
 
 /* Page 29: plan and composer in the main column, Evolución beside them. */
 .cl-workspace > .tp-card,
-.cl-workspace > .cec-card {
+.cl-workspace > .cec-card,
+.cl-workspace > .cc-card {
   grid-column: 1;
+}
+
+.cc-card {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.cc-card h2,
+.cc-card p {
+  margin: 0;
+}
+
+.cc-card select {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.cc-card button {
+  justify-self: end;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cc-card :focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+.cc-error {
+  color: #b42318;
 }
 
 .cl-workspace > .cr-card {
@@ -161,6 +203,7 @@ body {
   }
   .cl-workspace > .tp-card,
   .cl-workspace > .cec-card,
+  .cl-workspace > .cc-card,
   .cl-workspace > .cr-card {
     grid-column: auto;
     grid-row: auto;

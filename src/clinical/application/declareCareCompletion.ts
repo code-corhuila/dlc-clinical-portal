@@ -14,7 +14,6 @@ export interface CareCompletionPort {
   declareCareCompleted(
     recordId: string,
     request: CareCompletionRequest,
-    idempotencyKey: string,
   ): Promise<ClinicalCareCompletion>;
 }
 
@@ -22,8 +21,6 @@ export interface CareCompletionAccess {
   readonly patientId: string;
   readonly role: ClinicalRole | null;
   readonly clinicalWriteAuthorized: boolean;
-  /** One key per user intent, reused on retries (Annex H). */
-  readonly idempotencyKey: string;
 }
 
 /**
@@ -56,21 +53,12 @@ export class DeclareCareCompletion {
         code: 'INVALID',
         message: 'La declaración requiere la cita en atención.',
       };
-    if (!access.idempotencyKey)
-      throw {
-        code: 'INVALID',
-        message: 'Falta la clave de idempotencia de la operación.',
-      };
 
     const recordId = await this.port.findRecordId(access.patientId);
     const expectedVersion = await this.port.readRecordVersion(recordId);
-    return this.port.declareCareCompleted(
-      recordId,
-      {
-        ...declaration,
-        expectedVersion,
-      },
-      access.idempotencyKey,
-    );
+    return this.port.declareCareCompleted(recordId, {
+      ...declaration,
+      expectedVersion,
+    });
   }
 }

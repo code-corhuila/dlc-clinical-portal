@@ -20,6 +20,8 @@ import { QuickNoteForm } from '../components/QuickNoteForm';
 import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
 import type { CompleteProcedure } from '../../../../application/completeProcedure';
+import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
+import { CareCompletionCard } from '../components/CareCompletionCard';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 
 export interface ClinicalPortalPageProps {
@@ -32,6 +34,7 @@ export interface ClinicalPortalPageProps {
   readonly authorName?: (authorId: string) => string;
   readonly patientReader?: ReadPatientForCare;
   readonly amender?: AmendClinicalEntry;
+  readonly declarer?: DeclareCareCompletion;
   readonly treatments?: {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
@@ -66,6 +69,7 @@ export function ClinicalPortalPage({
   patientReader,
   treatments,
   amender,
+  declarer,
 }: ClinicalPortalPageProps) {
   const request = useRef(0);
   const [retry, setRetry] = useState(0);
@@ -152,6 +156,19 @@ export function ClinicalPortalPage({
         : undefined,
     [clinicalReadAuthorized, patientId, role, treatmentPlan],
   );
+  const consultations =
+    status.kind === 'ready'
+      ? status.page.data
+          .filter((entry) => entry.kind === 'CONSULTATION')
+          .map((entry) => ({
+            id: entry.id,
+            label: `${entry.createdAt?.slice(0, 10) ?? ''} · ${
+              entry.text.length > 40
+                ? `${entry.text.slice(0, 40)}…`
+                : entry.text
+            }`,
+          }))
+      : [];
   const canWrite =
     writer !== undefined &&
     status.kind === 'ready' &&
@@ -265,15 +282,27 @@ export function ClinicalPortalPage({
             role={role}
             clinicalWriteAuthorized={clinicalWriteAuthorized}
             recordWritable={status.kind === 'ready'}
-            consultations={
-              status.kind === 'ready'
-                ? status.page.data
-                    .filter((entry) => entry.kind === 'CONSULTATION')
-                    .map((entry) => ({ id: entry.id, label: entry.text }))
-                : []
-            }
+            consultations={consultations}
             onSubmit={submitEntry}
           />
+          {declarer && allowed && patientId && (
+            <CareCompletionCard
+              key={`${patientId}:${role}:${clinicalWriteAuthorized}`}
+              consultations={consultations}
+              onDeclare={
+                role === 'DENTIST' && canWrite
+                  ? (consultationId) =>
+                      declarer.execute(
+                        { patientId, role, clinicalWriteAuthorized },
+                        {
+                          consultationId,
+                          appointmentId: treatments?.appointmentId ?? '',
+                        },
+                      )
+                  : undefined
+              }
+            />
+          )}
         </div>
       ) : (
         <>
