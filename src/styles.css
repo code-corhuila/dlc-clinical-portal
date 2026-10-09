@@ -77,7 +77,13 @@ body {
   margin: 0;
 }
 
+/* Page 29: main column first, Evolución card in the side column. */
+.cl-workspace > .cec-card {
+  order: -1;
+}
+
 .cl-patient {
+  order: -2;
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -146,6 +152,9 @@ body {
 @media (max-width: 900px) {
   .cl-workspace {
     grid-template-columns: 1fr;
+  }
+  .cl-workspace > .cec-card {
+    order: 0;
   }
   .cl-patient {
     flex-wrap: wrap;

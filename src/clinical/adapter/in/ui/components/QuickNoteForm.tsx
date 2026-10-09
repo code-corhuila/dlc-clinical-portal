@@ -1,15 +1,11 @@
 import { useState } from 'react';
-import { useIntentKey } from './useIntentKey';
 import {
   validateClinicalEntryRequest,
   type ClinicalEntryRequest,
 } from '../../../../model/clinicalEntryRequest';
 
 export interface QuickNoteFormProps {
-  readonly onSubmit: (
-    request: ClinicalEntryRequest,
-    idempotencyKey: string,
-  ) => Promise<void>;
+  readonly onSubmit: (request: ClinicalEntryRequest) => Promise<void>;
 }
 
 /** Mockup page-29 quick note: appends an EVOLUTION entry. */
@@ -17,7 +13,6 @@ export function QuickNoteForm({ onSubmit }: QuickNoteFormProps) {
   const [text, setText] = useState('');
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
-  const [intentKey, renewIntentKey] = useIntentKey();
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,8 +22,7 @@ export function QuickNoteForm({ onSubmit }: QuickNoteFormProps) {
     setMessage(undefined);
     setPending(true);
     try {
-      await onSubmit(request, intentKey);
-      renewIntentKey();
+      await onSubmit(request);
       setText('');
     } catch {
       setMessage('No fue posible enviar la nota. Inténtelo de nuevo.');

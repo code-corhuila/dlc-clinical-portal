@@ -186,3 +186,52 @@
   color: #66737a;
   font-size: 12px;
 }
+
+.cr-quick-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eef2f4;
+}
+
+.cr-quick-note input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.cr-quick-note button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #0f766e;
+  color: #fff;
+  cursor: pointer;
+}
+
+.cr-quick-note button:hover {
+  background: #115e59;
+}
+
+.cr-quick-note button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cr-quick-note :focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+.cr-quick-note p {
+  flex-basis: 100%;
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+}

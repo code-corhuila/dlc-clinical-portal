@@ -46,6 +46,7 @@ export function ClinicalEntryComposer({
     setSubmitting(true);
     try {
       await onSubmit(request);
+      setText('');
     } catch {
       setMessage(
         'No fue posible enviar la entrada clínica. Inténtelo de nuevo.',
