@@ -517,3 +517,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Still different by contract/domain:** patient age, photo and readable ID (Patients), per-procedure notes, diagnosis active/monitoring state, attachments and "Guardar registro".
 - **TDD:** genuine RED for the plan status header and the detection date (2 tests); icons and CSS are visual-only.
 - **Validation (Windows):** focused Clinical suite 219 tests PASS; `npm test` PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS. Browser screenshot at 1400 px compared with mockup page 29.
+
+## DEV-CLIN-PORTAL-SHELL-MOUNT-PROPS-027
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); front-only integration with `dlc-front`. Branch `feat/clinical-mount-props-27` from `origin/develop` `4ef827c`.
+- **Change:** both federated entries accept `ClinicalShellContext` (`patientId`, `role`, `staffId`, `staffName`), the remote's public mount interface. In the demo build the context sets the initial patient/role (clinical record) and the viewer (dashboard); a change of `patientId` or `role` from the shell remounts the demo so no data from the previous context remains. The README documents the props, their source in the shell and the demo patient ids.
+- **TDD:** genuine RED: the clinical record ignored the shell patient/role and the dashboard ignored the shell role/staff name (2 tests).
+- **Mount verification:** the probe Module Federation host passed `patientId="patient-b"`, `role="ADMINISTRATOR"` to `./ClinicalPortal` and `role="DENTIST"`, `staffName="Dra. Valentina Ruiz"` to `./ClinicalDashboard` against the `build:demo` remote: patient B as Administrator, and a Dentist dashboard (own 5 appointments, no revenue, personal greeting), styled.
+- **Validation (Windows):** focused Clinical suite 221 tests PASS; `npm test` PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS.
