@@ -92,3 +92,26 @@
   outline: 2px solid #1554a3;
   outline-offset: 2px;
 }
+
+.tp-start {
+  border: 1px solid #0f766e;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: #fff;
+  color: #0f766e;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tp-start:hover {
+  background: #e6f6f4;
+}
+
+.tp-start:focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+.tp-card > p[role='alert'] {
+  color: #b42318;
+}
