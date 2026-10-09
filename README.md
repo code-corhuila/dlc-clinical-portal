@@ -58,11 +58,10 @@ Testing Library provides the current test harness.
 | `npm run build` | Type checking followed by the Vite production build. |
 | `npm run quality` | Typecheck, lint, formatting, tests, coverage and build in that order. |
 
-Coverage is currently restricted to `src/clinical` and excludes test harness files. It measures
-three structural Clinical source files — `ClinicalPortal.tsx`, `ClinicalPortalComposition.tsx`
-and `ClinicalPortalPage.tsx` — rather than complete functional or domain coverage. No arbitrary
-coverage threshold is configured yet because there is no Clinical domain or application behavior
-from which to establish a meaningful business baseline.
+Coverage measures all of `src/clinical` (model, application use cases, UI and demo adapters)
+and excludes test harness files; at `develop` `6d3d3ec` it reports about 95% of statements. No
+threshold is configured yet: the figure comes from synthetic-demo behavior, and the baseline
+should be fixed once real owner integration exists.
 
 The format check covers `src/**/*.{ts,tsx,css}`, root `*.{js,ts,json,html}` project files,
 `.prettierrc.json` and `.github/workflows/*.{yml,yaml}`. `package-lock.json` remains excluded
@@ -78,17 +77,66 @@ RED → GREEN → REFACTOR → REGRESSION
 Do not add fictitious tests solely to increase coverage. The first Clinical behaviors will
 establish their own test-first evidence and coverage baseline.
 
-## Foundation status
+## Current status
 
-This branch establishes the portal foundation only: runtime, build, remote exposure, the
-documented `shell/apiClient` boundary, and containerized static delivery. It does not implement
-a Clinical user story, authentication, session handling, HTTP calls, Clinical forms, Analytics,
-or API integration. The exact `shell/apiClient` operations and any session/role contract remain
-a documentation gap until `dlc-front` publishes them. Its TypeScript type is an intentionally
-empty, compile-time boundary; this repository must not infer or implement the missing client
-contract or expand it unilaterally.
+The frontend of HU-CLN-001, HU-CLN-002, HU-XCT-001 and HU-CLN-003 is implemented against
+**synthetic in-memory data** (issues #3–#6 hold the DoD evidence matrices). It is **not integrated**
+with the Clinical API, Patients, Billing or `dlc-front`, and **no user story is Done**: each still
+needs the real owner contracts, removal of the mock from the integrated path and a reviewed DoD.
 
+The `shell/apiClient` operations and the session/role contract remain unpublished by `dlc-front`;
+its TypeScript type stays an intentionally empty boundary that this repository must not extend.
 Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
+
+### Federated modules (public interface)
+
+| Expose | Intended mount in `dlc-front` | Outside the dev demo |
+|---|---|---|
+| `./ClinicalPortal` | Patient clinical record (`/app/patients/:patientId`) | Placeholder until the shell supplies client and session |
+| `./ClinicalDashboard` | `/app/dashboard` (Clinical Analytics, ADR-006) | Placeholder: "requires the shared session supplied by dlc-front" |
+
+### Synthetic demo
+
+Development only; it is never part of a production build.
+
+```powershell
+$env:VITE_CLINICAL_DEMO = 'true'; npm run dev
+```
+
+In CMD: `set "VITE_CLINICAL_DEMO=true" && npm run dev`. The demo bar selects the view (clinical
+record or dashboard), patient, role and independent read/write clinical authorization:
+
+| Synthetic patient | Purpose |
+|---|---|
+| A, B | Independent histories with treatment plan and evolution |
+| C | Unassigned: every clinical read and write is denied |
+| D | Clinically closed encounter: new entries and amendments are rejected |
+
+### Architecture
+
+Hexagonal: `adapter/in/ui` (React) → `application` use cases → typed ports in `application`,
+implemented by `adapter/out/demo`; `model` holds pure rules; `composition` wires concrete adapters.
+Integration replaces the demo adapter with real adapters for these ports, through the shell client:
+
+| Port | Owner contract |
+|---|---|
+| `ClinicalRecordEntriesPort`, `ClinicalEntryWritePort`, `ClinicalEntryAmendPort` | Clinical: `/clinical-records`, `/entries`, `/clinical-entries/{id}/amendments` |
+| `TreatmentPort`, `ProcedureCompletionPort` | Clinical: `/treatments`, `/treatments/{id}/starts`, `/procedures/{id}/completions` |
+| `CareCompletionPort`, `CareClosurePort` | Clinical: `/clinical-records/{id}/care-completions`, `/care-closures/{id}` (+ `/retries`) |
+| `PatientForCarePort` | Patients: `GET /patients/{id}` (`PatientForCare` projection) |
+| `ProcedurePricePort` | Billing: `GET /procedure-prices` (read-only COP estimate) |
+| `DashboardSnapshotPort` | Clinical analytics read contract (pending in `dlc-docs`) |
+
+Rules enforced in the application layer: clinical read and write authorization are independent;
+the Secretary Assistant gets no clinical data; only the Dentist declares care completion; Clinical
+never stores, edits or sends money (CLN-006) — COP amounts are exact decimal strings shown read-only.
+
+### Known limitations
+
+- On Windows, `scripts/pr-gates.mjs` checked out with CRLF breaks `npm test`/coverage locally;
+  Linux CI is authoritative.
+- Documentation gaps: no Billing manual-charge route/handoff contract, no query contract for earlier
+  care-completion declarations or closures, and HU-CLN-003 indicators pending refinement.
 
 ## Documentation
 
