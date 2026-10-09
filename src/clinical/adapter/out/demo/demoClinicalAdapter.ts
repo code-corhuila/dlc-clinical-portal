@@ -9,6 +9,7 @@ import type { CareClosure } from '../../../model/procedureCompletion';
 import type { CareCompletionPort } from '../../../application/declareCareCompletion';
 import type { CareClosurePort } from '../../../application/careClosureTracking';
 import type { ProcedurePricePort } from '../../../application/billingEstimate';
+import type { DashboardSnapshotPort } from '../../../application/readDashboard';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -30,7 +31,8 @@ export interface DemoClinicalAdapter
     ProcedureCompletionPort,
     CareCompletionPort,
     CareClosurePort,
-    ProcedurePricePort {
+    ProcedurePricePort,
+    DashboardSnapshotPort {
   authorName(authorId: string): string;
 }
 
@@ -118,6 +120,39 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   /** Demo convergence: unpriced additional needs fail Billing until a retry. */
   const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
   return {
+    /** Synthetic dashboard facts; a professional scope sees only own work. */
+    async readDashboard(scope) {
+      const own = scope.scope === 'PROFESSIONAL';
+      const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      const counts = own ? [3, 4, 6, 2, 5, 1, 0] : [8, 11, 15, 6, 12, 4, 1];
+      const upcoming = [
+        ['a-1', 'María Jiménez', 'Control y limpieza', '10:00', false],
+        ['a-2', 'David Bravo', 'Endodoncia', '11:30', false],
+        ['a-3', 'Ana López', 'Dolor agudo', '14:00', true],
+        ['a-4', 'Tomás Silva', 'Consulta', '16:15', false],
+      ] as const;
+      return {
+        asOf: new Date().toISOString(),
+        todayAppointments: { count: own ? 5 : 12, deltaVsYesterday: 2 },
+        pendingPatients: own ? 2 : 4,
+        monthlyRevenue: own
+          ? undefined
+          : { amount: '14500000.00', changePercent: 15 },
+        weeklyActivity: days.map((day, index) => ({
+          day,
+          count: counts[index],
+        })),
+        upcomingAppointments: upcoming
+          .slice(0, own ? 2 : 4)
+          .map(([id, patientName, reason, time, urgent]) => ({
+            id,
+            patientName,
+            reason,
+            time,
+            urgent,
+          })),
+      };
+    },
     /** Synthetic Billing catalog prices (exact COP strings); read-only for Clinical. */
     async listProcedurePrices() {
       return [

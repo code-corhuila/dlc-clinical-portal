@@ -362,6 +362,25 @@ describe('demoClinicalAdapter', () => {
     });
   });
 
+  it('serves clinic and professional dashboard snapshots with COP revenue', async () => {
+    const adapter = createDemoClinicalAdapter();
+
+    const clinic = await adapter.readDashboard({ scope: 'CLINIC' });
+    const own = await adapter.readDashboard({
+      scope: 'PROFESSIONAL',
+      professionalId: 'demo-dentist',
+    });
+
+    expect(clinic.monthlyRevenue?.amount).toMatch(/^\d{1,12}\.\d{2}$/);
+    expect(clinic.weeklyActivity).toHaveLength(7);
+    expect(own.todayAppointments.count).toBeLessThan(
+      clinic.todayAppointments.count,
+    );
+    expect(own.upcomingAppointments.length).toBeLessThan(
+      clinic.upcomingAppointments.length,
+    );
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 

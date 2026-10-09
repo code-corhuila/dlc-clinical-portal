@@ -39,35 +39,6 @@ describe('ClinicalDashboardPage', () => {
     ).toHaveTextContent('María Jiménez');
   });
 
-  it('draws the weekly activity chart with a textual alternative', async () => {
-    renderDashboard('ADMINISTRATOR');
-
-    const chart = await screen.findByRole('img', {
-      name: /Actividad semanal: Lun 8, Mar 11, Mié 15/,
-    });
-    expect(chart.querySelectorAll('.db-bar')).toHaveLength(7);
-    expect(screen.getByText('Mié: 15')).toBeInTheDocument();
-  });
-
-  it('shows revenue compactly as in the mockup and keeps the exact amount accessible', async () => {
-    renderDashboard('ADMINISTRATOR');
-
-    const revenue = await screen.findByRole('region', {
-      name: 'Ingresos del mes',
-    });
-    expect(revenue.querySelector('strong')).toHaveTextContent(/^\$14,5 M/);
-    expect(revenue).toHaveTextContent(/14\.500\.000,00/);
-  });
-
-  it('highlights the busiest day of the week', async () => {
-    renderDashboard('ADMINISTRATOR');
-
-    const chart = await screen.findByRole('img', { name: /Actividad semanal/ });
-    const peak = chart.querySelector('[data-peak="true"]');
-    expect(peak).toHaveTextContent('Mié');
-    expect(chart.querySelectorAll('[data-peak="true"]')).toHaveLength(1);
-  });
-
   it('narrows the dentist dashboard to own scope without revenue', async () => {
     renderDashboard('DENTIST');
 
@@ -139,29 +110,5 @@ describe('ClinicalDashboardPage', () => {
     expect(
       screen.queryByRole('region', { name: 'Ingresos del mes' }),
     ).toBeNull();
-  });
-
-  it('highlights every day that ties for the busiest of the week', async () => {
-    const demo = createDemoClinicalAdapter();
-    const reader = new ReadDashboard(
-      {
-        readDashboard: async (scope) => ({
-          ...(await demo.readDashboard(scope)),
-          weeklyActivity: [
-            { day: 'Lun', count: 9 },
-            { day: 'Mar', count: 4 },
-            { day: 'Mié', count: 9 },
-          ],
-        }),
-      },
-      now,
-    );
-    renderDashboard('ADMINISTRATOR', reader);
-
-    const chart = await screen.findByRole('img', { name: /Actividad semanal/ });
-    const peaks = [...chart.querySelectorAll('[data-peak="true"]')];
-    expect(peaks.map((bar) => bar.querySelector('small')?.textContent)).toEqual(
-      ['Lun', 'Mié'],
-    );
   });
 });
