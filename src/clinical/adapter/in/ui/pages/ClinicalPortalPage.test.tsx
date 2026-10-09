@@ -55,7 +55,8 @@ describe('ClinicalPortalPage', () => {
     );
 
     expect(await screen.findByText(consultationEntry.text)).toBeInTheDocument();
-    expect(screen.getByText('Acceso no autorizado')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nueva entrada' })).toBeNull();
+    expect(screen.queryByLabelText('Narrativa clínica')).toBeNull();
   });
 
   it('submits through the injected use case with the write context', async () => {
@@ -72,8 +73,9 @@ describe('ClinicalPortalPage', () => {
         },
       ),
     };
-    const BoundPage =
-      ClinicalPortalPage as unknown as React.ComponentType<BoundPageProps>;
+    const BoundPage = ClinicalPortalPage as unknown as React.ComponentType<
+      BoundPageProps & { readonly patientReader?: ReadPatientForCare }
+    >;
     render(
       <BoundPage
         patientId="patient-1"
@@ -82,15 +84,32 @@ describe('ClinicalPortalPage', () => {
         clinicalWriteAuthorized
         readPort={port}
         writer={new RecordClinicalEntry(port)}
+        patientReader={
+          new ReadPatientForCare({
+            readPatient: async (id) => ({
+              id,
+              name: 'Ana Demo',
+              status: 'ACTIVE',
+              version: 1,
+            }),
+          })
+        }
       />,
     );
     await screen.findByText(consultationEntry.text);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Nueva entrada' }),
+    );
     fireEvent.change(screen.getByLabelText('Narrativa clínica'), {
       target: { value: 'Nota inyectada' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Registrar entrada' }));
 
-    expect(await screen.findByText('Nota inyectada')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Nota inyectada', {
+        selector: '.cr-entry__text',
+      }),
+    ).toBeInTheDocument();
     expect(port.appendEntry).toHaveBeenCalledWith('record-1', {
       kind: 'CONSULTATION',
       text: 'Nota inyectada',
