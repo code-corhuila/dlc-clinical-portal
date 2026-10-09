@@ -194,6 +194,76 @@ describe('ClinicalPortalComposition', () => {
     ).toBeNull();
   });
 
+  it('completes a started procedure recording a justified extra', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    expect(
+      screen.queryByRole('button', { name: 'Completar procedimiento' }),
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Agregar material o necesidad' }),
+    );
+    fireEvent.change(screen.getByLabelText('Cantidad'), {
+      target: { value: '1.5' },
+    });
+    fireEvent.change(screen.getByLabelText('Descripción'), {
+      target: { value: 'Resina adicional' },
+    });
+    fireEvent.change(screen.getByLabelText('Justificación clínica'), {
+      target: { value: 'Cavidad más profunda' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Registrar procedimiento completado',
+      }),
+    );
+
+    expect(
+      await screen.findByText(/Cierre pendiente: Citas y Facturación/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('cell', { name: /Limpieza profunda · Completado/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\$|Costo|Total|Precio/)).toBeNull();
+  });
+
+  it('rejects an extra without clinical justification', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Agregar material o necesidad' }),
+    );
+    fireEvent.change(screen.getByLabelText('Cantidad'), {
+      target: { value: '1' },
+    });
+    fireEvent.change(screen.getByLabelText('Descripción'), {
+      target: { value: 'Resina' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Registrar procedimiento completado',
+      }),
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'justificación clínica',
+    );
+  });
+
   it('keeps the plan readable but not editable without write authorization', async () => {
     renderDemo();
 
