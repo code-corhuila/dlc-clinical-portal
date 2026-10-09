@@ -564,3 +564,9 @@ No terminal logs or timestamps are invented for this historical note.
 - **Verification (Docker 29.7.2):** `docker compose -f deploy/compose.yml up --build -d` started both containers. Real container: 0 bundle files with synthetic strings, `remoteEntry.js` 200 with `Cache-Control: no-store`, page shows the federation placeholder. Demo container: synthetic data present, `remoteEntry.js` 200 `no-store`, page shows the demo selector and patient A. Inspected in the in-app browser.
 - **TDD:** configuration only; no unit RED. Regression: `npm test` 262 tests PASS.
 - **Validation (Windows):** typecheck, lint, format, `npm run build`, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-CONTAINER-NAMES-033
+
+- **Request (2026-10-09, project owner):** container names must say which one is the demo and which one is mounted by `dlc-front`. Branch `chore/clinical-container-names-33` from `origin/develop` `5bb8b8e`.
+- **Change:** compose services and containers renamed to `clinical-portal-dlc-front` (real remote, port 4173) and `clinical-portal-demo` (synthetic, port 4175); README table updated.
+- **Verification (Docker 29.7.2):** `docker compose -f deploy/compose.yml up --build -d` started both containers with those names; `remoteEntry.js` answered 200 on 4173 and 4175. Configuration only, no unit RED.
