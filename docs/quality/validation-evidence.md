@@ -43,15 +43,15 @@ This registry follows an **append-oriented review convention**, not a technicall
 
 ### Promotion traceability
 
-| # | Source develop-side SHA | QA feeder promotion SHA |
-| --- | --- | --- |
-| 1 | ff6e23eb7b0059104e6a86b1f8bc40442019ce4d | 45409e3b82dfbe0094cd9e71ac574890edb44401 |
-| 2 | b235b51d8e81120742f01a2d517f3eba971fb66e | 9ed1ff5f865790cc7f30d00bd85c53bce9d3c1a8 |
-| 3 | 8b6d1e753d63b3d8e18096db618a5fab2f5db410 | b7a93d63aa5a82433f42ad3e61448f374edf1db1 |
-| 4 | ea218efeeef4b3050549a8c645228783ddc004ae | 6f8aa6e9d60d29fa5dd0eb3548418b666429870b |
-| 5 | 3c7d105cf34ab66dee13ffd5a2adc80f11b195f5 | b853423296df5b4c85648ba9f46897e1e85e5b8c |
-| 6 | 4666f9bc28c30daf9eea6c07ac5149d3292685f1 | 64fe3e17e338e33dbaa0fd3ad6f186def412935a |
-| 7 | fabf4ac3e08b99e848cbca8edb5409914a74b815 | 267f03583dadc08793fdc09da0a01fc6708c69c5 |
+| #   | Source develop-side SHA                  | QA feeder promotion SHA                  |
+| --- | ---------------------------------------- | ---------------------------------------- |
+| 1   | ff6e23eb7b0059104e6a86b1f8bc40442019ce4d | 45409e3b82dfbe0094cd9e71ac574890edb44401 |
+| 2   | b235b51d8e81120742f01a2d517f3eba971fb66e | 9ed1ff5f865790cc7f30d00bd85c53bce9d3c1a8 |
+| 3   | 8b6d1e753d63b3d8e18096db618a5fab2f5db410 | b7a93d63aa5a82433f42ad3e61448f374edf1db1 |
+| 4   | ea218efeeef4b3050549a8c645228783ddc004ae | 6f8aa6e9d60d29fa5dd0eb3548418b666429870b |
+| 5   | 3c7d105cf34ab66dee13ffd5a2adc80f11b195f5 | b853423296df5b4c85648ba9f46897e1e85e5b8c |
+| 6   | 4666f9bc28c30daf9eea6c07ac5149d3292685f1 | 64fe3e17e338e33dbaa0fd3ad6f186def412935a |
+| 7   | fabf4ac3e08b99e848cbca8edb5409914a74b815 | 267f03583dadc08793fdc09da0a01fc6708c69c5 |
 
 - All **7/7** promotion commits contain the required `(cherry picked from commit <source-sha>)` trailer, each pointing to the exact source SHA listed in its row.
 - The exact tested promotion HEAD was `267f03583dadc08793fdc09da0a01fc6708c69c5` (mapping #7).
@@ -186,27 +186,27 @@ No terminal logs or timestamps are invented for this historical note.
 
 **Commands, expected result, actual result:**
 
-| Command | Expected | Actual | Result |
-| --- | --- | --- | --- |
-| `npm run typecheck` | exit 0 | exit 0 | PASS |
-| `npm run lint` | exit 0 | exit 0 | PASS |
-| `npm run format:check` | exit 0 | all matched files use Prettier style | PASS |
-| `npm test` | suite passes | 2 files, 29 tests passed | PASS |
-| `npm run test:coverage` | exit 0 | 100% statements/lines/functions, structural only (3 files) | PASS |
-| `npm run build` | exit 0 | exit 0, `dist/` produced | PASS |
-| `npm run quality` | exit 0 | exit 0 | PASS |
-| `git diff --check` | no output | no output | PASS |
-| `pr-gates lines --base origin/develop --head WORKTREE` | total ≤ 400 | 386/400 computable, 269 test lines excluded, run after `git add -N .` | PASS |
-| `pr-gates lines --limit 386` | accept the exact total | `386/386 computable … lines: PASS`, exit 0 | PASS |
-| `pr-gates lines --limit 385` | reject when the total exceeds the limit | `386/385 computable … lines: FAIL`, exit 1 | PASS |
-| `pr-gates branch --base develop --head chore/clinical-pr-gates` | no findings | 0 findings | PASS |
-| `pr-gates branch --base qa --head feat/cln-001` | wrong target detected | `BRANCH_WRONG_TARGET — feat/ → develop`, FAIL | PASS |
-| `pr-gates branch --base qa --head qa/hu-001` | conflict reported, no compliance claimed | `QA_NOMENCLATURE_UNRESOLVED`, FAIL | PASS |
-| `pr-gates commits --base origin/develop~6 --head origin/develop` | non-conforming subjects detected | 6 `COMMIT_SUBJECT` findings | PASS |
-| `pr-gates commits --base origin/develop --head chore/clinical-pr-gates` | no commits yet | 0 findings (empty range) | PASS |
-| `pr-gates pr --body <filled body>` | 0 findings | `pr: PASS` | PASS |
-| `pr-gates pr --body .github/pull_request_template.md` | unfilled traceability detected | 3 findings, FAIL | PASS |
-| `pr-gates arch` | no violation under `src/` | 0 findings | PASS |
+| Command                                                                 | Expected                                 | Actual                                                                | Result |
+| ----------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------- | ------ |
+| `npm run typecheck`                                                     | exit 0                                   | exit 0                                                                | PASS   |
+| `npm run lint`                                                          | exit 0                                   | exit 0                                                                | PASS   |
+| `npm run format:check`                                                  | exit 0                                   | all matched files use Prettier style                                  | PASS   |
+| `npm test`                                                              | suite passes                             | 2 files, 29 tests passed                                              | PASS   |
+| `npm run test:coverage`                                                 | exit 0                                   | 100% statements/lines/functions, structural only (3 files)            | PASS   |
+| `npm run build`                                                         | exit 0                                   | exit 0, `dist/` produced                                              | PASS   |
+| `npm run quality`                                                       | exit 0                                   | exit 0                                                                | PASS   |
+| `git diff --check`                                                      | no output                                | no output                                                             | PASS   |
+| `pr-gates lines --base origin/develop --head WORKTREE`                  | total ≤ 400                              | 386/400 computable, 269 test lines excluded, run after `git add -N .` | PASS   |
+| `pr-gates lines --limit 386`                                            | accept the exact total                   | `386/386 computable … lines: PASS`, exit 0                            | PASS   |
+| `pr-gates lines --limit 385`                                            | reject when the total exceeds the limit  | `386/385 computable … lines: FAIL`, exit 1                            | PASS   |
+| `pr-gates branch --base develop --head chore/clinical-pr-gates`         | no findings                              | 0 findings                                                            | PASS   |
+| `pr-gates branch --base qa --head feat/cln-001`                         | wrong target detected                    | `BRANCH_WRONG_TARGET — feat/ → develop`, FAIL                         | PASS   |
+| `pr-gates branch --base qa --head qa/hu-001`                            | conflict reported, no compliance claimed | `QA_NOMENCLATURE_UNRESOLVED`, FAIL                                    | PASS   |
+| `pr-gates commits --base origin/develop~6 --head origin/develop`        | non-conforming subjects detected         | 6 `COMMIT_SUBJECT` findings                                           | PASS   |
+| `pr-gates commits --base origin/develop --head chore/clinical-pr-gates` | no commits yet                           | 0 findings (empty range)                                              | PASS   |
+| `pr-gates pr --body <filled body>`                                      | 0 findings                               | `pr: PASS`                                                            | PASS   |
+| `pr-gates pr --body .github/pull_request_template.md`                   | unfilled traceability detected           | 3 findings, FAIL                                                      | PASS   |
+| `pr-gates arch`                                                         | no violation under `src/`                | 0 findings                                                            | PASS   |
 
 **Measured size of this increment (norm 9.2):** 386 computable lines (insertions + deletions across 7 files); `scripts/pr-gates.test.mjs` adds 269 test lines that norm 9.2 excludes. Limit 400, PASS. Measured with `git add -N .` so untracked files appear in `git diff origin/develop`; the index was restored with `git reset` (no commit).
 
@@ -244,28 +244,28 @@ No terminal logs or timestamps are invented for this historical note.
 
 **TDD chronology (actual, never reconstructed):**
 
-| Step | Execution and actual result |
-| --- | --- |
-| TEST-FIRST BLOCKED | Wrote `ClinicalRecordEntries.test.tsx` (12 tests) and `ClinicalPortalPage.test.tsx` (2) before implementation; `npm test` ran zero new tests because `fixtures/clinicalFixtures` imports could not resolve while 29 existing tests passed; this is not behavioral RED. Raw output: `%TEMP%\opencode\hu-cln-001-red-01.txt`. |
-| BEHAVIORAL RED | Retry regression test then failed: an error without `onRetry` rendered `Reintentar` (1 failed, 12 passed). |
-| GREEN | Added `model/`, `fixtures/`, component, styles and page wiring. Run 1: 6 failures because React Testing Library never auto-cleans (vitest has no globals) → `src/test/setup.ts` now calls `cleanup()`; run 2: 1 failure (`screen.container` removed in RTL 16) → used the render result; run 3: 42/42 passed. |
-| REFACTOR | `npm run format`, compact styles and signatures without behavior change; renamed `clinicalAuthorization` → `clinicalReadAuthorized` after `arch` read it as `Authorization:`; a real regression was caught by the suite — the two-argument `resolveClinicalAccess` kept an object call site so every state resolved to *denied* (8 failures) → call site fixed → 43/43. |
-| REGRESSION | Complete `npm run quality` re-run plus every applicable gate (table below): retry fixed; 46 tests passed with 100% structural coverage. |
+| Step               | Execution and actual result                                                                                                                                                                                                                                                                                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TEST-FIRST BLOCKED | Wrote `ClinicalRecordEntries.test.tsx` (12 tests) and `ClinicalPortalPage.test.tsx` (2) before implementation; `npm test` ran zero new tests because `fixtures/clinicalFixtures` imports could not resolve while 29 existing tests passed; this is not behavioral RED. Raw output: `%TEMP%\opencode\hu-cln-001-red-01.txt`.                                             |
+| BEHAVIORAL RED     | Retry regression test then failed: an error without `onRetry` rendered `Reintentar` (1 failed, 12 passed).                                                                                                                                                                                                                                                              |
+| GREEN              | Added `model/`, `fixtures/`, component, styles and page wiring. Run 1: 6 failures because React Testing Library never auto-cleans (vitest has no globals) → `src/test/setup.ts` now calls `cleanup()`; run 2: 1 failure (`screen.container` removed in RTL 16) → used the render result; run 3: 42/42 passed.                                                           |
+| REFACTOR           | `npm run format`, compact styles and signatures without behavior change; renamed `clinicalAuthorization` → `clinicalReadAuthorized` after `arch` read it as `Authorization:`; a real regression was caught by the suite — the two-argument `resolveClinicalAccess` kept an object call site so every state resolved to _denied_ (8 failures) → call site fixed → 43/43. |
+| REGRESSION         | Complete `npm run quality` re-run plus every applicable gate (table below): retry fixed; 46 tests passed with 100% structural coverage.                                                                                                                                                                                                                                 |
 
 **Commands, expected result, actual result:**
 
-| Command | Expected | Actual | Result |
-| --- | --- | --- | --- |
-| `npm run typecheck` | exit 0 | exit 0 | PASS |
-| `npm run lint` | exit 0 | exit 0 | PASS |
-| `npm run format:check` | exit 0 | all matched files Prettier-clean | PASS |
-| `npm test` | suite passes | 4 files, 46 tests passed | PASS |
-| `npm run test:coverage` | exit 0 | 100% stmts/branches/funcs/lines (structural, `src/clinical/**`) | PASS |
-| `npm run build` and `npm run quality` | exit 0 | exit 0, `dist/` produced | PASS |
-| `npm run gates -- --help` | usage text | `unknown command: --help`, exit 1 (no help subcommand) | REPORTED |
-| `pr-gates lines --base origin/develop --head WORKTREE` | ≤ 400 | 353/400 before this entry, tests excluded | PASS |
-| `pr-gates arch`, `branch --base develop --head feat/hu-cln-001-record-states`, `commits` | 0 findings | 0, 0, 0 (empty commit range) | PASS |
-| `git diff --check` | no output | exit 0, no output | PASS |
+| Command                                                                                  | Expected     | Actual                                                          | Result   |
+| ---------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------- | -------- |
+| `npm run typecheck`                                                                      | exit 0       | exit 0                                                          | PASS     |
+| `npm run lint`                                                                           | exit 0       | exit 0                                                          | PASS     |
+| `npm run format:check`                                                                   | exit 0       | all matched files Prettier-clean                                | PASS     |
+| `npm test`                                                                               | suite passes | 4 files, 46 tests passed                                        | PASS     |
+| `npm run test:coverage`                                                                  | exit 0       | 100% stmts/branches/funcs/lines (structural, `src/clinical/**`) | PASS     |
+| `npm run build` and `npm run quality`                                                    | exit 0       | exit 0, `dist/` produced                                        | PASS     |
+| `npm run gates -- --help`                                                                | usage text   | `unknown command: --help`, exit 1 (no help subcommand)          | REPORTED |
+| `pr-gates lines --base origin/develop --head WORKTREE`                                   | ≤ 400        | 353/400 before this entry, tests excluded                       | PASS     |
+| `pr-gates arch`, `branch --base develop --head feat/hu-cln-001-record-states`, `commits` | 0 findings   | 0, 0, 0 (empty commit range)                                    | PASS     |
+| `git diff --check`                                                                       | no output    | exit 0, no output                                               | PASS     |
 
 **Size and files (norm 9.2):** 353 computable lines before this entry (measured with `git add -N .`, index restored with `git reset`); 219 excluded test lines (179 + 33 + 7). Counted: `.env.example`, `src/vite-env.d.ts`, `src/test/setup.ts`, `src/clinical/model/{clinicalEntry,clinicalAccess,clinicalRecordView}.ts`, `src/clinical/fixtures/clinicalFixtures.ts`, `src/clinical/adapter/in/ui/components/{ClinicalRecordEntries.tsx,clinical-record.css}`, `src/clinical/adapter/in/ui/pages/ClinicalPortalPage.tsx`; new tests are excluded and the original `ClinicalPortal.test.tsx` smoke test stays unchanged (root heading).
 
