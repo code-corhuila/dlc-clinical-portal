@@ -224,15 +224,17 @@ describe('ClinicalPortalComposition', () => {
   it('completes a started procedure recording a justified extra', async () => {
     renderDemo();
 
-    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
     expect(
-      screen.queryByRole('button', { name: 'Completar procedimiento' }),
-    ).toBeNull();
+      screen.getByRole('checkbox', { name: 'Completar Limpieza profunda' }),
+    ).toBeDisabled();
     fireEvent.click(
       screen.getByRole('button', { name: 'Iniciar tratamiento' }),
     );
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+      await screen.findByRole('checkbox', {
+        name: 'Completar Limpieza profunda',
+      }),
     );
     fireEvent.click(
       screen.getByRole('button', { name: 'Agregar material o necesidad' }),
@@ -258,18 +260,25 @@ describe('ClinicalPortalComposition', () => {
     expect(
       screen.getByRole('cell', { name: /Limpieza profunda · Completado/ }),
     ).toBeInTheDocument();
+    const done = screen.getByRole('checkbox', {
+      name: 'Completar Limpieza profunda',
+    });
+    expect(done).toBeChecked();
+    expect(done).toBeDisabled();
     expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
   it('lists recorded extras pending pricing in Billing', async () => {
     renderDemo();
 
-    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
     fireEvent.click(
       screen.getByRole('button', { name: 'Iniciar tratamiento' }),
     );
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+      await screen.findByRole('checkbox', {
+        name: 'Completar Limpieza profunda',
+      }),
     );
     fireEvent.click(
       screen.getByRole('button', { name: 'Agregar material o necesidad' }),
@@ -304,12 +313,14 @@ describe('ClinicalPortalComposition', () => {
   it('shows no pending pricing list when no extras were recorded', async () => {
     renderDemo();
 
-    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
     fireEvent.click(
       screen.getByRole('button', { name: 'Iniciar tratamiento' }),
     );
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+      await screen.findByRole('checkbox', {
+        name: 'Completar Limpieza profunda',
+      }),
     );
     fireEvent.click(
       screen.getByRole('button', {
@@ -329,12 +340,14 @@ describe('ClinicalPortalComposition', () => {
 
   async function completeProcedure(withNeed: boolean) {
     renderDemo();
-    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
     fireEvent.click(
       screen.getByRole('button', { name: 'Iniciar tratamiento' }),
     );
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+      await screen.findByRole('checkbox', {
+        name: 'Completar Limpieza profunda',
+      }),
     );
     if (withNeed) {
       fireEvent.click(
@@ -395,12 +408,14 @@ describe('ClinicalPortalComposition', () => {
   it('rejects an extra without clinical justification', async () => {
     renderDemo();
 
-    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
     fireEvent.click(
       screen.getByRole('button', { name: 'Iniciar tratamiento' }),
     );
     fireEvent.click(
-      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+      await screen.findByRole('checkbox', {
+        name: 'Completar Limpieza profunda',
+      }),
     );
     fireEvent.click(
       screen.getByRole('button', { name: 'Agregar material o necesidad' }),
@@ -476,6 +491,32 @@ describe('ClinicalPortalComposition', () => {
 
     expect(print).toHaveBeenCalledOnce();
     print.mockRestore();
+  });
+
+  it('filters the Evolución timeline by entry type', async () => {
+    renderDemo();
+
+    await screen.findByText(consultationEntry.text);
+    fireEvent.change(screen.getByLabelText('Nota rápida'), {
+      target: { value: 'Control sin dolor' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar nota' }));
+    await screen.findByText('Control sin dolor', {
+      selector: '.cr-entry__text',
+    });
+
+    fireEvent.change(screen.getByLabelText('Filtrar evolución'), {
+      target: { value: 'EVOLUTION' },
+    });
+    expect(screen.queryByText(consultationEntry.text)).toBeNull();
+    expect(
+      screen.getByText('Control sin dolor', { selector: '.cr-entry__text' }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Filtrar evolución'), {
+      target: { value: 'ALL' },
+    });
+    expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
   });
 
   it('keeps the planning form closed until requested', async () => {
@@ -684,7 +725,7 @@ describe('ClinicalPortalComposition', () => {
       target: { value: 'ADMINISTRATOR' },
     });
 
-    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
     expect(
       screen.queryByRole('button', { name: 'Declarar atención completada' }),
     ).toBeNull();
