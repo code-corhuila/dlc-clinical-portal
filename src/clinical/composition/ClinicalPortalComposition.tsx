@@ -7,6 +7,7 @@ import {
   demoProcedureCatalog,
 } from '../adapter/out/demo/demoClinicalAdapter';
 import { TreatmentPlan } from '../application/treatmentPlan';
+import { AmendClinicalEntry } from '../application/amendClinicalEntry';
 import { RecordClinicalEntry } from '../application/recordClinicalEntry';
 import { ReadPatientForCare } from '../application/readPatientForCare';
 
@@ -29,6 +30,7 @@ function ClinicalDemoComposition() {
   const [writer] = useState(() => new RecordClinicalEntry(adapter));
   const [patientReader] = useState(() => new ReadPatientForCare(adapter));
   const [treatmentPlan] = useState(() => new TreatmentPlan(adapter));
+  const [amender] = useState(() => new AmendClinicalEntry(adapter));
 
   return (
     <ClinicalDemoPage
@@ -37,6 +39,7 @@ function ClinicalDemoComposition() {
       authorName={adapter.authorName}
       patientReader={patientReader}
       treatmentPlan={treatmentPlan}
+      amender={amender}
       catalog={demoProcedureCatalog}
       appointments={demoAppointments}
     />
