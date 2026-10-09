@@ -142,6 +142,9 @@ describe('ClinicalPortalComposition', () => {
     renderDemo();
 
     await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Planificar nuevo tratamiento' }),
+    );
     fireEvent.change(screen.getByLabelText('Motivo clínico'), {
       target: { value: 'Caries en pieza 18' },
     });
@@ -163,6 +166,9 @@ describe('ClinicalPortalComposition', () => {
     renderDemo();
 
     await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Planificar nuevo tratamiento' }),
+    );
     fireEvent.change(screen.getByLabelText('Motivo clínico'), {
       target: { value: 'Control' },
     });
@@ -393,6 +399,48 @@ describe('ClinicalPortalComposition', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'justificación clínica',
     );
+  });
+
+  it('keeps the planning form closed until requested', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: 'Limpieza profunda' });
+
+    expect(screen.queryByLabelText('Motivo clínico')).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Planificar nuevo tratamiento' }),
+    );
+    expect(screen.getByLabelText('Motivo clínico')).toBeInTheDocument();
+  });
+
+  it('lists recorded diagnoses in the side column card', async () => {
+    renderDemo();
+
+    const card = await screen.findByRole('region', { name: 'Diagnósticos' });
+    expect(card).toHaveTextContent('Sin diagnósticos registrados.');
+    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
+      target: { value: 'DIAGNOSIS' },
+    });
+    fireEvent.change(screen.getByLabelText('Consulta asociada'), {
+      target: { value: consultationEntry.id },
+    });
+    addEntry('Caries oclusal profunda');
+
+    await screen.findByText('Caries oclusal profunda', {
+      selector: '.dx-card li strong',
+    });
+    expect(card).toHaveTextContent('Consulta del');
+  });
+
+  it('hides diagnoses from a secretary assistant', async () => {
+    renderDemo();
+
+    await screen.findByRole('region', { name: 'Diagnósticos' });
+    fireEvent.change(screen.getByLabelText('Rol'), {
+      target: { value: 'SECRETARY_ASSISTANT' },
+    });
+
+    expect(screen.queryByRole('region', { name: 'Diagnósticos' })).toBeNull();
   });
 
   it('keeps the plan readable but not editable without write authorization', async () => {
