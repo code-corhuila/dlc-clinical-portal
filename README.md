@@ -44,7 +44,7 @@ The compose file builds two containers from the same image recipe:
 
 | Service | Build | URL | Content |
 | --- | --- | --- | --- |
-| `clinical-portal` | `npm run build` | `http://localhost:4173` | Real remote: no synthetic data; workflows wait for the `dlc-front` session and client. |
+| `clinical-portal-dlc-front` | `npm run build` | `http://localhost:4173` | Real remote: no synthetic data; workflows wait for the `dlc-front` session and client. |
 | `clinical-portal-demo` | `npm run build:demo` | `http://localhost:4175` | Front-only delivery: synthetic data with the role/patient selector. |
 
 Both publish `remoteEntry.js` for `dlc-front`. Ports can be changed with `PORTAL_PORT` and `PORTAL_DEMO_PORT`.
