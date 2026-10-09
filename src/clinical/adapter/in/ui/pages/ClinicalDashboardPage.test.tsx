@@ -140,4 +140,28 @@ describe('ClinicalDashboardPage', () => {
       screen.queryByRole('region', { name: 'Ingresos del mes' }),
     ).toBeNull();
   });
+
+  it('highlights every day that ties for the busiest of the week', async () => {
+    const demo = createDemoClinicalAdapter();
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async (scope) => ({
+          ...(await demo.readDashboard(scope)),
+          weeklyActivity: [
+            { day: 'Lun', count: 9 },
+            { day: 'Mar', count: 4 },
+            { day: 'Mié', count: 9 },
+          ],
+        }),
+      },
+      now,
+    );
+    renderDashboard('ADMINISTRATOR', reader);
+
+    const chart = await screen.findByRole('img', { name: /Actividad semanal/ });
+    const peaks = [...chart.querySelectorAll('[data-peak="true"]')];
+    expect(peaks.map((bar) => bar.querySelector('small')?.textContent)).toEqual(
+      ['Lun', 'Mié'],
+    );
+  });
 });
