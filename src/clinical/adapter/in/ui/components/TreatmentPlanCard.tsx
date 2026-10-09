@@ -154,48 +154,6 @@ export function TreatmentPlanCard({
     <section className="tp-card" aria-labelledby="treatment-plan-title">
       <h2 id="treatment-plan-title">Plan de Tratamiento y Procedimientos</h2>
       {startError && <p role="alert">{startError}</p>}
-      {notice && <p role="status">{notice}</p>}
-      {onRefreshClosure && tracked.length > 0 && (
-        <CareClosureTracker
-          closures={tracked}
-          procedureLabel={(procedureId) =>
-            label(
-              treatments
-                ?.flatMap((item) => item.procedures)
-                .find((item) => item.id === procedureId)?.procedureCode ??
-                procedureId,
-            )
-          }
-          onRefresh={onRefreshClosure}
-          onRetry={onRetryClosure}
-          onChange={(updated) =>
-            setTracked(
-              tracked.map((item) => (item.id === updated.id ? updated : item)),
-            )
-          }
-        />
-      )}
-      {unpriced.length > 0 && (
-        <section
-          className="tp-unpriced"
-          aria-label="Extras pendientes de precio en Facturación"
-        >
-          <h3>Extras pendientes de precio en Facturación</h3>
-          <p>
-            El precio de cada extra se registra en Facturación; Clinical no
-            guarda montos.
-          </p>
-          <ul>
-            {unpriced.map((item) => (
-              <li key={item.sourceRecordId}>
-                {item.description} · {EXTRA_ITEM_TYPE_LABELS[item.type]} ·
-                Cantidad: {item.quantity} · {item.procedure} · Cita:{' '}
-                {item.appointmentId} · Ref.: {item.sourceRecordId}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {failed ? (
         <p role="alert">No fue posible cargar el plan de tratamiento.</p>
       ) : !treatments ? (
@@ -286,6 +244,48 @@ export function TreatmentPlanCard({
           Total estimado: <strong>{formatCop(sumCop(priced))}</strong> · Valores
           de solo lectura de Facturación.
         </p>
+      )}
+      {notice && <p role="status">{notice}</p>}
+      {onRefreshClosure && tracked.length > 0 && (
+        <CareClosureTracker
+          closures={tracked}
+          procedureLabel={(procedureId) =>
+            label(
+              treatments
+                ?.flatMap((item) => item.procedures)
+                .find((item) => item.id === procedureId)?.procedureCode ??
+                procedureId,
+            )
+          }
+          onRefresh={onRefreshClosure}
+          onRetry={onRetryClosure}
+          onChange={(updated) =>
+            setTracked(
+              tracked.map((item) => (item.id === updated.id ? updated : item)),
+            )
+          }
+        />
+      )}
+      {unpriced.length > 0 && (
+        <section
+          className="tp-unpriced"
+          aria-label="Extras pendientes de precio en Facturación"
+        >
+          <h3>Extras pendientes de precio en Facturación</h3>
+          <p>
+            El precio de cada extra se registra en Facturación; Clinical no
+            guarda montos.
+          </p>
+          <ul>
+            {unpriced.map((item) => (
+              <li key={item.sourceRecordId}>
+                {item.description} · {EXTRA_ITEM_TYPE_LABELS[item.type]} ·
+                Cantidad: {item.quantity} · {item.procedure} · Cita:{' '}
+                {item.appointmentId} · Ref.: {item.sourceRecordId}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {onComplete && completing && (
         <CompleteProcedureForm
