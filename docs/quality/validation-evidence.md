@@ -552,7 +552,7 @@ No terminal logs or timestamps are invented for this historical note.
 - **Validation (Windows):** `npm test` 259 tests PASS; coverage 95.46 % statements; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. No browser verification claimed for this increment (no visual change).
 ## DEV-CLIN-PORTAL-DASHBOARD-REVIEW-030
 
-- **Story:** HU-CLN-003 presentation (code-corhuila/dlc-clinical-portal#5); follow-up to the review of code-corhuila/dlc-clinical-portal#50. Branch `fix/clinical-dashboard-review-30` from `origin/develop` `5c92c8e`.
+- **Story:** HU-CLN-003 presentation (code-corhuila/dlc-clinical-portal#5); follow-up to the review of code-corhuila/dlc-clinical-portal#50. Branch `fix/clinical-dashboard-ties-30` from `origin/develop` `f58d983`; replaces code-corhuila/dlc-clinical-portal#52 by cherry-pick after #51 merged (no merge commit).
 - **Changes:** every weekday tied for the week's maximum is marked as a peak (previously only the first by array order); the duplicated `.db-bar > span` rules are consolidated into one.
 - **Review points checked, no change needed:** `formatCopCompact` output was executed, not assumed: Node 78.3 ICU, the GitHub Actions run 37981871337 (Linux) and the in-app browser all produce `$980 k` and `$14,5 M` for `es-CO`. The `DEV-CLIN-PORTAL-DASHBOARD-FIDELITY-028` entry is present in #50; the table realignment in that PR came from a Prettier pass and will be kept in separate `chore` commits from now on.
 - **TDD:** genuine RED for tied busiest days (1 test).
