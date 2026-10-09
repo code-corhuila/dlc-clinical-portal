@@ -9,10 +9,70 @@ body {
 }
 
 .portal-placeholder {
-  max-width: 44rem;
-  margin: 3rem auto;
-  padding: 2rem;
-  border-radius: 1rem;
+  box-sizing: border-box;
+  max-width: 1200px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px;
+  background: #f7f9fa;
+  color: #1f2933;
+}
+
+.portal-placeholder > section[aria-label] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
   background: #fff;
-  box-shadow: 0 0.25rem 1rem rgb(23 59 77 / 12%);
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.portal-placeholder > section[aria-label] > p {
+  grid-column: 1 / -1;
+  color: #0f766e;
+  font-weight: 600;
+  margin: 0;
+}
+
+.portal-placeholder > section[aria-label] > .portal-placeholder {
+  grid-column: 1 / -1;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.portal-placeholder > section[aria-label] > .portal-placeholder > h1 {
+  display: none;
+}
+
+.portal-placeholder > section[aria-label] > .portal-placeholder > .cr-card,
+.portal-placeholder > section[aria-label] > .portal-placeholder > .cec-card {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.portal-placeholder > section[aria-label] label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.portal-placeholder > section[aria-label] select {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  .portal-placeholder {
+    padding: 16px;
+  }
+  .portal-placeholder > section[aria-label] {
+    grid-template-columns: 1fr;
+  }
 }
