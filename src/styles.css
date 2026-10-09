@@ -263,3 +263,67 @@ body {
     padding: 16px;
   }
 }
+
+.cl-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgba(31, 41, 51, 0.45);
+  padding: 16px;
+}
+
+.cl-dialog {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.cl-dialog__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  background: none;
+  color: #0f766e;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-dialog > .cec-card,
+.cl-dialog > .cc-card {
+  margin: 0;
+  border: 0;
+}
+
+.tp-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tp-primary {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media print {
+  .cl-demo > :not(.portal-placeholder),
+  .cl-patient__action,
+  .cl-aside,
+  .tp-footer,
+  .tp-form {
+    display: none;
+  }
+}

@@ -25,6 +25,7 @@ import type { CareClosureTracking } from '../../../../application/careClosureTra
 import type { BillingEstimate } from '../../../../application/billingEstimate';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
 import { CareCompletionCard } from '../components/CareCompletionCard';
+import { ClinicalDialog } from '../components/ClinicalDialog';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 
 export interface ClinicalPortalPageProps {
@@ -79,6 +80,12 @@ export function ClinicalPortalPage({
   const request = useRef(0);
   const [retry, setRetry] = useState(0);
   const [patientView, setPatientView] = useState<PatientView>();
+  const [dialog, setDialog] = useState<'entry' | 'declare'>();
+  const closeDialog = () => setDialog(undefined);
+
+  useEffect(() => {
+    if (dialog === 'entry') document.getElementById('entry-text')?.focus();
+  }, [dialog]);
   const [view, setView] = useState<RecordView>({
     patientId: null,
     context: null,
@@ -200,11 +207,7 @@ export function ClinicalPortalPage({
           {patient && (
             <PatientHeader
               patient={patient}
-              onNewEntry={
-                canWrite
-                  ? () => document.getElementById('entry-text')?.focus()
-                  : undefined
-              }
+              onNewEntry={canWrite ? () => setDialog('entry') : undefined}
             />
           )}
           <div className="cl-main">
@@ -214,6 +217,11 @@ export function ClinicalPortalPage({
                 load={loadTreatments}
                 catalog={treatments.catalog}
                 loadPrices={loadPrices}
+                onDeclareOpen={
+                  declarer && role === 'DENTIST' && canWrite
+                    ? () => setDialog('declare')
+                    : undefined
+                }
                 appointmentId={treatments.appointmentId}
                 diagnoses={
                   status.kind === 'ready'
@@ -288,13 +296,6 @@ export function ClinicalPortalPage({
                 }
               />
             )}
-            <ClinicalEntryComposer
-              role={role}
-              clinicalWriteAuthorized={clinicalWriteAuthorized}
-              recordWritable={status.kind === 'ready'}
-              consultations={consultations}
-              onSubmit={submitEntry}
-            />
           </div>
           <aside className="cl-aside">
             {allowed && status.kind === 'ready' && (
@@ -327,25 +328,43 @@ export function ClinicalPortalPage({
                 <QuickNoteForm onSubmit={submitEntry} />
               )}
             </ClinicalRecordEntries>
-            {declarer && allowed && patientId && (
-              <CareCompletionCard
-                key={`${patientId}:${role}:${clinicalWriteAuthorized}`}
+          </aside>
+          {dialog === 'entry' && canWrite && (
+            <ClinicalDialog title="Nueva entrada clínica" onClose={closeDialog}>
+              <ClinicalEntryComposer
+                role={role}
+                clinicalWriteAuthorized={clinicalWriteAuthorized}
+                recordWritable={status.kind === 'ready'}
                 consultations={consultations}
-                onDeclare={
-                  role === 'DENTIST' && canWrite
-                    ? (consultationId) =>
-                        declarer.execute(
-                          { patientId, role, clinicalWriteAuthorized },
-                          {
-                            consultationId,
-                            appointmentId: treatments?.appointmentId ?? '',
-                          },
-                        )
-                    : undefined
+                onSubmit={
+                  submitEntry &&
+                  (async (entry) => {
+                    await submitEntry(entry);
+                    closeDialog();
+                  })
                 }
               />
-            )}
-          </aside>
+            </ClinicalDialog>
+          )}
+          {dialog === 'declare' && declarer && patientId && (
+            <ClinicalDialog
+              title="Cierre de la atención clínica"
+              onClose={closeDialog}
+            >
+              <CareCompletionCard
+                consultations={consultations}
+                onDeclare={(consultationId) =>
+                  declarer.execute(
+                    { patientId, role, clinicalWriteAuthorized },
+                    {
+                      consultationId,
+                      appointmentId: treatments?.appointmentId ?? '',
+                    },
+                  )
+                }
+              />
+            </ClinicalDialog>
+          )}
         </div>
       ) : (
         <>
