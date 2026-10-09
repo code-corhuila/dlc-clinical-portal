@@ -112,3 +112,96 @@
   font-size: 12px;
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
 }
+
+.db-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.db-kpis h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #66737a;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.db-kpis h2 .cl-icon {
+  box-sizing: content-box;
+  border-radius: 8px;
+  background: #e6f6f4;
+  padding: 8px;
+  color: #0f766e;
+}
+
+.db-kpis span:not(.db-sr) {
+  margin-top: 6px;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.db-bar > span {
+  background: #d1d5db;
+}
+
+.db-bar[data-peak='true'] > span {
+  background: #4b5563;
+}
+
+.db-bar > span {
+  position: relative;
+}
+
+.db-bar b {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  font-size: 12px;
+}
+
+.db-upcoming li {
+  border: 1px solid #e5e9eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.db-upcoming li > span[data-tone='1'] {
+  background: #fde8e8;
+  color: #b42318;
+}
+
+.db-upcoming li > span[data-tone='2'] {
+  background: #e8edfd;
+  color: #3346a8;
+}
+
+.db-upcoming li > span[data-tone='3'] {
+  background: #fdf3e2;
+  color: #a15c07;
+}
+
+.db-upcoming li:first-child time {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.db-upcoming .db-urgent {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #b42318;
+  font-weight: 600;
+}
+
+.db-urgent .cl-icon {
+  width: 12px;
+  height: 12px;
+  color: inherit;
+}

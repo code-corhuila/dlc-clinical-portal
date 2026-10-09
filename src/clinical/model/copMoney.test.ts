@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCop, sumCop } from './copMoney';
+import { formatCop, formatCopCompact, sumCop } from './copMoney';
 
 describe('copMoney', () => {
   it('adds exact COP decimals without floating point error', () => {
@@ -15,5 +15,10 @@ describe('copMoney', () => {
 
   it('formats COP for es-CO readers', () => {
     expect(formatCop('265000.00')).toMatch(/\$\s?265\.000,00/);
+  });
+
+  it('formats large COP amounts compactly for dashboard cards', () => {
+    expect(formatCopCompact('14500000.00')).toBe('$14,5 M');
+    expect(formatCopCompact('980000.00')).toBe('$980 k');
   });
 });
