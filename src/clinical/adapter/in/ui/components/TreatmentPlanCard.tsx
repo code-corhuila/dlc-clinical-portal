@@ -38,6 +38,7 @@ export interface TreatmentPlanCardProps {
   ) => Promise<CareClosure>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly loadPrices?: () => Promise<PriceEstimate>;
+  readonly onDeclareOpen?: () => void;
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
 }
@@ -52,6 +53,7 @@ export function TreatmentPlanCard({
   onRetryClosure,
   catalog,
   loadPrices,
+  onDeclareOpen,
   diagnoses,
   appointmentId = '',
 }: TreatmentPlanCardProps) {
@@ -313,14 +315,34 @@ export function TreatmentPlanCard({
           }}
         />
       )}
-      {onPlan && treatments && !planning && (
-        <button
-          type="button"
-          className="tp-start"
-          onClick={() => setPlanning(true)}
-        >
-          Planificar nuevo tratamiento
-        </button>
+      {treatments && !planning && (
+        <div className="tp-footer">
+          {onPlan && (
+            <button
+              type="button"
+              className="tp-start"
+              onClick={() => setPlanning(true)}
+            >
+              Planificar nuevo tratamiento
+            </button>
+          )}
+          <button
+            type="button"
+            className="tp-start"
+            onClick={() => window.print()}
+          >
+            Imprimir plan
+          </button>
+          {onDeclareOpen && (
+            <button
+              type="button"
+              className="tp-primary"
+              onClick={onDeclareOpen}
+            >
+              Declarar atención completada
+            </button>
+          )}
+        </div>
       )}
       {onPlan && treatments && planning && (
         <form className="tp-form" onSubmit={plan} noValidate>
