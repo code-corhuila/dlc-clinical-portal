@@ -39,6 +39,16 @@ describe('ClinicalDashboardPage', () => {
     ).toHaveTextContent('María Jiménez');
   });
 
+  it('draws the weekly activity chart with a textual alternative', async () => {
+    renderDashboard('ADMINISTRATOR');
+
+    const chart = await screen.findByRole('img', {
+      name: /Actividad semanal: Lun 8, Mar 11, Mié 15/,
+    });
+    expect(chart.querySelectorAll('.db-bar')).toHaveLength(7);
+    expect(screen.getByText('Mié: 15')).toBeInTheDocument();
+  });
+
   it('narrows the dentist dashboard to own scope without revenue', async () => {
     renderDashboard('DENTIST');
 
