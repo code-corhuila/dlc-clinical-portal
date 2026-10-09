@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ClinicalPortal } from './clinical/ClinicalPortal';
-import './styles.css';
 
 const root = document.getElementById('root');
 

@@ -40,6 +40,28 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.queryByText(/Modo demostraci/)).toBeNull();
   });
 
+  it('enables synthetic data in the explicit demo build for dlc-front', async () => {
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('MODE', 'demo');
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+    render(<ClinicalPortalComposition />);
+
+    expect(await screen.findByText(consultationEntry.text)).toBeInTheDocument();
+    expect(screen.getByText(/Modo demostraci/)).toBeInTheDocument();
+  });
+
+  it('keeps a normal production build free of synthetic data even with the flag', () => {
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+    render(<ClinicalPortalComposition />);
+
+    expect(screen.queryByText(consultationEntry.text)).toBeNull();
+    expect(
+      screen.getByRole('heading', { name: 'Clinical portal' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows the synthetic clinical record demo only with the dev flag', async () => {
     renderDemo();
 
