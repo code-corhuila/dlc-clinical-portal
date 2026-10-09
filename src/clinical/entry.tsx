@@ -52,7 +52,14 @@ export async function mount(
   host: HTMLElement,
   context: PortalContext,
 ): Promise<PortalHandle> {
-  let root: Root | null = createRoot(host);
+  // Styles stay inside the host (C03); the sibling entry.css ships with the release.
+  const stylesheet = document.createElement('link');
+  stylesheet.rel = 'stylesheet';
+  stylesheet.href = new URL('./entry.css', import.meta.url).href;
+  const frame = document.createElement('div');
+  frame.className = 'cl-portal';
+  host.append(stylesheet, frame);
+  let root: Root | null = createRoot(frame);
   let route = context.route;
   const render = () =>
     flushSync(() =>
@@ -71,6 +78,8 @@ export async function mount(
     const current = root;
     root = null;
     current.unmount();
+    frame.remove();
+    stylesheet.remove();
   };
   context.signal.addEventListener('abort', unmount);
   try {

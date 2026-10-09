@@ -587,3 +587,12 @@ No terminal logs or timestamps are invented for this historical note.
 - **Pending (next increments):** build the independent `entry.js` ES module under `/portals/clinical/{release}/` with no bare imports and no import side effects, wire `context.http` into real adapters, report render failures through `reportFailure`, and retire the Module Federation entries once dlc-front consumes v1.
 - **TDD:** genuine RED: the `entry` module did not exist (6 tests).
 - **Validation (Windows):** `npm test` 268 tests PASS; coverage 95.55 % statements; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. No browser verification claimed (no compositor exists yet).
+
+## DEV-CLIN-PORTAL-ENTRY-BUILD-035
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C01 and C03 (dlc-docs `638e4f2`). Branch `feat/clinical-portal-entry-build-35` from `origin/develop` `00e5ce7`.
+- **Change:** `vite.entry.config.ts` builds `src/clinical/entry.tsx` as one independent ES module at `/portals/clinical/{release}/entry.js` with a sibling `entry.css`; React is bundled, release defaults to the package version (`-demo` in demo mode) and is validated against C01's release pattern. `npm run build` and `npm run build:demo` now emit it. `mount` attaches `entry.css` and its render frame inside the host and removes both on unmount. nginx serves `/portals/` with `no-store`. README documents the v1 entry.
+- **TDD:** genuine RED: the entry build configuration did not exist (build test failed) and mount attached no stylesheet inside the host (1 test). The build test checks the release directory, absence of bare imports and that importing the built module exposes the v1 identity without side effects.
+- **Browser verification:** a temporary compositor probe page (not committed) imported `/portals/clinical/0.1.0-demo/entry.js` and mounted patient A as Dentist: styled record, `entry.css` link inside the host and no styles added to `<head>`; `updateRoute('/analytics')` showed the Dentist dashboard without revenue; `unmount` left the host empty and removed the stylesheet.
+- **Containers (Docker 29.7.2):** rebuilt; `entry.js` and `entry.css` answer 200 with `Cache-Control: no-store` on 4173 (`0.1.0`) and 4175 (`0.1.0-demo`); an unknown release returns 404; the real entry contains no synthetic strings.
+- **Validation (Windows):** `npm test` 270 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
