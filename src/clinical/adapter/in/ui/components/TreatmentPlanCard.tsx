@@ -14,6 +14,7 @@ interface Option {
 export interface TreatmentPlanCardProps {
   readonly load: () => Promise<readonly Treatment[]>;
   readonly onPlan?: (draft: TreatmentDraft) => Promise<void>;
+  readonly onStart?: (treatment: Treatment) => Promise<void>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
@@ -23,6 +24,7 @@ export interface TreatmentPlanCardProps {
 export function TreatmentPlanCard({
   load,
   onPlan,
+  onStart,
   catalog,
   diagnoses,
   appointmentId = '',
@@ -35,6 +37,7 @@ export function TreatmentPlanCard({
   const [codes, setCodes] = useState<readonly string[]>([]);
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [startError, setStartError] = useState<string>();
   const label = (code: string) =>
     catalog.find((item) => item.code === code)?.label ?? code;
 
@@ -48,6 +51,23 @@ export function TreatmentPlanCard({
       active = false;
     };
   }, [load, version]);
+
+  async function start(treatment: Treatment) {
+    if (!onStart || pending) return;
+    setPending(true);
+    setStartError(undefined);
+    try {
+      await onStart(treatment);
+    } catch (error) {
+      setStartError(
+        (error as { message?: string }).message ??
+          'No fue posible iniciar el tratamiento.',
+      );
+    } finally {
+      setPending(false);
+      setVersion((value) => value + 1);
+    }
+  }
 
   async function plan(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,6 +98,7 @@ export function TreatmentPlanCard({
   return (
     <section className="tp-card" aria-labelledby="treatment-plan-title">
       <h2 id="treatment-plan-title">Plan de Tratamiento y Procedimientos</h2>
+      {startError && <p role="alert">{startError}</p>}
       {failed ? (
         <p role="alert">No fue posible cargar el plan de tratamiento.</p>
       ) : !treatments ? (
@@ -91,21 +112,42 @@ export function TreatmentPlanCard({
               <th scope="col">Procedimiento</th>
               <th scope="col">Estado</th>
               <th scope="col">Motivo</th>
+              {onStart && <th scope="col">Acción</th>}
             </tr>
           </thead>
           <tbody>
             {treatments.flatMap((treatment) =>
-              treatment.procedures.map((procedure) => (
+              treatment.procedures.map((procedure, index) => (
                 <tr key={procedure.id}>
                   <td>{label(procedure.procedureCode)}</td>
-                  <td>{TREATMENT_STATUS_LABELS[procedure.status]}</td>
-                  <td>
-                    {treatment.clinicalReason ??
-                      diagnoses.find(
-                        (item) => item.id === treatment.diagnosisId,
-                      )?.label ??
-                      'Diagnóstico registrado'}
-                  </td>
+                  {index === 0 && (
+                    <>
+                      <td rowSpan={treatment.procedures.length}>
+                        {TREATMENT_STATUS_LABELS[treatment.status]}
+                      </td>
+                      <td rowSpan={treatment.procedures.length}>
+                        {treatment.clinicalReason ??
+                          diagnoses.find(
+                            (item) => item.id === treatment.diagnosisId,
+                          )?.label ??
+                          'Diagnóstico registrado'}
+                      </td>
+                      {onStart && (
+                        <td rowSpan={treatment.procedures.length}>
+                          {treatment.status === 'PLANNED' && (
+                            <button
+                              type="button"
+                              className="tp-start"
+                              disabled={pending}
+                              onClick={() => start(treatment)}
+                            >
+                              Iniciar tratamiento
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </>
+                  )}
                 </tr>
               )),
             )}

@@ -175,6 +175,25 @@ describe('ClinicalPortalComposition', () => {
     );
   });
 
+  it('starts a planned treatment', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    expect(
+      screen.getByRole('cell', { name: 'Planificado' }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+
+    expect(
+      await screen.findByRole('cell', { name: 'En curso' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Iniciar tratamiento' }),
+    ).toBeNull();
+  });
+
   it('keeps the plan readable but not editable without write authorization', async () => {
     renderDemo();
 
@@ -188,6 +207,9 @@ describe('ClinicalPortalComposition', () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Planificar tratamiento' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Iniciar tratamiento' }),
     ).toBeNull();
   });
 
