@@ -11,12 +11,17 @@ export interface ClinicalAmendmentRequest {
 
 /** Host-provided amendment boundary; it deliberately contains no HTTP details. */
 export interface ClinicalEntryAmendPort {
-  amendEntry(entryId: string, request: ClinicalAmendmentRequest): Promise<void>;
+  amendEntry(
+    entryId: string,
+    request: ClinicalAmendmentRequest,
+    idempotencyKey: string,
+  ): Promise<void>;
 }
 
 export interface ClinicalAmendAccess {
   readonly role: ClinicalRole | null;
   readonly clinicalWriteAuthorized: boolean;
+  readonly idempotencyKey: string;
 }
 
 /** Appends a linked correction; the original entry is never overwritten. */
@@ -42,10 +47,19 @@ export class AmendClinicalEntry {
         code: 'INVALID',
         message: 'Indique el motivo de la corrección (máximo 1000 caracteres).',
       };
-    await this.port.amendEntry(entry.id, {
-      text: correction.text,
-      reason: correction.reason,
-      expectedVersion: entry.version,
-    });
+    if (!access.idempotencyKey)
+      throw {
+        code: 'INVALID',
+        message: 'Falta la clave de idempotencia de la operación.',
+      };
+    await this.port.amendEntry(
+      entry.id,
+      {
+        text: correction.text,
+        reason: correction.reason,
+        expectedVersion: entry.version,
+      },
+      access.idempotencyKey,
+    );
   }
 }
