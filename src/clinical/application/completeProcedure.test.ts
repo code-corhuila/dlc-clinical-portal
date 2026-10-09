@@ -50,7 +50,19 @@ describe('CompleteProcedure', () => {
 
     await expect(
       useCase.execute(access('DENTIST', true), target, [material, need]),
-    ).resolves.toEqual(closure);
+    ).resolves.toEqual({
+      closure,
+      extras: [
+        expect.objectContaining({
+          sourceRecordId: 'source-1',
+          description: 'Resina adicional',
+        }),
+        expect.objectContaining({
+          sourceRecordId: 'source-2',
+          description: 'Anestesia adicional',
+        }),
+      ],
+    });
 
     expect(completions.completeProcedure).toHaveBeenCalledWith('procedure-1', {
       expectedVersion: 3,
