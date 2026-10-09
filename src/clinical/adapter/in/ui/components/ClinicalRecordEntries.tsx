@@ -6,6 +6,7 @@ import {
 } from '../../../../model/clinicalAccess';
 import type { ClinicalEntry } from '../../../../model/clinicalEntry';
 import { AmendEntryForm } from './AmendEntryForm';
+import { ClinicalIcon } from './ClinicalIcon';
 import {
   clinicalEntryLabel,
   toClinicalRecordViewModel,
@@ -68,6 +69,7 @@ export function ClinicalRecordEntries({
     <section className="cr-card" aria-labelledby="clinical-record-title">
       <div className="cr-card__header">
         <h2 className="cr-title" id="clinical-record-title">
+          <ClinicalIcon name="evolution" />
           Evolución
         </h2>
         {view.state === 'data' && (
