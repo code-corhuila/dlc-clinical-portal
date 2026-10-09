@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ClinicalRecordEntriesPort } from '../../../../application/clinicalRecordEntriesWorkflow';
 import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
 import type { ReadPatientForCare } from '../../../../application/readPatientForCare';
+import type { TreatmentPlan } from '../../../../application/treatmentPlan';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
 
@@ -10,6 +11,8 @@ export interface ClinicalDemoPageProps {
   readonly writer: RecordClinicalEntry;
   readonly authorName: (authorId: string) => string;
   readonly patientReader: ReadPatientForCare;
+  readonly treatmentPlan: TreatmentPlan;
+  readonly catalog: readonly { code: string; label: string }[];
 }
 
 /** Dev-only context controls; dependencies are injected by composition. */
@@ -18,6 +21,8 @@ export function ClinicalDemoPage({
   writer,
   authorName,
   patientReader,
+  treatmentPlan,
+  catalog,
 }: ClinicalDemoPageProps) {
   const [patientId, setPatientId] = useState('patient-a');
   const [role, setRole] = useState<ClinicalRole>('DENTIST');
@@ -74,6 +79,7 @@ export function ClinicalDemoPage({
         writer={writer}
         authorName={authorName}
         patientReader={patientReader}
+        treatments={{ plan: treatmentPlan, catalog }}
       />
     </section>
   );

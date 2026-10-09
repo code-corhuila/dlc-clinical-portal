@@ -97,6 +97,22 @@ describe('demoClinicalAdapter', () => {
     });
   });
 
+  it('lists treatments per patient without prices and denies patient C', async () => {
+    const adapter = createDemoClinicalAdapter();
+
+    const [treatment] = await adapter.listTreatments('patient-a');
+
+    expect(treatment.procedures[0]).toMatchObject({
+      procedureCode: 'D1110',
+      status: 'PLANNED',
+    });
+    expect(await adapter.listTreatments('patient-b')).toEqual([]);
+    await expect(adapter.listTreatments('patient-c')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+    expect(JSON.stringify(treatment)).not.toMatch(/price|amount|cost/i);
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 

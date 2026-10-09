@@ -121,6 +121,73 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.queryByLabelText('Nota rápida')).toBeNull();
   });
 
+  it('shows the treatment plan without prices', async () => {
+    renderDemo();
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Plan de Tratamiento y Procedimientos',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('cell', { name: 'Limpieza profunda' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('cell', { name: 'Planificado' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\$|Costo|Total/)).toBeNull();
+  });
+
+  it('keeps the plan readable but not editable without write authorization', async () => {
+    renderDemo();
+
+    expect(
+      await screen.findByRole('cell', { name: 'Limpieza profunda' }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Autorización clínica de escritura'));
+
+    expect(
+      await screen.findByRole('cell', { name: 'Limpieza profunda' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Planificar tratamiento' }),
+    ).toBeNull();
+  });
+
+  it('does not show the previous patient plan after switching patients', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    fireEvent.change(screen.getByLabelText('Paciente'), {
+      target: { value: 'patient-b' },
+    });
+
+    expect(
+      screen.queryByRole('cell', { name: 'Limpieza profunda' }),
+    ).toBeNull();
+    expect(
+      await screen.findByText('Sin tratamientos planificados.'),
+    ).toBeInTheDocument();
+  });
+
+  it('hides the treatment plan from a secretary assistant', async () => {
+    renderDemo();
+
+    await screen.findByRole('cell', { name: 'Limpieza profunda' });
+    fireEvent.change(screen.getByLabelText('Rol'), {
+      target: { value: 'SECRETARY_ASSISTANT' },
+    });
+
+    expect(
+      screen.queryByRole('cell', { name: 'Limpieza profunda' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Plan de Tratamiento y Procedimientos',
+      }),
+    ).toBeNull();
+  });
+
   it('keeps read access while write authorization is withdrawn', async () => {
     renderDemo();
 

@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { ClinicalDemoPage } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
-import { createDemoClinicalAdapter } from '../adapter/out/demo/demoClinicalAdapter';
+import {
+  createDemoClinicalAdapter,
+  demoProcedureCatalog,
+} from '../adapter/out/demo/demoClinicalAdapter';
+import { TreatmentPlan } from '../application/treatmentPlan';
 import { RecordClinicalEntry } from '../application/recordClinicalEntry';
 import { ReadPatientForCare } from '../application/readPatientForCare';
 
@@ -23,6 +27,7 @@ function ClinicalDemoComposition() {
   const [adapter] = useState(createDemoClinicalAdapter);
   const [writer] = useState(() => new RecordClinicalEntry(adapter));
   const [patientReader] = useState(() => new ReadPatientForCare(adapter));
+  const [treatmentPlan] = useState(() => new TreatmentPlan(adapter));
 
   return (
     <ClinicalDemoPage
@@ -30,6 +35,8 @@ function ClinicalDemoComposition() {
       writer={writer}
       authorName={adapter.authorName}
       patientReader={patientReader}
+      treatmentPlan={treatmentPlan}
+      catalog={demoProcedureCatalog}
     />
   );
 }
