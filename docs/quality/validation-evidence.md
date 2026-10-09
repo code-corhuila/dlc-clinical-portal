@@ -478,3 +478,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Change:** the closure notice, the closure follow-up panel and the extras pending pricing now render below the plan table and total, matching mockup page 29's reading order. No behavior change.
 - **TDD:** genuine RED: a DOM-order test (`compareDocumentPosition`) failed while those blocks rendered above the table; GREEN moved the block.
 - **Validation:** focused Clinical suite 20 files / 210 tests PASS; typecheck, lint, format, build and `git diff --check` PASS. Windows `npm test` keeps the known `scripts/pr-gates.test.mjs` SyntaxError.
+
+## DEV-CLIN-PORTAL-WINDOWS-GATE-EOL-023
+
+- **Branch / base:** `fix/windows-gate-line-endings` from `origin/develop` `6d3d3ec`.
+- **Root cause (reproduced):** with `core.autocrlf=true`, Windows checks out `scripts/pr-gates.mjs` with CRLF; its first line is a shebang, and `#!/usr/bin/env node\r` makes the Vitest transform fail with `SyntaxError: Invalid or unexpected token`. Probes on LF copies: converting only `pr-gates.mjs` to LF makes all 28 gate tests pass.
+- **Fix:** `.gitattributes` with `*.mjs text eol=lf`, so every checkout keeps LF for Node ESM scripts. The validator logic and its tests are unchanged (no content diff in `scripts/`; the repository already stored them as LF).
+- **TDD:** RED was the existing failing `npm test`/coverage on Windows (`scripts/pr-gates.test.mjs` SyntaxError). GREEN after the attribute and working-copy normalization.
+- **Validation (Windows):** `npm test` 21 files / 238 tests PASS (210 Clinical + 28 gate); `npm run test:coverage` PASS, ~95% statements on `src/clinical`; typecheck, lint, format and build PASS. The "known Windows failure" noted in earlier evidence records is resolved from this revision on.
