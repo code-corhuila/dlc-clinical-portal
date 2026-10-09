@@ -5,6 +5,7 @@ import type { ReadPatientForCare } from '../../../../application/readPatientForC
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
 import type { CompleteProcedure } from '../../../../application/completeProcedure';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
+import type { CareClosureTracking } from '../../../../application/careClosureTracking';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
@@ -17,6 +18,7 @@ export interface ClinicalDemoPageProps {
   readonly treatmentPlan: TreatmentPlan;
   readonly completer: CompleteProcedure;
   readonly declarer: DeclareCareCompletion;
+  readonly tracking: CareClosureTracking;
   readonly amender: AmendClinicalEntry;
   readonly catalog: readonly { code: string; label: string }[];
   readonly appointments: Readonly<Record<string, string>>;
@@ -31,6 +33,7 @@ export function ClinicalDemoPage({
   treatmentPlan,
   completer,
   declarer,
+  tracking,
   amender,
   catalog,
   appointments,
@@ -98,6 +101,7 @@ export function ClinicalDemoPage({
         treatments={{
           plan: treatmentPlan,
           completer,
+          tracking,
           catalog,
           appointmentId: appointments[patientId],
         }}

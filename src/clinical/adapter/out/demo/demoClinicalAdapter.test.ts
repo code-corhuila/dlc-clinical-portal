@@ -305,6 +305,63 @@ describe('demoClinicalAdapter', () => {
     expect(await adapter.readRecordVersion(record)).toBe(before + 1);
   });
 
+  async function completeFirstProcedure(withNeed: boolean) {
+    const adapter = createDemoClinicalAdapter();
+    const [planned] = await adapter.listTreatments('patient-a');
+    const started = await adapter.startTreatment(planned.id, planned.version);
+    const need = {
+      sourceRecordId: 'source-1',
+      type: 'COMPLEXITY_ADJUSTMENT' as const,
+      quantity: '1',
+      description: 'Anestesia',
+      clinicalReason: 'Sensibilidad',
+    };
+    const closure = await adapter.completeProcedure(started.procedures[0].id, {
+      expectedVersion: started.version,
+      materialsUsed: [],
+      additionalRequirements: withNeed ? [need] : [],
+    });
+    return { adapter, closure };
+  }
+
+  it('converges a closure without manual extras to completed', async () => {
+    const { adapter, closure } = await completeFirstProcedure(false);
+
+    expect(await adapter.readCareClosure(closure.id)).toMatchObject({
+      status: 'CLOSURE_COMPLETED',
+      appointmentOutcome: 'COMPLETED',
+      billingOutcome: 'COMPLETED',
+    });
+  });
+
+  it('fails a closure with unpriced needs until an authorized retry', async () => {
+    const { adapter, closure } = await completeFirstProcedure(true);
+
+    const failed = await adapter.readCareClosure(closure.id);
+    expect(failed).toMatchObject({
+      status: 'CLOSURE_FAILED',
+      billingOutcome: 'PENDING',
+      failureReason: 'Facturación requiere el precio manual de los extras.',
+    });
+    await expect(
+      adapter.retryCareClosure(closure.id, {
+        reason: 'Precio registrado',
+        expectedVersion: failed.version + 1,
+      }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const retried = await adapter.retryCareClosure(closure.id, {
+      reason: 'Precio registrado',
+      expectedVersion: failed.version,
+    });
+    expect(retried).toMatchObject({ status: 'CLOSURE_PENDING' });
+    expect(await adapter.readCareClosure(closure.id)).toMatchObject({
+      status: 'CLOSURE_COMPLETED',
+    });
+    await expect(adapter.readCareClosure('unknown')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 

@@ -20,6 +20,7 @@ import { QuickNoteForm } from '../components/QuickNoteForm';
 import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
 import type { CompleteProcedure } from '../../../../application/completeProcedure';
+import type { CareClosureTracking } from '../../../../application/careClosureTracking';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
 import { CareCompletionCard } from '../components/CareCompletionCard';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
@@ -40,6 +41,7 @@ export interface ClinicalPortalPageProps {
     readonly catalog: readonly { code: string; label: string }[];
     readonly appointmentId?: string;
     readonly completer?: CompleteProcedure;
+    readonly tracking?: CareClosureTracking;
   };
 }
 
@@ -239,13 +241,35 @@ export function ClinicalPortalPage({
                 resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                   'granted'
                   ? async (treatment, procedureId, extras) =>
-                      (
-                        await treatments.completer!.execute(
-                          { role, clinicalWriteAuthorized },
-                          { procedureId, treatmentVersion: treatment.version },
-                          extras,
-                        )
-                      ).extras
+                      await treatments.completer!.execute(
+                        { role, clinicalWriteAuthorized },
+                        { procedureId, treatmentVersion: treatment.version },
+                        extras,
+                      )
+                  : undefined
+              }
+              onRefreshClosure={
+                treatments.tracking &&
+                ((closure) =>
+                  treatments.tracking!.read(
+                    { role, clinicalReadAuthorized, clinicalWriteAuthorized },
+                    closure.id,
+                  ))
+              }
+              onRetryClosure={
+                treatments.tracking &&
+                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                  'granted'
+                  ? (closure, reason) =>
+                      treatments.tracking!.retry(
+                        {
+                          role,
+                          clinicalReadAuthorized,
+                          clinicalWriteAuthorized,
+                        },
+                        closure,
+                        reason,
+                      )
                   : undefined
               }
               onStart={
