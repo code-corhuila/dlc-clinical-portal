@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
         filename: 'remoteEntry.js',
         exposes: {
           './ClinicalPortal': './src/clinical/ClinicalPortal.tsx',
+          './ClinicalDashboard': './src/clinical/ClinicalDashboard.tsx',
         },
         shared: {
           react: { singleton: true },

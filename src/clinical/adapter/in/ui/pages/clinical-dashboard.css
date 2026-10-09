@@ -82,3 +82,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+.db-chart {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  height: 200px;
+  align-items: end;
+  border-radius: 8px;
+  background: #f7f9fa;
+  padding: 12px;
+}
+
+.db-bar {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  text-align: center;
+}
+
+.db-bar > span {
+  align-self: end;
+  border-radius: 4px 4px 0 0;
+  background: #20a99a;
+}
+
+.db-card .db-chart-text {
+  margin-top: 12px;
+  font-size: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+}

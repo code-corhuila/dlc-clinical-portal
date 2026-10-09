@@ -10,6 +10,8 @@ import type { BillingEstimate } from '../../../../application/billingEstimate';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
+import { ClinicalDashboardPage } from './ClinicalDashboardPage';
+import type { ReadDashboard } from '../../../../application/readDashboard';
 
 export interface ClinicalDemoPageProps {
   readonly readPort: ClinicalRecordEntriesPort;
@@ -21,10 +23,18 @@ export interface ClinicalDemoPageProps {
   readonly declarer: DeclareCareCompletion;
   readonly tracking: CareClosureTracking;
   readonly estimate: BillingEstimate;
+  readonly dashboard: ReadDashboard;
   readonly amender: AmendClinicalEntry;
   readonly catalog: readonly { code: string; label: string }[];
   readonly appointments: Readonly<Record<string, string>>;
 }
+
+/** Synthetic signed-in staff per demo role (the shell session supplies it in production). */
+const DEMO_STAFF: Record<ClinicalRole, { id: string; name: string }> = {
+  DENTIST: { id: 'demo-dentist', name: 'Dra. Valentina Ruiz' },
+  ADMINISTRATOR: { id: 'demo-admin', name: 'Laura Gómez' },
+  SECRETARY_ASSISTANT: { id: 'demo-assistant', name: 'Camila Rojas' },
+};
 
 /** Dev-only context controls; dependencies are injected by composition. */
 export function ClinicalDemoPage({
@@ -37,6 +47,7 @@ export function ClinicalDemoPage({
   declarer,
   tracking,
   estimate,
+  dashboard,
   amender,
   catalog,
   appointments,
@@ -45,10 +56,23 @@ export function ClinicalDemoPage({
   const [role, setRole] = useState<ClinicalRole>('DENTIST');
   const [readAuthorized, setReadAuthorized] = useState(true);
   const [writeAuthorized, setWriteAuthorized] = useState(true);
+  const [view, setView] = useState<'record' | 'dashboard'>('record');
 
   return (
     <section className="cl-demo" aria-label="Controles de demostración clínica">
       <p>Modo demostración — datos sintéticos</p>
+      <label>
+        Vista
+        <select
+          value={view}
+          onChange={(event) =>
+            setView(event.target.value as 'record' | 'dashboard')
+          }
+        >
+          <option value="record">Historia clínica</option>
+          <option value="dashboard">Dashboard</option>
+        </select>
+      </label>
       <label>
         Paciente
         <select
@@ -90,26 +114,35 @@ export function ClinicalDemoPage({
         />
         Autorización clínica de escritura
       </label>
-      <ClinicalPortalPage
-        patientId={patientId}
-        role={role}
-        clinicalReadAuthorized={readAuthorized}
-        clinicalWriteAuthorized={writeAuthorized}
-        readPort={readPort}
-        writer={writer}
-        authorName={authorName}
-        patientReader={patientReader}
-        amender={amender}
-        declarer={declarer}
-        treatments={{
-          plan: treatmentPlan,
-          completer,
-          tracking,
-          estimate,
-          catalog,
-          appointmentId: appointments[patientId],
-        }}
-      />
+      {view === 'dashboard' ? (
+        <ClinicalDashboardPage
+          reader={dashboard}
+          role={role}
+          staffId={DEMO_STAFF[role].id}
+          staffName={DEMO_STAFF[role].name}
+        />
+      ) : (
+        <ClinicalPortalPage
+          patientId={patientId}
+          role={role}
+          clinicalReadAuthorized={readAuthorized}
+          clinicalWriteAuthorized={writeAuthorized}
+          readPort={readPort}
+          writer={writer}
+          authorName={authorName}
+          patientReader={patientReader}
+          amender={amender}
+          declarer={declarer}
+          treatments={{
+            plan: treatmentPlan,
+            completer,
+            tracking,
+            estimate,
+            catalog,
+            appointmentId: appointments[patientId],
+          }}
+        />
+      )}
     </section>
   );
 }
