@@ -11,10 +11,12 @@ import {
   type ClinicalRole,
 } from '../../../../model/clinicalAccess';
 import type { ClinicalRecordStatus } from '../../../../model/clinicalRecordView';
+import type { ClinicalEntryRequest } from '../../../../model/clinicalEntryRequest';
 import type { PatientForCare } from '../../../../model/patientForCare';
 import { ClinicalRecordEntries } from '../components/ClinicalRecordEntries';
 import { ClinicalEntryComposer } from '../components/ClinicalEntryComposer';
 import { PatientHeader } from '../components/PatientHeader';
+import { QuickNoteForm } from '../components/QuickNoteForm';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
@@ -114,6 +116,16 @@ export function ClinicalPortalPage({
     patientView?.context === context
       ? patientView.patient
       : undefined;
+  const submitEntry =
+    writer && patientId
+      ? async (entry: ClinicalEntryRequest) => {
+          await writer.execute(
+            { patientId, role, clinicalWriteAuthorized },
+            entry,
+          );
+          setRetry((value) => value + 1);
+        }
+      : undefined;
   const canWrite =
     writer !== undefined &&
     status.kind === 'ready' &&
@@ -149,7 +161,11 @@ export function ClinicalPortalPage({
                 ? () => setRetry((value) => value + 1)
                 : undefined
             }
-          />
+          >
+            {canWrite && submitEntry && (
+              <QuickNoteForm onSubmit={submitEntry} />
+            )}
+          </ClinicalRecordEntries>
           <ClinicalEntryComposer
             role={role}
             clinicalWriteAuthorized={clinicalWriteAuthorized}
@@ -161,17 +177,7 @@ export function ClinicalPortalPage({
                     .map((entry) => ({ id: entry.id, label: entry.text }))
                 : []
             }
-            onSubmit={
-              writer && patientId
-                ? async (entry) => {
-                    await writer.execute(
-                      { patientId, role, clinicalWriteAuthorized },
-                      entry,
-                    );
-                    setRetry((value) => value + 1);
-                  }
-                : undefined
-            }
+            onSubmit={submitEntry}
           />
         </div>
       ) : (
