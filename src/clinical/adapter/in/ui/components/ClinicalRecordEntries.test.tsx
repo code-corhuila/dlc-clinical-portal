@@ -107,7 +107,9 @@ describe('ClinicalRecordEntries', () => {
         ]),
       });
 
-      expect(screen.getByText('Diagnóstico')).toBeInTheDocument();
+      expect(
+        screen.getByText('Diagnóstico', { selector: '.cr-entry__kind' }),
+      ).toBeInTheDocument();
       expect(screen.getByText(/Vinculado a la consulta del/)).toHaveTextContent(
         '2026',
       );
@@ -116,7 +118,9 @@ describe('ClinicalRecordEntries', () => {
     it('renders a CONSULTATION entry with text, author and formatted createdAt', () => {
       renderEntries({ status: readyStatus([consultationEntry]) });
 
-      expect(screen.getByText('Consulta')).toBeInTheDocument();
+      expect(
+        screen.getByText('Consulta', { selector: '.cr-entry__kind' }),
+      ).toBeInTheDocument();
       expect(screen.getByText(consultationEntry.text)).toBeInTheDocument();
       expect(screen.getByText('Autor')).toBeInTheDocument();
       expect(screen.getByText(consultationEntry.authorId)).toBeInTheDocument();
@@ -171,7 +175,9 @@ describe('ClinicalRecordEntries', () => {
       });
 
       expect(screen.getByText('ALLERGY')).toBeInTheDocument();
-      expect(screen.queryByText('Consulta')).toBeNull();
+      expect(
+        screen.queryByText('Consulta', { selector: '.cr-entry__kind' }),
+      ).toBeNull();
     });
   });
 
