@@ -623,6 +623,56 @@ describe('ClinicalPortalComposition', () => {
     ).toBeNull();
   });
 
+  function openDashboard(role?: string) {
+    renderDemo();
+    if (role)
+      fireEvent.change(screen.getByLabelText('Rol'), {
+        target: { value: role },
+      });
+    fireEvent.change(screen.getByLabelText('Vista'), {
+      target: { value: 'dashboard' },
+    });
+  }
+
+  it('shows the administrator dashboard with revenue in COP', async () => {
+    openDashboard('ADMINISTRATOR');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Panel' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Bienvenida de nuevo/)).toBeInTheDocument();
+    const today = screen.getByRole('region', { name: 'Citas de hoy' });
+    expect(today).toHaveTextContent('12');
+    expect(
+      screen.getByRole('region', { name: 'Ingresos del mes' }),
+    ).toHaveTextContent(/14\.500\.000,00/);
+    expect(
+      screen.getByRole('region', { name: 'Próximas citas' }),
+    ).toHaveTextContent('María Jiménez');
+    expect(screen.queryByText(consultationEntry.text)).toBeNull();
+  });
+
+  it('hides revenue and narrows the dentist dashboard to own scope', async () => {
+    openDashboard('DENTIST');
+
+    const today = await screen.findByRole('region', { name: 'Citas de hoy' });
+    expect(today).toHaveTextContent('5');
+    expect(
+      screen.queryByRole('region', { name: 'Ingresos del mes' }),
+    ).toBeNull();
+  });
+
+  it('hides revenue from the secretary assistant dashboard', async () => {
+    openDashboard('SECRETARY_ASSISTANT');
+
+    expect(
+      await screen.findByRole('region', { name: 'Pacientes pendientes' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('region', { name: 'Ingresos del mes' }),
+    ).toBeNull();
+  });
+
   it('keeps read access while write authorization is withdrawn', async () => {
     renderDemo();
 
