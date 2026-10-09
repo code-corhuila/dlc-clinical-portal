@@ -37,7 +37,7 @@ export class CompleteProcedure {
     access: CompletionAccess,
     target: { readonly procedureId: string; readonly treatmentVersion: number },
     extras: readonly ExtraItemDraft[],
-  ): Promise<CareClosure> {
+  ): Promise<{ closure: CareClosure; extras: readonly ExtraItem[] }> {
     const granted = resolveClinicalWriteAccess(
       access.role,
       access.clinicalWriteAuthorized,
@@ -56,10 +56,12 @@ export class CompleteProcedure {
     }));
     const pick = (category: ExtraItemDraft['category']) =>
       items.filter((entry) => entry.category === category).map((e) => e.item);
-    return this.port.completeProcedure(target.procedureId, {
+    const closure = await this.port.completeProcedure(target.procedureId, {
       expectedVersion: target.treatmentVersion,
       materialsUsed: pick('MATERIAL'),
       additionalRequirements: pick('REQUIREMENT'),
     });
+    // Extras still need a manual price entered through Billing (BIL-008).
+    return { closure, extras: items.map((entry) => entry.item) };
   }
 }

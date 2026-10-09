@@ -5,7 +5,11 @@ import {
   type TreatmentDraft,
 } from '../../../../model/treatment';
 import { portFailureMessage } from '../../../../model/portFailure';
-import type { ExtraItemDraft } from '../../../../model/procedureCompletion';
+import {
+  EXTRA_ITEM_TYPE_LABELS,
+  type ExtraItem,
+  type ExtraItemDraft,
+} from '../../../../model/procedureCompletion';
 import { CompleteProcedureForm } from './CompleteProcedureForm';
 import './treatment-plan.css';
 
@@ -22,7 +26,7 @@ export interface TreatmentPlanCardProps {
     treatment: Treatment,
     procedureId: string,
     extras: readonly ExtraItemDraft[],
-  ) => Promise<void>;
+  ) => Promise<readonly ExtraItem[]>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
@@ -52,6 +56,9 @@ export function TreatmentPlanCard({
     procedureId: string;
   }>();
   const [notice, setNotice] = useState<string>();
+  const [unpriced, setUnpriced] = useState<
+    readonly (ExtraItem & { procedure: string; appointmentId: string })[]
+  >([]);
   const label = (code: string) =>
     catalog.find((item) => item.code === code)?.label ?? code;
 
@@ -112,6 +119,27 @@ export function TreatmentPlanCard({
       <h2 id="treatment-plan-title">Plan de Tratamiento y Procedimientos</h2>
       {startError && <p role="alert">{startError}</p>}
       {notice && <p role="status">{notice}</p>}
+      {unpriced.length > 0 && (
+        <section
+          className="tp-unpriced"
+          aria-label="Extras pendientes de precio en Facturación"
+        >
+          <h3>Extras pendientes de precio en Facturación</h3>
+          <p>
+            El precio de cada extra se registra en Facturación; Clinical no
+            guarda montos.
+          </p>
+          <ul>
+            {unpriced.map((item) => (
+              <li key={item.sourceRecordId}>
+                {item.description} · {EXTRA_ITEM_TYPE_LABELS[item.type]} ·
+                Cantidad: {item.quantity} · {item.procedure} · Cita:{' '}
+                {item.appointmentId} · Ref.: {item.sourceRecordId}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {failed ? (
         <p role="alert">No fue posible cargar el plan de tratamiento.</p>
       ) : !treatments ? (
@@ -192,11 +220,22 @@ export function TreatmentPlanCard({
           key={completing.procedureId}
           onCancel={() => setCompleting(undefined)}
           onComplete={async (extras) => {
-            await onComplete(
+            const recorded = await onComplete(
               completing.treatment,
               completing.procedureId,
               extras,
             );
+            const procedure = completing.treatment.procedures.find(
+              (item) => item.id === completing.procedureId,
+            )!;
+            setUnpriced([
+              ...unpriced,
+              ...recorded.map((item) => ({
+                ...item,
+                procedure: label(procedure.procedureCode),
+                appointmentId: procedure.appointmentId,
+              })),
+            ]);
             setCompleting(undefined);
             setNotice(
               'Cierre pendiente: Citas y Facturación confirmarán el procedimiento. Los extras se valorizan en Facturación.',
