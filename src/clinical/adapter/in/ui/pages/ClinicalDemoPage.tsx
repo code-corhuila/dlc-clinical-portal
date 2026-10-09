@@ -14,6 +14,8 @@ import { ClinicalDashboardPage } from './ClinicalDashboardPage';
 import type { ReadDashboard } from '../../../../application/readDashboard';
 
 export interface ClinicalDemoPageProps {
+  readonly initialPatientId?: string;
+  readonly initialRole?: ClinicalRole;
   readonly readPort: ClinicalRecordEntriesPort;
   readonly writer: RecordClinicalEntry;
   readonly authorName: (authorId: string) => string;
@@ -51,9 +53,11 @@ export function ClinicalDemoPage({
   amender,
   catalog,
   appointments,
+  initialPatientId,
+  initialRole,
 }: ClinicalDemoPageProps) {
-  const [patientId, setPatientId] = useState('patient-a');
-  const [role, setRole] = useState<ClinicalRole>('DENTIST');
+  const [patientId, setPatientId] = useState(initialPatientId ?? 'patient-a');
+  const [role, setRole] = useState<ClinicalRole>(initialRole ?? 'DENTIST');
   const [readAuthorized, setReadAuthorized] = useState(true);
   const [writeAuthorized, setWriteAuthorized] = useState(true);
   const [view, setView] = useState<'record' | 'dashboard'>('record');

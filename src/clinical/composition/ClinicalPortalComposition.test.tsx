@@ -62,6 +62,26 @@ describe('ClinicalPortalComposition', () => {
     ).toBeInTheDocument();
   });
 
+  it('starts from the patient and role supplied by the dlc-front shell', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+    const { rerender } = render(
+      <ClinicalPortalComposition patientId="patient-b" role="ADMINISTRATOR" />,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Mateo Herrera Gómez' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Rol')).toHaveValue('ADMINISTRATOR');
+
+    rerender(
+      <ClinicalPortalComposition patientId="patient-a" role="DENTIST" />,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Ana García Rodríguez' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Rol')).toHaveValue('DENTIST');
+  });
+
   it('shows the synthetic clinical record demo only with the dev flag', async () => {
     renderDemo();
 
