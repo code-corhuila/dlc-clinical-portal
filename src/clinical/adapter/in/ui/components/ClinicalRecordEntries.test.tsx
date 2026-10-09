@@ -138,7 +138,9 @@ describe('ClinicalRecordEntries', () => {
     it('renders an EVOLUTION entry with its text and author', () => {
       renderEntries({ status: readyStatus([evolutionEntry]) });
 
-      expect(screen.getByText('Evolución')).toBeInTheDocument();
+      expect(
+        screen.getByText('Evolución', { selector: '.cr-entry__kind' }),
+      ).toBeInTheDocument();
       expect(screen.getByText(evolutionEntry.text)).toBeInTheDocument();
       expect(screen.getByText(evolutionEntry.authorId)).toBeInTheDocument();
     });
