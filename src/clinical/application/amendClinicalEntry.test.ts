@@ -12,6 +12,7 @@ function port(): ClinicalEntryAmendPort {
 const access = (role: ClinicalRole | null, authorized: boolean) => ({
   role,
   clinicalWriteAuthorized: authorized,
+  idempotencyKey: 'intent-1',
 });
 
 const entry = { id: 'entry-1', version: 2 };
@@ -27,10 +28,11 @@ describe('AmendClinicalEntry', () => {
       correction,
     );
 
-    expect(amendments.amendEntry).toHaveBeenCalledWith('entry-1', {
-      ...correction,
-      expectedVersion: 2,
-    });
+    expect(amendments.amendEntry).toHaveBeenCalledWith(
+      'entry-1',
+      { ...correction, expectedVersion: 2 },
+      'intent-1',
+    );
   });
 
   it.each<[string, ClinicalRole | null, boolean]>([
@@ -46,6 +48,19 @@ describe('AmendClinicalEntry', () => {
         correction,
       ),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    expect(amendments.amendEntry).not.toHaveBeenCalled();
+  });
+
+  it('requires an idempotency key per amendment intent', async () => {
+    const amendments = port();
+
+    await expect(
+      new AmendClinicalEntry(amendments).execute(
+        { ...access('DENTIST', true), idempotencyKey: '' },
+        entry,
+        correction,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID' });
     expect(amendments.amendEntry).not.toHaveBeenCalled();
   });
 
