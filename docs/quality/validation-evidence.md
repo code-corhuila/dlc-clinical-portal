@@ -579,3 +579,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Request (2026-10-09, project owner):** container names must say which one is the demo and which one is mounted by `dlc-front`. Branch `chore/clinical-container-names-33` from `origin/develop` `5bb8b8e`.
 - **Change:** compose services and containers renamed to `clinical-portal-dlc-front` (real remote, port 4173) and `clinical-portal-demo` (synthetic, port 4175); README table updated.
 - **Verification (Docker 29.7.2):** `docker compose -f deploy/compose.yml up --build -d` started both containers with those names; `remoteEntry.js` answered 200 on 4173 and 4175. Configuration only, no unit RED.
+
+## DEV-CLIN-PORTAL-MOUNT-ADAPTER-034
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); dlc-docs `638e4f2`, ADR-011 and composition contract v1 (`05-architecture/frontend-composition.md`, C01-C04). Branch `feat/clinical-portal-mount-34` from `origin/develop` `b637357`.
+- **Change:** `src/clinical/entry.tsx` exports `portalId: 'clinical'`, `contractVersion: 1` and `mount(host, context)`. The handle offers `updateRoute`, `canLeave` and an idempotent `unmount` that also runs when `context.signal` aborts and removes the session subscription. `ClinicalRouteView` interprets the local path: `/analytics` mounts Clinical Analytics, `/{patientId}` the clinical record, `/` asks for a patient and any other path shows the portal 404. The viewer (role, id, name) comes from the Auth session snapshot; UI claims are not authorization.
+- **Pending (next increments):** build the independent `entry.js` ES module under `/portals/clinical/{release}/` with no bare imports and no import side effects, wire `context.http` into real adapters, report render failures through `reportFailure`, and retire the Module Federation entries once dlc-front consumes v1.
+- **TDD:** genuine RED: the `entry` module did not exist (6 tests).
+- **Validation (Windows):** `npm test` 268 tests PASS; coverage 95.55 % statements; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. No browser verification claimed (no compositor exists yet).
