@@ -221,13 +221,14 @@ export function ClinicalPortalPage({
                 treatments.completer &&
                 resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                   'granted'
-                  ? async (treatment, procedureId, extras) => {
-                      await treatments.completer?.execute(
-                        { role, clinicalWriteAuthorized },
-                        { procedureId, treatmentVersion: treatment.version },
-                        extras,
-                      );
-                    }
+                  ? async (treatment, procedureId, extras) =>
+                      (
+                        await treatments.completer!.execute(
+                          { role, clinicalWriteAuthorized },
+                          { procedureId, treatmentVersion: treatment.version },
+                          extras,
+                        )
+                      ).extras
                   : undefined
               }
               onStart={
