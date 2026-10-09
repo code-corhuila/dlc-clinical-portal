@@ -9,6 +9,7 @@ import {
 import { TreatmentPlan } from '../application/treatmentPlan';
 import { CompleteProcedure } from '../application/completeProcedure';
 import { DeclareCareCompletion } from '../application/declareCareCompletion';
+import { CareClosureTracking } from '../application/careClosureTracking';
 import { AmendClinicalEntry } from '../application/amendClinicalEntry';
 import { RecordClinicalEntry } from '../application/recordClinicalEntry';
 import { ReadPatientForCare } from '../application/readPatientForCare';
@@ -37,6 +38,7 @@ function ClinicalDemoComposition() {
   );
   const [amender] = useState(() => new AmendClinicalEntry(adapter));
   const [declarer] = useState(() => new DeclareCareCompletion(adapter));
+  const [tracking] = useState(() => new CareClosureTracking(adapter));
 
   return (
     <ClinicalDemoPage
@@ -47,6 +49,7 @@ function ClinicalDemoComposition() {
       treatmentPlan={treatmentPlan}
       completer={completer}
       declarer={declarer}
+      tracking={tracking}
       amender={amender}
       catalog={demoProcedureCatalog}
       appointments={demoAppointments}

@@ -146,3 +146,38 @@
   padding-left: 18px;
   overflow-wrap: anywhere;
 }
+
+.tp-closures {
+  margin-top: 16px;
+  border-top: 1px solid #eef2f4;
+  padding-top: 12px;
+}
+
+.tp-closures h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.tp-closures ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tp-closures li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.tp-closures input {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-left: 6px;
+}
+
+.tp-closures [role='alert'] {
+  color: #b42318;
+}

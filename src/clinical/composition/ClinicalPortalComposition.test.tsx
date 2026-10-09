@@ -290,12 +290,79 @@ describe('ClinicalPortalComposition', () => {
       }),
     );
 
-    expect(await screen.findByText(/Cierre pendiente/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Cierre pendiente: Citas y Facturación/),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('region', {
         name: 'Extras pendientes de precio en Facturación',
       }),
     ).toBeNull();
+  });
+
+  async function completeProcedure(withNeed: boolean) {
+    renderDemo();
+    await screen.findByRole('cell', { name: /Limpieza profunda/ });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Iniciar tratamiento' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Completar procedimiento' }),
+    );
+    if (withNeed) {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Agregar material o necesidad' }),
+      );
+      fireEvent.change(screen.getByLabelText('Categoría'), {
+        target: { value: 'REQUIREMENT' },
+      });
+      fireEvent.change(screen.getByLabelText('Cantidad'), {
+        target: { value: '1' },
+      });
+      fireEvent.change(screen.getByLabelText('Descripción'), {
+        target: { value: 'Anestesia adicional' },
+      });
+      fireEvent.change(screen.getByLabelText('Justificación clínica'), {
+        target: { value: 'Sensibilidad persistente' },
+      });
+    }
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Registrar procedimiento completado',
+      }),
+    );
+    return screen.findByRole('region', { name: 'Seguimiento del cierre' });
+  }
+
+  it('follows a care closure until both outcomes complete', async () => {
+    const panel = await completeProcedure(false);
+
+    expect(panel).toHaveTextContent('Cierre pendiente');
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
+
+    expect(await screen.findByText(/Cierre completado/)).toBeInTheDocument();
+    expect(panel).toHaveTextContent(
+      'Citas: completado · Facturación: completado',
+    );
+  });
+
+  it('shows a failed closure and retries it with a reason', async () => {
+    await completeProcedure(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
+
+    expect(await screen.findByText(/Cierre fallido/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Facturación requiere el precio manual de los extras/),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Motivo del reintento'), {
+      target: { value: 'Precio registrado en Facturación' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar cierre' }));
+    expect(
+      await screen.findByText(/Limpieza profunda: Cierre pendiente/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
+    expect(await screen.findByText(/Cierre completado/)).toBeInTheDocument();
   });
 
   it('rejects an extra without clinical justification', async () => {
