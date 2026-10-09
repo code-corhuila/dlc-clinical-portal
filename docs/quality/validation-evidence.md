@@ -492,3 +492,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Fix:** `.gitattributes` with `*.mjs text eol=lf`, so every checkout keeps LF for Node ESM scripts. The validator logic and its tests are unchanged (no content diff in `scripts/`; the repository already stored them as LF).
 - **TDD:** RED was the existing failing `npm test`/coverage on Windows (`scripts/pr-gates.test.mjs` SyntaxError). GREEN after the attribute and working-copy normalization.
 - **Validation (Windows):** `npm test` 21 files / 238 tests PASS (210 Clinical + 28 gate); `npm run test:coverage` PASS, ~95% statements on `src/clinical`; typecheck, lint, format and build PASS. The "known Windows failure" noted in earlier evidence records is resolved from this revision on.
+
+## DEV-CLIN-PORTAL-IDEMPOTENCY-ENTRIES-024
+
+- **Story:** HU-CLN-001 (code-corhuila/dlc-clinical-portal#3); integration readiness (technical debt 1). Branch `feat/clinical-idempotency-pagination` from `origin/develop` `8dac081`.
+- **Basis:** every Clinical write in `clinical-service.yaml` declares the `IdempotencyKey` parameter; Annex H requires "`Idempotency-Key` por intención, reutilizada al reintentar".
+- **Change (part A1: entries):** `RecordClinicalEntry` and `AmendClinicalEntry` require an idempotency key in their context and pass it to `ClinicalEntryWritePort.appendEntry` / `ClinicalEntryAmendPort.amendEntry`, where a real adapter maps it to the header. `useIntentKey` keeps one key per user intent in the composer, quick note and amendment form, reuses it when the same submission is retried after a failure and renews it only after success. The demo adapter applies a repeated key once. Remaining writes (treatments, completion, declaration, closure retry) follow in A2; pagination in B.
+- **TDD chronology:** genuine RED: 13 tests failed first (use-case key propagation and missing-key rejection, adapter replay, composer retry-reuse/renew, page propagation). Existing expectations gained the key argument; adapter tests now pass a key on every call because the port requires it.
+- **Validation (Windows):** `npm test` 21 files / 242 tests PASS; typecheck, lint, format, build and `git diff --check` PASS; production bundle contains no synthetic strings. Browser: a quick note is stored once.

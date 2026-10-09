@@ -44,6 +44,7 @@ export interface ClinicalRecordEntriesProps {
 type AmendHandler = (
   entry: ClinicalEntry,
   correction: { text: string; reason: string },
+  idempotencyKey: string,
 ) => Promise<void>;
 
 /** Read-only clinical record slice; denied access wins before any narrative. */
@@ -224,8 +225,8 @@ function Entry({
             entryId={entry.id}
             initialText={entry.text}
             onCancel={() => setAmending(false)}
-            onSave={async (correction) => {
-              await onAmend(entry, correction);
+            onSave={async (correction, idempotencyKey) => {
+              await onAmend(entry, correction, idempotencyKey);
               setAmending(false);
             }}
           />

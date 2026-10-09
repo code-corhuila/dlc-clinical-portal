@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { useIntentKey } from './useIntentKey';
 import { portFailureMessage } from '../../../../model/portFailure';
 
 export interface AmendEntryFormProps {
   readonly entryId: string;
   readonly initialText: string;
-  readonly onSave: (correction: {
-    text: string;
-    reason: string;
-  }) => Promise<void>;
+  readonly onSave: (
+    correction: { text: string; reason: string },
+    idempotencyKey: string,
+  ) => Promise<void>;
   readonly onCancel: () => void;
 }
 
@@ -22,6 +23,7 @@ export function AmendEntryForm({
   const [reason, setReason] = useState('');
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [intentKey] = useIntentKey();
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,7 +31,7 @@ export function AmendEntryForm({
     setPending(true);
     setMessage(undefined);
     try {
-      await onSave({ text, reason });
+      await onSave({ text, reason }, intentKey);
     } catch (error) {
       setMessage(
         portFailureMessage(error, 'No fue posible guardar la corrección.'),

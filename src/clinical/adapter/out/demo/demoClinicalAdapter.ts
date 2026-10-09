@@ -87,6 +87,8 @@ const authors: Record<string, string> = {
 
 export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   const closedRecords = new Set(['record-d']);
+  /** Idempotency-Key replay: a repeated intent has no second effect. */
+  const applied = new Set<string>();
   const versions: Record<string, number> = {};
   const version = (recordId: string) => versions[recordId] ?? 1;
   const entries: Record<string, ClinicalEntry[]> = {
@@ -320,7 +322,8 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
       };
     },
-    async amendEntry(entryId, request) {
+    async amendEntry(entryId, request, idempotencyKey?: string) {
+      if (idempotencyKey && applied.has(idempotencyKey)) return;
       const recordId = Object.keys(entries).find((id) =>
         entries[id].some((entry) => entry.id === entryId),
       );
@@ -351,8 +354,10 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         },
       ];
       versions[recordId] = version(recordId) + 1;
+      if (idempotencyKey) applied.add(idempotencyKey);
     },
-    async appendEntry(recordId, request) {
+    async appendEntry(recordId, request, idempotencyKey?: string) {
+      if (idempotencyKey && applied.has(idempotencyKey)) return;
       if (!entries[recordId]) throw { code: 'FORBIDDEN' };
       if (closedRecords.has(recordId))
         throw { code: 'CONFLICT', message: closedMessage };
@@ -377,6 +382,7 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
       };
       entries[recordId] = [...entries[recordId], entry];
       versions[recordId] = version(recordId) + 1;
+      if (idempotencyKey) applied.add(idempotencyKey);
     },
     async readRecordVersion(recordId) {
       if (!entries[recordId]) throw { code: 'NOT_FOUND' };

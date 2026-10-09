@@ -13,7 +13,12 @@ function writePort(): ClinicalEntryWritePort {
 }
 
 function context(role: ClinicalRole | null, clinicalWriteAuthorized: boolean) {
-  return { patientId: 'patient-1', role, clinicalWriteAuthorized };
+  return {
+    patientId: 'patient-1',
+    role,
+    clinicalWriteAuthorized,
+    idempotencyKey: 'intent-1',
+  };
 }
 
 const consultation = { kind: 'CONSULTATION', text: 'Consulta' } as const;
@@ -28,7 +33,11 @@ describe('RecordClinicalEntry', () => {
     );
 
     expect(port.findRecordId).toHaveBeenCalledWith('patient-1');
-    expect(port.appendEntry).toHaveBeenCalledWith('record-1', consultation);
+    expect(port.appendEntry).toHaveBeenCalledWith(
+      'record-1',
+      consultation,
+      'intent-1',
+    );
   });
 
   it('appends an evolution for an explicitly write-authorized administrator', async () => {
@@ -40,7 +49,11 @@ describe('RecordClinicalEntry', () => {
       evolution,
     );
 
-    expect(port.appendEntry).toHaveBeenCalledWith('record-1', evolution);
+    expect(port.appendEntry).toHaveBeenCalledWith(
+      'record-1',
+      evolution,
+      'intent-1',
+    );
   });
 
   it.each([
@@ -58,6 +71,18 @@ describe('RecordClinicalEntry', () => {
       new RecordClinicalEntry(port).execute(writeContext, consultation),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(port.findRecordId).not.toHaveBeenCalled();
+    expect(port.appendEntry).not.toHaveBeenCalled();
+  });
+
+  it('requires an idempotency key per write intent', async () => {
+    const port = writePort();
+
+    await expect(
+      new RecordClinicalEntry(port).execute(
+        { ...context('DENTIST', true), idempotencyKey: '' },
+        consultation,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID' });
     expect(port.appendEntry).not.toHaveBeenCalled();
   });
 
@@ -99,7 +124,11 @@ describe('RecordClinicalEntry', () => {
       diagnosis,
     );
 
-    expect(port.appendEntry).toHaveBeenCalledWith('record-1', diagnosis);
+    expect(port.appendEntry).toHaveBeenCalledWith(
+      'record-1',
+      diagnosis,
+      'intent-1',
+    );
   });
 
   it('rejects a diagnosis without an explicit consultation', async () => {
