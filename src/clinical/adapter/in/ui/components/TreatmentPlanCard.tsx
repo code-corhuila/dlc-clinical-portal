@@ -12,6 +12,8 @@ import {
 } from '../../../../model/procedureCompletion';
 import { CompleteProcedureForm } from './CompleteProcedureForm';
 import { CareClosureTracker } from './CareClosureTracker';
+import type { PriceEstimate } from '../../../../application/billingEstimate';
+import { formatCop, sumCop } from '../../../../model/copMoney';
 import type { CareClosure } from '../../../../model/procedureCompletion';
 import './treatment-plan.css';
 
@@ -35,6 +37,7 @@ export interface TreatmentPlanCardProps {
     reason: string,
   ) => Promise<CareClosure>;
   readonly catalog: readonly { code: string; label: string }[];
+  readonly loadPrices?: () => Promise<PriceEstimate>;
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
 }
@@ -48,11 +51,13 @@ export function TreatmentPlanCard({
   onRefreshClosure,
   onRetryClosure,
   catalog,
+  loadPrices,
   diagnoses,
   appointmentId = '',
 }: TreatmentPlanCardProps) {
   const [treatments, setTreatments] = useState<readonly Treatment[]>();
   const [failed, setFailed] = useState(false);
+  const [prices, setPrices] = useState<PriceEstimate>();
   const [version, setVersion] = useState(0);
   const [diagnosisId, setDiagnosisId] = useState('');
   const [reason, setReason] = useState('');
@@ -83,6 +88,23 @@ export function TreatmentPlanCard({
       active = false;
     };
   }, [load, version]);
+
+  useEffect(() => {
+    let active = true;
+    loadPrices?.().then(
+      (data) => active && setPrices(data),
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [loadPrices]);
+
+  const priced = (treatments ?? [])
+    .filter((treatment) => treatment.status !== 'CANCELLED')
+    .flatMap((treatment) => treatment.procedures)
+    .map((procedure) => prices?.[procedure.procedureCode]?.basePrice)
+    .filter((price): price is string => price !== undefined);
 
   async function start(treatment: Treatment) {
     if (!onStart || pending) return;
@@ -183,6 +205,7 @@ export function TreatmentPlanCard({
           <thead>
             <tr>
               <th scope="col">Procedimiento</th>
+              {prices && <th scope="col">Costo (COP)</th>}
               <th scope="col">Estado</th>
               <th scope="col">Motivo</th>
               {onStart && <th scope="col">Acción</th>}
@@ -213,6 +236,13 @@ export function TreatmentPlanCard({
                         </button>
                       )}
                   </td>
+                  {prices && (
+                    <td>
+                      {prices[procedure.procedureCode]
+                        ? formatCop(prices[procedure.procedureCode].basePrice)
+                        : 'Sin precio'}
+                    </td>
+                  )}
                   {index === 0 && (
                     <>
                       <td rowSpan={treatment.procedures.length}>
@@ -246,6 +276,12 @@ export function TreatmentPlanCard({
             )}
           </tbody>
         </table>
+      )}
+      {prices && treatments && treatments.length > 0 && (
+        <p className="tp-total">
+          Total estimado: <strong>{formatCop(sumCop(priced))}</strong> · Valores
+          de solo lectura de Facturación.
+        </p>
       )}
       {onComplete && completing && (
         <CompleteProcedureForm

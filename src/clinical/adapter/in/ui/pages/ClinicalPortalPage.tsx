@@ -22,6 +22,7 @@ import { TreatmentPlanCard } from '../components/TreatmentPlanCard';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
 import type { CompleteProcedure } from '../../../../application/completeProcedure';
 import type { CareClosureTracking } from '../../../../application/careClosureTracking';
+import type { BillingEstimate } from '../../../../application/billingEstimate';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
 import { CareCompletionCard } from '../components/CareCompletionCard';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
@@ -43,6 +44,7 @@ export interface ClinicalPortalPageProps {
     readonly appointmentId?: string;
     readonly completer?: CompleteProcedure;
     readonly tracking?: CareClosureTracking;
+    readonly estimate?: BillingEstimate;
   };
 }
 
@@ -172,6 +174,14 @@ export function ClinicalPortalPage({
             }`,
           }))
       : [];
+  const estimate = treatments?.estimate;
+  const loadPrices = useMemo(
+    () =>
+      estimate
+        ? () => estimate.read({ role, clinicalReadAuthorized })
+        : undefined,
+    [clinicalReadAuthorized, estimate, role],
+  );
   const canWrite =
     writer !== undefined &&
     status.kind === 'ready' &&
@@ -203,6 +213,7 @@ export function ClinicalPortalPage({
                 key={`${patientId}:${role}:${clinicalReadAuthorized}:${clinicalWriteAuthorized}`}
                 load={loadTreatments}
                 catalog={treatments.catalog}
+                loadPrices={loadPrices}
                 appointmentId={treatments.appointmentId}
                 diagnoses={
                   status.kind === 'ready'
