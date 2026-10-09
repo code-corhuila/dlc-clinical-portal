@@ -2,6 +2,7 @@
 .portal-placeholder {
   box-sizing: border-box;
   max-width: 1200px;
+  min-height: 100vh;
   margin: 0 auto;
   padding: 32px;
   background: #f7f9fa;
@@ -38,11 +39,6 @@
   border: 1px solid #d6dee2;
   border-radius: 8px;
   padding: 8px;
-}
-
-/* Inside the compositor host the shell owns the viewport height. */
-.cl-portal .portal-placeholder {
-  min-height: 0;
 }
 
 .cl-demo > .portal-placeholder {
@@ -204,7 +200,7 @@
 
 .cl-patient h2 {
   margin: 0 0 4px;
-  font-size: 24px;
+  font-size: 20px;
 }
 
 .cl-patient p {
@@ -313,95 +309,12 @@
   cursor: pointer;
 }
 
-.cl-icon {
-  flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  color: #20a99a;
-}
-
-.cl-workspace h2,
-.cl-patient p span,
-.dx-card li strong {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.cl-patient__action {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #b8e3dd;
-  background: #e6f6f4;
-  color: #0f766e;
-}
-
-.cl-patient__action .cl-icon {
-  color: inherit;
-}
-
-.cl-patient__action:hover {
-  background: #d3efeb;
-}
-
-.tp-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.tp-status {
-  color: #1f2933;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.dx-card li strong .cl-icon {
-  color: #b42318;
-}
-
-.cr-entry:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 18px;
-  bottom: 0;
-  left: 5px;
-  width: 2px;
-  background: #e6f6f4;
-}
-
-.cl-back {
-  margin-bottom: 16px;
-}
-
-.cl-back button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #b8e3dd;
-  border-radius: 8px;
-  background: #e6f6f4;
-  color: #0f766e;
-  padding: 8px 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.cl-back button::before {
-  content: '←';
-}
-
-.cl-back button:hover {
-  background: #d3efeb;
-}
-
-.cl-back button:focus-visible {
-  outline: 2px solid #0f766e;
-  outline-offset: 2px;
+@media print {
+  .cl-demo > :not(.portal-placeholder),
+  .cl-patient__action,
+  .cl-aside,
+  .tp-footer,
+  .tp-form {
+    display: none;
+  }
 }
