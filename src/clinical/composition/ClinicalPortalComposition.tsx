@@ -3,6 +3,7 @@ import { ClinicalDemoPage } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
 import { createDemoClinicalAdapter } from '../adapter/out/demo/demoClinicalAdapter';
 import { RecordClinicalEntry } from '../application/recordClinicalEntry';
+import { ReadPatientForCare } from '../application/readPatientForCare';
 
 /**
  * Composition root for the Clinical bounded context.
@@ -21,12 +22,14 @@ export function ClinicalPortalComposition() {
 function ClinicalDemoComposition() {
   const [adapter] = useState(createDemoClinicalAdapter);
   const [writer] = useState(() => new RecordClinicalEntry(adapter));
+  const [patientReader] = useState(() => new ReadPatientForCare(adapter));
 
   return (
     <ClinicalDemoPage
       readPort={adapter}
       writer={writer}
       authorName={adapter.authorName}
+      patientReader={patientReader}
     />
   );
 }

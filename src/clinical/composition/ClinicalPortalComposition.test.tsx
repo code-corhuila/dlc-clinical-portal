@@ -95,6 +95,21 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.queryByLabelText('Narrativa clínica')).toBeNull();
   });
 
+  it('shows the synthetic patient header and switches it with the patient', async () => {
+    renderDemo();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Ana García Rodríguez' }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Paciente'), {
+      target: { value: 'patient-b' },
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Mateo Herrera Gómez' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Ana García Rodríguez')).toBeNull();
+  });
+
   it('denies the unassigned patient C for reading and writing', async () => {
     renderDemo();
 
@@ -106,6 +121,8 @@ describe('ClinicalPortalComposition', () => {
     expect(await screen.findByText('Acceso denegado')).toBeInTheDocument();
     expect(screen.queryByText(consultationEntry.text)).toBeNull();
     expect(screen.queryByLabelText('Narrativa clínica')).toBeNull();
+    expect(screen.queryByText('Ana García Rodríguez')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Nueva entrada' })).toBeNull();
   });
 
   it('denies the secretary assistant clinical reading and writing', async () => {

@@ -59,6 +59,19 @@ describe('demoClinicalAdapter', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
+  it('serves only the minimized care projection for assigned patients', async () => {
+    const adapter = createDemoClinicalAdapter();
+
+    const patient = await adapter.readPatient('patient-a');
+
+    expect(Object.keys(patient).sort()).toEqual(
+      ['id', 'name', 'phone', 'status', 'version'].sort(),
+    );
+    await expect(adapter.readPatient('patient-c')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    });
+  });
+
   it('does not report an unknown record as an empty history', async () => {
     const adapter = createDemoClinicalAdapter();
 
