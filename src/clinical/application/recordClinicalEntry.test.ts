@@ -13,12 +13,7 @@ function writePort(): ClinicalEntryWritePort {
 }
 
 function context(role: ClinicalRole | null, clinicalWriteAuthorized: boolean) {
-  return {
-    patientId: 'patient-1',
-    role,
-    clinicalWriteAuthorized,
-    idempotencyKey: 'intent-1',
-  };
+  return { patientId: 'patient-1', role, clinicalWriteAuthorized };
 }
 
 const consultation = { kind: 'CONSULTATION', text: 'Consulta' } as const;
@@ -33,11 +28,7 @@ describe('RecordClinicalEntry', () => {
     );
 
     expect(port.findRecordId).toHaveBeenCalledWith('patient-1');
-    expect(port.appendEntry).toHaveBeenCalledWith(
-      'record-1',
-      consultation,
-      'intent-1',
-    );
+    expect(port.appendEntry).toHaveBeenCalledWith('record-1', consultation);
   });
 
   it('appends an evolution for an explicitly write-authorized administrator', async () => {
@@ -49,11 +40,7 @@ describe('RecordClinicalEntry', () => {
       evolution,
     );
 
-    expect(port.appendEntry).toHaveBeenCalledWith(
-      'record-1',
-      evolution,
-      'intent-1',
-    );
+    expect(port.appendEntry).toHaveBeenCalledWith('record-1', evolution);
   });
 
   it.each([
@@ -74,18 +61,6 @@ describe('RecordClinicalEntry', () => {
     expect(port.appendEntry).not.toHaveBeenCalled();
   });
 
-  it('requires an idempotency key per write intent', async () => {
-    const port = writePort();
-
-    await expect(
-      new RecordClinicalEntry(port).execute(
-        { ...context('DENTIST', true), idempotencyKey: '' },
-        consultation,
-      ),
-    ).rejects.toMatchObject({ code: 'INVALID' });
-    expect(port.appendEntry).not.toHaveBeenCalled();
-  });
-
   it('rejects an empty narrative before calling the port', async () => {
     const port = writePort();
 
@@ -100,7 +75,7 @@ describe('RecordClinicalEntry', () => {
 
   it('rejects entry kinds outside this increment', async () => {
     const port = writePort();
-    const diagnosis = { kind: 'ALLERGY', text: 'Fuera de alcance' } as never;
+    const diagnosis = { kind: 'DIAGNOSIS', text: 'Sin consulta' } as never;
 
     await expect(
       new RecordClinicalEntry(port).execute(
@@ -109,38 +84,6 @@ describe('RecordClinicalEntry', () => {
       ),
     ).rejects.toMatchObject({ code: 'INVALID' });
     expect(port.appendEntry).not.toHaveBeenCalled();
-  });
-
-  it('appends a diagnosis with its explicit consultation', async () => {
-    const port = writePort();
-    const diagnosis = {
-      kind: 'DIAGNOSIS',
-      text: 'Caries oclusal',
-      consultationId: 'consultation-1',
-    } as const;
-
-    await new RecordClinicalEntry(port).execute(
-      context('DENTIST', true),
-      diagnosis,
-    );
-
-    expect(port.appendEntry).toHaveBeenCalledWith(
-      'record-1',
-      diagnosis,
-      'intent-1',
-    );
-  });
-
-  it('rejects a diagnosis without an explicit consultation', async () => {
-    const port = writePort();
-
-    await expect(
-      new RecordClinicalEntry(port).execute(context('DENTIST', true), {
-        kind: 'DIAGNOSIS',
-        text: 'Sin consulta',
-      }),
-    ).rejects.toMatchObject({ code: 'INVALID' });
-    expect(port.findRecordId).not.toHaveBeenCalled();
   });
 
   it('does not append when the record boundary denies the patient', async () => {

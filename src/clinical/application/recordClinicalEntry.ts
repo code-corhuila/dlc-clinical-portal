@@ -10,20 +10,13 @@ import {
 /** Host-provided write boundary; it deliberately contains no HTTP details. */
 export interface ClinicalEntryWritePort {
   findRecordId(patientId: string): Promise<string>;
-  /** `idempotencyKey` maps to the contract `Idempotency-Key` header. */
-  appendEntry(
-    recordId: string,
-    request: ClinicalEntryRequest,
-    idempotencyKey: string,
-  ): Promise<void>;
+  appendEntry(recordId: string, request: ClinicalEntryRequest): Promise<void>;
 }
 
 export interface ClinicalWriteContext {
   readonly patientId: string;
   readonly role: ClinicalRole | null;
   readonly clinicalWriteAuthorized: boolean;
-  /** One key per user intent, reused when that intent is retried. */
-  readonly idempotencyKey: string;
 }
 
 export class ClinicalEntryWriteError extends Error {
@@ -35,9 +28,9 @@ export class ClinicalEntryWriteError extends Error {
   }
 }
 
-const SUPPORTED_KINDS = ['CONSULTATION', 'DIAGNOSIS', 'EVOLUTION'];
+const SUPPORTED_KINDS = ['CONSULTATION', 'EVOLUTION'];
 
-/** Records CONSULTATION, DIAGNOSIS and EVOLUTION entries for an authorized writer. */
+/** Records CONSULTATION and EVOLUTION entries for an authorized writer. */
 export class RecordClinicalEntry {
   constructor(private readonly port: ClinicalEntryWritePort) {}
 
@@ -59,21 +52,11 @@ export class RecordClinicalEntry {
         'INVALID',
         'Tipo de entrada no admitido.',
       );
-    const valid = validateClinicalEntryRequest(
-      request.kind,
-      request.text,
-      request.consultationId,
-    );
+    const valid = validateClinicalEntryRequest(request.kind, request.text);
     if (typeof valid === 'string')
       throw new ClinicalEntryWriteError('INVALID', valid);
 
-    if (!context.idempotencyKey)
-      throw new ClinicalEntryWriteError(
-        'INVALID',
-        'Falta la clave de idempotencia de la operación.',
-      );
-
     const recordId = await this.port.findRecordId(context.patientId);
-    await this.port.appendEntry(recordId, valid, context.idempotencyKey);
+    await this.port.appendEntry(recordId, valid);
   }
 }
