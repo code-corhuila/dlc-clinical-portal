@@ -254,12 +254,13 @@ export function ClinicalPortalPage({
                   treatments.tracking &&
                   resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                     'granted'
-                    ? (closure, reason) =>
+                    ? (closure, reason, idempotencyKey) =>
                         treatments.tracking!.retry(
                           {
                             role,
                             clinicalReadAuthorized,
                             clinicalWriteAuthorized,
+                            idempotencyKey,
                           },
                           closure,
                           reason,
@@ -353,9 +354,14 @@ export function ClinicalPortalPage({
             >
               <CareCompletionCard
                 consultations={consultations}
-                onDeclare={(consultationId) =>
+                onDeclare={(consultationId, idempotencyKey) =>
                   declarer.execute(
-                    { patientId, role, clinicalWriteAuthorized },
+                    {
+                      patientId,
+                      role,
+                      clinicalWriteAuthorized,
+                      idempotencyKey,
+                    },
                     {
                       consultationId,
                       appointmentId: treatments?.appointmentId ?? '',

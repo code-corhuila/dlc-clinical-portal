@@ -533,3 +533,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Not included (no contract):** the mockup's "This Week" range selector and "View All Appointments" link.
 - **TDD:** genuine RED for the compact COP format, the compact revenue card with the accessible exact amount, and the peak-day marker (3 tests).
 - **Validation (Windows):** `npm test` 252 tests PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS; size gate PASS. Browser screenshot at 1280 px compared with the mockup.
+
+## DEV-CLIN-PORTAL-INTENT-KEYS-029
+
+- **Story:** HU-XCT-001 (code-corhuila/dlc-clinical-portal#6), Annex H idempotency (A2, part 1). Branch `feat/clinical-intent-keys-29` from `origin/develop` `5c92c8e`.
+- **Change:** the care-completion declaration and the care-closure retry now require an `Idempotency-Key` per user intent, as `clinical-service.yaml` declares for `POST /clinical-records/{id}/care-completions` and `POST /care-closures/{id}/retries`. The declaration card keeps one key for its intent; the closure tracker keeps one key per failed closure version, reused across retries of that failure. The demo adapter replays a repeated key without a second effect.
+- **Pending (A2, part 2):** keys for plan treatment, start treatment and procedure completion.
+- **TDD:** genuine RED: use cases ignored the key (4 tests), the demo adapter applied a repeated declaration twice (1 test), and the UI sent no key (2 tests).
+- **Validation (Windows):** `npm test` 259 tests PASS; coverage 95.46 % statements; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. No browser verification claimed for this increment (no visual change).
