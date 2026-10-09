@@ -110,10 +110,11 @@ describe('ClinicalPortalPage', () => {
         selector: '.cr-entry__text',
       }),
     ).toBeInTheDocument();
-    expect(port.appendEntry).toHaveBeenCalledWith('record-1', {
-      kind: 'CONSULTATION',
-      text: 'Nota inyectada',
-    });
+    expect(port.appendEntry).toHaveBeenCalledWith(
+      'record-1',
+      { kind: 'CONSULTATION', text: 'Nota inyectada' },
+      expect.any(String),
+    );
   });
 
   it('loads authorized entries from an explicit patient context and typed port', async () => {

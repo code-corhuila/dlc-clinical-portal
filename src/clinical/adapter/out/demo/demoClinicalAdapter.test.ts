@@ -7,10 +7,14 @@ describe('demoClinicalAdapter', () => {
     const recordA = await adapter.findRecordId('patient-a');
     const recordB = await adapter.findRecordId('patient-b');
 
-    await adapter.appendEntry(recordA, {
-      kind: 'CONSULTATION',
-      text: 'Nueva consulta',
-    });
+    await adapter.appendEntry(
+      recordA,
+      {
+        kind: 'CONSULTATION',
+        text: 'Nueva consulta',
+      },
+      'k-1',
+    );
 
     expect(
       (await adapter.readEntries(recordA)).data.map((entry) => entry.text),
@@ -24,10 +28,14 @@ describe('demoClinicalAdapter', () => {
     const adapter = createDemoClinicalAdapter();
     const record = await adapter.findRecordId('patient-b');
     const before = (await adapter.readEntries(record)).data;
-    await adapter.appendEntry(record, {
-      kind: 'EVOLUTION',
-      text: 'Seguimiento demo',
-    });
+    await adapter.appendEntry(
+      record,
+      {
+        kind: 'EVOLUTION',
+        text: 'Seguimiento demo',
+      },
+      'k-2',
+    );
 
     const after = (await adapter.readEntries(record)).data;
     expect(after).toHaveLength(before.length + 1);
@@ -38,7 +46,11 @@ describe('demoClinicalAdapter', () => {
     const first = createDemoClinicalAdapter();
     const second = createDemoClinicalAdapter();
     const record = await first.findRecordId('patient-a');
-    await first.appendEntry(record, { kind: 'CONSULTATION', text: 'Solo A1' });
+    await first.appendEntry(
+      record,
+      { kind: 'CONSULTATION', text: 'Solo A1' },
+      'k-3',
+    );
 
     expect(
       (await second.readEntries(record)).data.map((entry) => entry.text),
@@ -52,10 +64,14 @@ describe('demoClinicalAdapter', () => {
       code: 'FORBIDDEN',
     });
     await expect(
-      adapter.appendEntry('record-c', {
-        kind: 'CONSULTATION',
-        text: 'No autorizado',
-      }),
+      adapter.appendEntry(
+        'record-c',
+        {
+          kind: 'CONSULTATION',
+          text: 'No autorizado',
+        },
+        'k-4',
+      ),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
@@ -79,17 +95,25 @@ describe('demoClinicalAdapter', () => {
     const [consultation] = (await adapter.readEntries(recordA)).data;
 
     await expect(
-      adapter.appendEntry(recordB, {
-        kind: 'DIAGNOSIS',
-        text: 'Cruce de pacientes',
-        consultationId: consultation.id,
-      }),
+      adapter.appendEntry(
+        recordB,
+        {
+          kind: 'DIAGNOSIS',
+          text: 'Cruce de pacientes',
+          consultationId: consultation.id,
+        },
+        'k-5',
+      ),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
-    await adapter.appendEntry(recordA, {
-      kind: 'DIAGNOSIS',
-      text: 'Caries oclusal',
-      consultationId: consultation.id,
-    });
+    await adapter.appendEntry(
+      recordA,
+      {
+        kind: 'DIAGNOSIS',
+        text: 'Caries oclusal',
+        consultationId: consultation.id,
+      },
+      'k-6',
+    );
 
     expect((await adapter.readEntries(recordA)).data.at(-1)).toMatchObject({
       kind: 'DIAGNOSIS',
@@ -165,17 +189,25 @@ describe('demoClinicalAdapter', () => {
     const [original] = (await adapter.readEntries(record)).data;
 
     await expect(
-      adapter.amendEntry(original.id, {
+      adapter.amendEntry(
+        original.id,
+        {
+          text: 'Corrección',
+          reason: 'Pieza equivocada',
+          expectedVersion: original.version + 1,
+        },
+        'k-7',
+      ),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    await adapter.amendEntry(
+      original.id,
+      {
         text: 'Corrección',
         reason: 'Pieza equivocada',
-        expectedVersion: original.version + 1,
-      }),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    await adapter.amendEntry(original.id, {
-      text: 'Corrección',
-      reason: 'Pieza equivocada',
-      expectedVersion: original.version,
-    });
+        expectedVersion: original.version,
+      },
+      'k-8',
+    );
 
     const entries = (await adapter.readEntries(record)).data;
     expect(entries[0]).toEqual(original);
@@ -193,17 +225,21 @@ describe('demoClinicalAdapter', () => {
     const [entry] = (await adapter.readEntries(record)).data;
 
     await expect(
-      adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }),
+      adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }, 'k-9'),
     ).rejects.toMatchObject({
       code: 'CONFLICT',
       message: 'La atención está cerrada; no admite nuevos registros.',
     });
     await expect(
-      adapter.amendEntry(entry.id, {
-        text: 'Cambio',
-        reason: 'Motivo',
-        expectedVersion: entry.version,
-      }),
+      adapter.amendEntry(
+        entry.id,
+        {
+          text: 'Cambio',
+          reason: 'Motivo',
+          expectedVersion: entry.version,
+        },
+        'k-10',
+      ),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
@@ -280,7 +316,7 @@ describe('demoClinicalAdapter', () => {
       manualChargeIds: [],
     });
     await expect(
-      adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }),
+      adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }, 'k-11'),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     await expect(
       adapter.declareCareCompleted(record, {
@@ -291,7 +327,7 @@ describe('demoClinicalAdapter', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     const fresh = createDemoClinicalAdapter();
     await expect(
-      fresh.appendEntry(record, { kind: 'EVOLUTION', text: 'Abierta' }),
+      fresh.appendEntry(record, { kind: 'EVOLUTION', text: 'Abierta' }, 'k-12'),
     ).resolves.toBeUndefined();
   });
 
@@ -300,7 +336,11 @@ describe('demoClinicalAdapter', () => {
     const record = await adapter.findRecordId('patient-b');
     const before = await adapter.readRecordVersion(record);
 
-    await adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Control' });
+    await adapter.appendEntry(
+      record,
+      { kind: 'EVOLUTION', text: 'Control' },
+      'k-13',
+    );
 
     expect(await adapter.readRecordVersion(record)).toBe(before + 1);
   });
@@ -379,6 +419,27 @@ describe('demoClinicalAdapter', () => {
     expect(own.upcomingAppointments.length).toBeLessThan(
       clinic.upcomingAppointments.length,
     );
+  });
+
+  it('applies a repeated write intent only once', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const record = await adapter.findRecordId('patient-a');
+    const before = (await adapter.readEntries(record)).data.length;
+    const note = { kind: 'EVOLUTION', text: 'Reintento' } as const;
+
+    await adapter.appendEntry(record, note, 'intent-1');
+    await adapter.appendEntry(record, note, 'intent-1');
+    await adapter.appendEntry(record, note, 'intent-2');
+    const [original] = (await adapter.readEntries(record)).data;
+    const amendment = {
+      text: 'Corrección',
+      reason: 'Motivo',
+      expectedVersion: original.version,
+    };
+    await adapter.amendEntry(original.id, amendment, 'intent-3');
+    await adapter.amendEntry(original.id, amendment, 'intent-3');
+
+    expect((await adapter.readEntries(record)).data).toHaveLength(before + 3);
   });
 
   it('does not report an unknown record as an empty history', async () => {

@@ -25,6 +25,26 @@ describe('ClinicalEntryComposer', () => {
     { id: 'c-1', label: '02 mar 2026 · Revisión inicial' },
   ];
 
+  it('reuses the idempotency key on retry and renews it after success', async () => {
+    const onSubmit = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue(undefined);
+    renderComposer({ onSubmit });
+
+    submit('Consulta con reintento');
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar entrada' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
+    submit('Otra consulta');
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(3));
+
+    const keys = onSubmit.mock.calls.map((call) => call[1]);
+    expect(keys[0]).toEqual(expect.any(String));
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[0]);
+  });
+
   it('clears the narrative after a successful submission', async () => {
     renderComposer({ onSubmit: vi.fn().mockResolvedValue(undefined) });
     submit('Consulta guardada');
@@ -71,11 +91,14 @@ describe('ClinicalEntryComposer', () => {
     });
     submit('Caries oclusal');
 
-    expect(onSubmit).toHaveBeenCalledWith({
-      kind: 'DIAGNOSIS',
-      text: 'Caries oclusal',
-      consultationId: 'c-1',
-    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'DIAGNOSIS',
+        text: 'Caries oclusal',
+        consultationId: 'c-1',
+      }),
+      expect.any(String),
+    );
   });
 
   it('submits an exact CONSULTATION request', async () => {
@@ -84,10 +107,13 @@ describe('ClinicalEntryComposer', () => {
 
     submit('Narrativa válida');
 
-    expect(onSubmit).toHaveBeenCalledWith({
-      kind: 'CONSULTATION',
-      text: 'Narrativa válida',
-    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'CONSULTATION',
+        text: 'Narrativa válida',
+      }),
+      expect.any(String),
+    );
   });
 
   it('submits an exact EVOLUTION request', () => {
@@ -99,10 +125,13 @@ describe('ClinicalEntryComposer', () => {
     });
     submit('Seguimiento válido');
 
-    expect(onSubmit).toHaveBeenCalledWith({
-      kind: 'EVOLUTION',
-      text: 'Seguimiento válido',
-    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'EVOLUTION',
+        text: 'Seguimiento válido',
+      }),
+      expect.any(String),
+    );
   });
 
   it.each(['', '   '])('rejects blank narrative %j', (text) => {
@@ -127,10 +156,13 @@ describe('ClinicalEntryComposer', () => {
 
     submit('  Contenido clínico válido.  ');
 
-    expect(onSubmit).toHaveBeenCalledWith({
-      kind: 'CONSULTATION',
-      text: '  Contenido clínico válido.  ',
-    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'CONSULTATION',
+        text: '  Contenido clínico válido.  ',
+      }),
+      expect.any(String),
+    );
   });
 
   it.each([
