@@ -135,7 +135,7 @@ describe('ClinicalPortalComposition', () => {
     expect(
       screen.getByRole('cell', { name: 'Planificado' }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/\$|Costo|Total/)).toBeNull();
+    expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
   it('plans procedures from the catalog without prices', async () => {
@@ -159,7 +159,7 @@ describe('ClinicalPortalComposition', () => {
     expect(
       screen.getByRole('cell', { name: 'Caries en pieza 18' }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/\$|Costo|Total/)).toBeNull();
+    expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
   it('shows a validation message when no procedure is selected', async () => {
@@ -237,7 +237,7 @@ describe('ClinicalPortalComposition', () => {
     expect(
       screen.getByRole('cell', { name: /Limpieza profunda · Completado/ }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/\$|Costo|Total|Precio/)).toBeNull();
+    expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
   it('lists recorded extras pending pricing in Billing', async () => {
@@ -399,6 +399,21 @@ describe('ClinicalPortalComposition', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'justificación clínica',
     );
+  });
+
+  it('shows a read-only Billing estimate in COP for planned procedures', async () => {
+    renderDemo();
+
+    const plan = await screen.findByRole('region', {
+      name: 'Plan de Tratamiento y Procedimientos',
+    });
+    await screen.findByRole('cell', { name: /180\.000,00/ });
+    expect(
+      screen.getByRole('columnheader', { name: 'Costo (COP)' }),
+    ).toBeInTheDocument();
+    expect(plan).toHaveTextContent(/Total estimado.*180\.000,00/);
+    expect(plan).toHaveTextContent('Valores de solo lectura de Facturación');
+    expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
   it('keeps the planning form closed until requested', async () => {

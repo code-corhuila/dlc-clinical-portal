@@ -181,3 +181,16 @@
 .tp-closures [role='alert'] {
   color: #b42318;
 }
+
+.tp-total {
+  margin: 16px 0 0;
+  border-top: 1px solid #eef2f4;
+  padding-top: 12px;
+  color: #66737a;
+  text-align: right;
+}
+
+.tp-total strong {
+  color: #0f766e;
+  font-size: 20px;
+}

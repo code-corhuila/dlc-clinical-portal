@@ -8,6 +8,7 @@ import type { ProcedureCompletionPort } from '../../../application/completeProce
 import type { CareClosure } from '../../../model/procedureCompletion';
 import type { CareCompletionPort } from '../../../application/declareCareCompletion';
 import type { CareClosurePort } from '../../../application/careClosureTracking';
+import type { ProcedurePricePort } from '../../../application/billingEstimate';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -28,7 +29,8 @@ export interface DemoClinicalAdapter
     ClinicalEntryAmendPort,
     ProcedureCompletionPort,
     CareCompletionPort,
-    CareClosurePort {
+    CareClosurePort,
+    ProcedurePricePort {
   authorName(authorId: string): string;
 }
 
@@ -116,6 +118,20 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   /** Demo convergence: unpriced additional needs fail Billing until a retry. */
   const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
   return {
+    /** Synthetic Billing catalog prices (exact COP strings); read-only for Clinical. */
+    async listProcedurePrices() {
+      return [
+        ['D1110', 'Limpieza profunda', '180000.00'],
+        ['D2391', 'Resina simple', '150000.00'],
+        ['D7140', 'Extracción simple', '220000.00'],
+      ].map(([procedureCode, name, basePrice]) => ({
+        procedureCode,
+        name,
+        basePrice,
+        currency: 'COP' as const,
+        status: 'ACTIVE' as const,
+      }));
+    },
     async readCareClosure(closureId) {
       const closure = closures[closureId];
       if (!closure) throw { code: 'NOT_FOUND' };
