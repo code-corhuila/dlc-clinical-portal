@@ -1,4 +1,3 @@
-import { ClinicalIcon } from './ClinicalIcon';
 import type { PatientForCare } from '../../../../model/patientForCare';
 
 export interface PatientHeaderProps {
@@ -23,16 +22,8 @@ export function PatientHeader({ patient, onNewEntry }: PatientHeaderProps) {
       <div className="cl-patient__identity">
         <h2>{patient.name}</h2>
         <p>
-          {patient.phone && (
-            <span>
-              <ClinicalIcon name="phone" />
-              {patient.phone}
-            </span>
-          )}
-          <span>
-            <ClinicalIcon name="id" />
-            ID: {patient.id}
-          </span>
+          {patient.phone && <span>{patient.phone}</span>}
+          <span>ID: {patient.id}</span>
           <span className="cl-patient__status">
             {patient.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
           </span>
@@ -44,7 +35,6 @@ export function PatientHeader({ patient, onNewEntry }: PatientHeaderProps) {
           className="cl-patient__action"
           onClick={onNewEntry}
         >
-          <ClinicalIcon name="plus" />
           Nueva entrada
         </button>
       )}

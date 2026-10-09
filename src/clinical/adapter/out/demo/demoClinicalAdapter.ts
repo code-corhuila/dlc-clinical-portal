@@ -1,5 +1,7 @@
 import type { ClinicalRecordEntriesPort } from '../../../application/clinicalRecordEntriesWorkflow';
 import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
+import type { PatientForCarePort } from '../../../application/readPatientForCare';
+import type { PatientForCare } from '../../../model/patientForCare';
 import type {
   ClinicalEntry,
   ClinicalEntryPage,
@@ -11,13 +13,32 @@ import {
 
 /** In-memory synthetic adapter, wired only by the dev demo composition. */
 export interface DemoClinicalAdapter
-  extends ClinicalRecordEntriesPort, ClinicalEntryWritePort {
+  extends
+    ClinicalRecordEntriesPort,
+    ClinicalEntryWritePort,
+    PatientForCarePort {
   authorName(authorId: string): string;
 }
 
 const records: Record<string, string> = {
   'patient-a': 'record-a',
   'patient-b': 'record-b',
+};
+const patients: Record<string, PatientForCare> = {
+  'patient-a': {
+    id: 'patient-a',
+    name: 'Ana García Rodríguez',
+    phone: '+57 300 123 4567',
+    status: 'ACTIVE',
+    version: 1,
+  },
+  'patient-b': {
+    id: 'patient-b',
+    name: 'Mateo Herrera Gómez',
+    phone: '+57 310 765 4321',
+    status: 'ACTIVE',
+    version: 1,
+  },
 };
 const authors: Record<string, string> = {
   'demo-dentist': 'Dra. Valentina Ruiz',
@@ -31,6 +52,11 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'record-b': [{ ...evolutionEntry, recordId: 'record-b' }],
   };
   return {
+    async readPatient(patientId) {
+      const patient = patients[patientId];
+      if (!patient) throw { code: 'FORBIDDEN' };
+      return patient;
+    },
     async findRecordId(patientId) {
       const recordId = records[patientId];
       if (!recordId) throw { code: 'FORBIDDEN' };

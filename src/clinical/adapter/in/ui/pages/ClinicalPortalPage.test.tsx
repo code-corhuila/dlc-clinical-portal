@@ -8,6 +8,7 @@ import { ClinicalPortalPage } from './ClinicalPortalPage';
 import type { ClinicalRecordEntriesPort } from '../../../../application/clinicalRecordEntriesWorkflow';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
+import { ReadPatientForCare } from '../../../../application/readPatientForCare';
 
 interface BoundPageProps {
   readonly patientId: string | null;
@@ -359,6 +360,142 @@ describe('ClinicalPortalPage', () => {
     resolve('record');
     await Promise.resolve();
     expect(container.textContent).toBe('');
+  });
+
+  describe('patient header', () => {
+    const readPort: ClinicalRecordEntriesPort = {
+      findRecordId: async () => 'record-1',
+      readEntries: async () => ({
+        data: [consultationEntry],
+        meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      }),
+    };
+    const patients = (name: string) =>
+      new ReadPatientForCare({
+        readPatient: async (id) => ({
+          id,
+          name,
+          phone: '+57 300 000 0000',
+          status: 'ACTIVE',
+          version: 1,
+        }),
+      });
+    const HeaderPage = ClinicalPortalPage as unknown as React.ComponentType<
+      BoundPageProps & { readonly patientReader?: ReadPatientForCare }
+    >;
+
+    it('shows the minimized care projection for an authorized reader', async () => {
+      render(
+        <HeaderPage
+          patientId="patient-1"
+          role="DENTIST"
+          clinicalReadAuthorized
+          readPort={readPort}
+          patientReader={patients('Ana Demo')}
+        />,
+      );
+
+      expect(
+        await screen.findByRole('heading', { name: 'Ana Demo' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('+57 300 000 0000')).toBeInTheDocument();
+      expect(screen.getByText('Activo')).toBeInTheDocument();
+    });
+
+    it('does not show patient identity to a secretary assistant', async () => {
+      render(
+        <HeaderPage
+          patientId="patient-1"
+          role="SECRETARY_ASSISTANT"
+          clinicalReadAuthorized
+          readPort={readPort}
+          patientReader={patients('Ana Demo')}
+        />,
+      );
+
+      expect(screen.getByText('Acceso denegado')).toBeInTheDocument();
+      await Promise.resolve();
+      expect(screen.queryByText('Ana Demo')).toBeNull();
+    });
+
+    it('hides the previous patient while the next one loads', async () => {
+      let resolveB!: (name: string) => void;
+      const reader = new ReadPatientForCare({
+        readPatient: (id) =>
+          id === 'a'
+            ? Promise.resolve({
+                id,
+                name: 'Paciente A',
+                status: 'ACTIVE',
+                version: 1,
+              })
+            : new Promise(
+                (done) =>
+                  (resolveB = (name) =>
+                    done({ id, name, status: 'ACTIVE', version: 1 })),
+              ),
+      });
+      const { rerender } = render(
+        <HeaderPage
+          patientId="a"
+          role="DENTIST"
+          clinicalReadAuthorized
+          readPort={readPort}
+          patientReader={reader}
+        />,
+      );
+      expect(await screen.findByText('Paciente A')).toBeInTheDocument();
+      rerender(
+        <HeaderPage
+          patientId="b"
+          role="DENTIST"
+          clinicalReadAuthorized
+          readPort={readPort}
+          patientReader={reader}
+        />,
+      );
+
+      expect(screen.queryByText('Paciente A')).toBeNull();
+      resolveB('Paciente B');
+      expect(await screen.findByText('Paciente B')).toBeInTheDocument();
+    });
+
+    it('offers a new-entry action only to writers and focuses the narrative', async () => {
+      const writer = new RecordClinicalEntry({
+        findRecordId: async () => 'record-1',
+        appendEntry: async () => undefined,
+      });
+      const { rerender } = render(
+        <HeaderPage
+          patientId="patient-1"
+          role="DENTIST"
+          clinicalReadAuthorized
+          readPort={readPort}
+          patientReader={patients('Ana Demo')}
+        />,
+      );
+      await screen.findByRole('heading', { name: 'Ana Demo' });
+      expect(
+        screen.queryByRole('button', { name: 'Nueva entrada' }),
+      ).toBeNull();
+
+      rerender(
+        <HeaderPage
+          patientId="patient-1"
+          role="DENTIST"
+          clinicalReadAuthorized
+          clinicalWriteAuthorized
+          readPort={readPort}
+          writer={writer}
+          patientReader={patients('Ana Demo')}
+        />,
+      );
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Nueva entrada' }),
+      );
+
+      expect(screen.getByLabelText('Narrativa clínica')).toHaveFocus();
+    });
   });
 
   it('retries the current patient and shows recovered content', async () => {

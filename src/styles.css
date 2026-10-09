@@ -18,61 +18,146 @@ body {
   color: #1f2933;
 }
 
-.portal-placeholder > section[aria-label] {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  align-items: end;
-  background: #fff;
-  border: 1px solid #d6dee2;
-  border-radius: 12px;
-  padding: 16px;
+.cl-demo {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  font-size: 14px;
 }
 
-.portal-placeholder > section[aria-label] > p {
-  grid-column: 1 / -1;
+.cl-demo > p {
+  flex-basis: 100%;
+  margin: 0;
   color: #0f766e;
   font-weight: 600;
-  margin: 0;
 }
 
-.portal-placeholder > section[aria-label] > .portal-placeholder {
-  grid-column: 1 / -1;
-  max-width: none;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.portal-placeholder > section[aria-label] > .portal-placeholder > h1 {
-  display: none;
-}
-
-.portal-placeholder > section[aria-label] > .portal-placeholder > .cr-card,
-.portal-placeholder > section[aria-label] > .portal-placeholder > .cec-card {
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.portal-placeholder > section[aria-label] label {
-  display: grid;
-  gap: 4px;
-  font-size: 14px;
+.cl-demo > label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   font-weight: 600;
 }
 
-.portal-placeholder > section[aria-label] select {
+.cl-demo select {
   border: 1px solid #d6dee2;
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px;
+}
+
+.cl-demo > .portal-placeholder {
+  flex-basis: 100%;
+  max-width: none;
+  min-height: 0;
+  padding: 0;
+}
+
+.cl-demo .portal-placeholder > h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.cl-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.cl-workspace > .cr-card,
+.cl-workspace > .cec-card {
+  margin: 0;
+}
+
+.cl-patient {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.cl-patient__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #e6f6f4;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.cl-patient__identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.cl-patient h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.cl-patient p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  color: #66737a;
+  font-size: 13px;
+}
+
+.cl-patient__status {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.cl-patient__action {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-patient__action:hover {
+  background: #115e59;
+}
+
+.cl-patient__action:focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .cl-workspace {
+    grid-template-columns: 1fr;
+  }
+  .cl-patient {
+    flex-wrap: wrap;
+  }
+  .cl-patient__identity {
+    flex-basis: calc(100% - 72px);
+  }
 }
 
 @media (max-width: 768px) {
-  .portal-placeholder {
+  .portal-placeholder,
+  .cl-demo {
     padding: 16px;
-  }
-  .portal-placeholder > section[aria-label] {
-    grid-template-columns: 1fr;
   }
 }

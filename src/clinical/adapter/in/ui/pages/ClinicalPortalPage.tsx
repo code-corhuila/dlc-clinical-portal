@@ -4,13 +4,17 @@ import {
   type ClinicalRecordEntriesPort,
 } from '../../../../application/clinicalRecordEntriesWorkflow';
 import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
+import type { ReadPatientForCare } from '../../../../application/readPatientForCare';
 import {
   resolveClinicalAccess,
+  resolveClinicalWriteAccess,
   type ClinicalRole,
 } from '../../../../model/clinicalAccess';
 import type { ClinicalRecordStatus } from '../../../../model/clinicalRecordView';
+import type { PatientForCare } from '../../../../model/patientForCare';
 import { ClinicalRecordEntries } from '../components/ClinicalRecordEntries';
 import { ClinicalEntryComposer } from '../components/ClinicalEntryComposer';
+import { PatientHeader } from '../components/PatientHeader';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
@@ -20,6 +24,13 @@ export interface ClinicalPortalPageProps {
   readonly readPort?: ClinicalRecordEntriesPort;
   readonly writer?: RecordClinicalEntry;
   readonly authorName?: (authorId: string) => string;
+  readonly patientReader?: ReadPatientForCare;
+}
+
+interface PatientView {
+  readonly patientId: string;
+  readonly context: object;
+  readonly patient: PatientForCare;
 }
 
 interface RecordView {
@@ -39,9 +50,11 @@ export function ClinicalPortalPage({
   readPort,
   writer,
   authorName,
+  patientReader,
 }: ClinicalPortalPageProps) {
   const request = useRef(0);
   const [retry, setRetry] = useState(0);
+  const [patientView, setPatientView] = useState<PatientView>();
   const [view, setView] = useState<RecordView>({
     patientId: null,
     context: null,
@@ -54,9 +67,23 @@ export function ClinicalPortalPage({
     [readPort],
   );
   const context = useMemo(
-    () => ({ workflow, allowed, role, clinicalReadAuthorized }),
-    [allowed, clinicalReadAuthorized, role, workflow],
+    () => ({ workflow, patientReader, allowed, role, clinicalReadAuthorized }),
+    [allowed, clinicalReadAuthorized, patientReader, role, workflow],
   );
+
+  useEffect(() => {
+    let active = true;
+    if (patientId && patientReader)
+      patientReader
+        .execute(patientId, role, clinicalReadAuthorized)
+        .then((patient) => {
+          if (active) setPatientView({ patientId, context, patient });
+        })
+        .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [clinicalReadAuthorized, context, patientId, patientReader, role]);
 
   useEffect(() => {
     const activeRequest = ++request.current;
@@ -81,6 +108,16 @@ export function ClinicalPortalPage({
       ? view.status
       : { kind: 'loading' as const };
   const bound = readPort !== undefined;
+  const patient =
+    allowed &&
+    patientView?.patientId === patientId &&
+    patientView?.context === context
+      ? patientView.patient
+      : undefined;
+  const canWrite =
+    writer !== undefined &&
+    status.kind === 'ready' &&
+    resolveClinicalWriteAccess(role, clinicalWriteAuthorized) === 'granted';
 
   return (
     <main
@@ -91,7 +128,17 @@ export function ClinicalPortalPage({
         {bound ? 'Historia clínica' : 'Clinical portal'}
       </h1>
       {bound ? (
-        <>
+        <div className="cl-workspace">
+          {patient && (
+            <PatientHeader
+              patient={patient}
+              onNewEntry={
+                canWrite
+                  ? () => document.getElementById('entry-text')?.focus()
+                  : undefined
+              }
+            />
+          )}
           <ClinicalRecordEntries
             role={role}
             clinicalReadAuthorized={clinicalReadAuthorized}
@@ -119,7 +166,7 @@ export function ClinicalPortalPage({
                 : undefined
             }
           />
-        </>
+        </div>
       ) : (
         <>
           <p>The Clinical remote is available for federation.</p>
