@@ -7,13 +7,17 @@ import {
   type ClinicalEntryRequestKind,
 } from '../../../../model/clinicalEntryRequest';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { useIntentKey } from './useIntentKey';
 import './clinical-entry-composer.css';
 
 export interface ClinicalEntryComposerProps {
   readonly role: ClinicalRole | null;
   readonly clinicalWriteAuthorized?: boolean;
   readonly recordWritable?: boolean;
-  readonly onSubmit?: (request: ClinicalEntryRequest) => Promise<void>;
+  readonly onSubmit?: (
+    request: ClinicalEntryRequest,
+    idempotencyKey: string,
+  ) => Promise<void>;
   readonly consultations?: readonly { id: string; label: string }[];
 }
 
@@ -30,6 +34,7 @@ export function ClinicalEntryComposer({
   const [consultationId, setConsultationId] = useState('');
   const [message, setMessage] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  const [intentKey, renewIntentKey] = useIntentKey();
   const allowed =
     resolveClinicalWriteAccess(role, clinicalWriteAuthorized) === 'granted' &&
     recordWritable !== false;
@@ -46,7 +51,8 @@ export function ClinicalEntryComposer({
     setMessage(undefined);
     setSubmitting(true);
     try {
-      await onSubmit(request);
+      await onSubmit(request, intentKey);
+      renewIntentKey();
       setText('');
     } catch (error) {
       setMessage(
