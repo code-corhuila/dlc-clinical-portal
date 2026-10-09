@@ -3,6 +3,7 @@ import type { ClinicalRecordEntriesPort } from '../../../../application/clinical
 import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
 import type { ReadPatientForCare } from '../../../../application/readPatientForCare';
 import type { TreatmentPlan } from '../../../../application/treatmentPlan';
+import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
 
@@ -12,6 +13,7 @@ export interface ClinicalDemoPageProps {
   readonly authorName: (authorId: string) => string;
   readonly patientReader: ReadPatientForCare;
   readonly treatmentPlan: TreatmentPlan;
+  readonly amender: AmendClinicalEntry;
   readonly catalog: readonly { code: string; label: string }[];
   readonly appointments: Readonly<Record<string, string>>;
 }
@@ -23,6 +25,7 @@ export function ClinicalDemoPage({
   authorName,
   patientReader,
   treatmentPlan,
+  amender,
   catalog,
   appointments,
 }: ClinicalDemoPageProps) {
@@ -43,6 +46,9 @@ export function ClinicalDemoPage({
           <option value="patient-a">Paciente sintético A</option>
           <option value="patient-b">Paciente sintético B</option>
           <option value="patient-c">Paciente sintético C</option>
+          <option value="patient-d">
+            Paciente sintético D (atención cerrada)
+          </option>
         </select>
       </label>
       <label>
@@ -81,6 +87,7 @@ export function ClinicalDemoPage({
         writer={writer}
         authorName={authorName}
         patientReader={patientReader}
+        amender={amender}
         treatments={{
           plan: treatmentPlan,
           catalog,

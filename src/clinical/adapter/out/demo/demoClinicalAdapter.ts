@@ -3,6 +3,7 @@ import type { ClinicalEntryWritePort } from '../../../application/recordClinical
 import type { PatientForCarePort } from '../../../application/readPatientForCare';
 import type { PatientForCare } from '../../../model/patientForCare';
 import type { TreatmentPort } from '../../../application/treatmentPlan';
+import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -19,7 +20,8 @@ export interface DemoClinicalAdapter
     ClinicalRecordEntriesPort,
     ClinicalEntryWritePort,
     PatientForCarePort,
-    TreatmentPort {
+    TreatmentPort,
+    ClinicalEntryAmendPort {
   authorName(authorId: string): string;
 }
 
@@ -39,12 +41,23 @@ export const demoAppointments: Record<string, string> = {
 const records: Record<string, string> = {
   'patient-a': 'record-a',
   'patient-b': 'record-b',
+  'patient-d': 'record-d',
 };
+/** Synthetic encounter already closed clinically (HU-XCT-001 owns closure). */
+const closedRecords = new Set(['record-d']);
+const closedMessage = 'La atención está cerrada; no admite nuevos registros.';
 const patients: Record<string, PatientForCare> = {
   'patient-a': {
     id: 'patient-a',
     name: 'Ana García Rodríguez',
     phone: '+57 300 123 4567',
+    status: 'ACTIVE',
+    version: 1,
+  },
+  'patient-d': {
+    id: 'patient-d',
+    name: 'Lucía Torres Pardo',
+    phone: '+57 320 555 0101',
     status: 'ACTIVE',
     version: 1,
   },
@@ -66,6 +79,9 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   const entries: Record<string, ClinicalEntry[]> = {
     'record-a': [{ ...consultationEntry, recordId: 'record-a' }],
     'record-b': [{ ...evolutionEntry, recordId: 'record-b' }],
+    'record-d': [
+      { ...consultationEntry, id: 'consultation-d', recordId: 'record-d' },
+    ],
   };
   const treatments: Record<string, Treatment[]> = {
     'patient-a': [
@@ -86,6 +102,7 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
       },
     ],
     'patient-b': [],
+    'patient-d': [],
   };
   return {
     async listTreatments(patientId) {
@@ -152,8 +169,41 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
       };
     },
+    async amendEntry(entryId, request) {
+      const recordId = Object.keys(entries).find((id) =>
+        entries[id].some((entry) => entry.id === entryId),
+      );
+      const original = recordId
+        ? entries[recordId].find((entry) => entry.id === entryId)
+        : undefined;
+      if (!recordId || !original) throw { code: 'NOT_FOUND' };
+      if (closedRecords.has(recordId))
+        throw { code: 'CONFLICT', message: closedMessage };
+      if (original.version !== request.expectedVersion)
+        throw {
+          code: 'CONFLICT',
+          message:
+            'La entrada cambió. Recargue el registro antes de corregirla.',
+        };
+      entries[recordId] = [
+        ...entries[recordId],
+        {
+          id: `demo-${recordId}-${entries[recordId].length + 1}`,
+          recordId,
+          kind: original.kind,
+          text: request.text,
+          amendsEntryId: original.id,
+          amendmentReason: request.reason,
+          authorId: 'demo-dentist',
+          createdAt: '2026-10-08T12:30:00.000Z',
+          version: 1,
+        },
+      ];
+    },
     async appendEntry(recordId, request) {
       if (!entries[recordId]) throw { code: 'FORBIDDEN' };
+      if (closedRecords.has(recordId))
+        throw { code: 'CONFLICT', message: closedMessage };
       const linked = entries[recordId].some(
         (entry) =>
           entry.kind === 'CONSULTATION' && entry.id === request.consultationId,

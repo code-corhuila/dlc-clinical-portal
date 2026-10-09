@@ -4,6 +4,7 @@ import {
   type Treatment,
   type TreatmentDraft,
 } from '../../../../model/treatment';
+import { portFailureMessage } from '../../../../model/portFailure';
 import './treatment-plan.css';
 
 interface Option {
@@ -60,8 +61,7 @@ export function TreatmentPlanCard({
       await onStart(treatment);
     } catch (error) {
       setStartError(
-        (error as { message?: string }).message ??
-          'No fue posible iniciar el tratamiento.',
+        portFailureMessage(error, 'No fue posible iniciar el tratamiento.'),
       );
     } finally {
       setPending(false);
@@ -87,8 +87,7 @@ export function TreatmentPlanCard({
       setVersion((value) => value + 1);
     } catch (error) {
       setMessage(
-        (error as { message?: string }).message ??
-          'No fue posible planificar el tratamiento.',
+        portFailureMessage(error, 'No fue posible planificar el tratamiento.'),
       );
     } finally {
       setPending(false);
