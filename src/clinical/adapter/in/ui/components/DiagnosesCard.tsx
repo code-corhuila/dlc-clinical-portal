@@ -25,10 +25,10 @@ export function DiagnosesCard({ entries }: DiagnosesCardProps) {
     entries.find((entry) => entry.id === id)?.createdAt?.slice(0, 10);
 
   return (
-    <section className="dx-card" aria-label="Diagnósticos">
+    <section className="dx-card" aria-label="Diagnósticos Activos">
       <h2>
         <ClinicalIcon name="diagnosis" />
-        Diagnósticos
+        Diagnósticos Activos
       </h2>
       {diagnoses.length === 0 ? (
         <p>Sin diagnósticos registrados.</p>
