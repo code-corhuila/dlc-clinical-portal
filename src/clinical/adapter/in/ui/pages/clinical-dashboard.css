@@ -1,0 +1,84 @@
+.db-page {
+  display: grid;
+  gap: 24px;
+  flex-basis: 100%;
+  color: #1f2933;
+}
+
+.db-page h1,
+.db-page p {
+  margin: 0;
+}
+
+.db-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.db-kpis section,
+.db-card {
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+  padding: 20px 24px;
+}
+
+.db-page h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.db-kpis strong {
+  display: block;
+  font-size: 32px;
+}
+
+.db-kpis span,
+.db-upcoming small {
+  display: block;
+  color: #66737a;
+  font-size: 13px;
+}
+
+.db-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 24px;
+}
+
+.db-card ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.db-upcoming li {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.db-upcoming li > span {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  border-radius: 50%;
+  background: #e6f6f4;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.db-stale {
+  border-left: 3px solid #b42318;
+  padding-left: 12px;
+}
+
+@media (max-width: 900px) {
+  .db-grid {
+    grid-template-columns: 1fr;
+  }
+}
