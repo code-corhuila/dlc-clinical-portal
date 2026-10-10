@@ -1,5 +1,6 @@
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
+import type { PortalHttp } from './adapter/out/http/portalHttp';
 import { ClinicalFailureBoundary } from './composition/ClinicalFailureBoundary';
 import { ClinicalRouteView } from './composition/ClinicalRouteView';
 
@@ -46,7 +47,7 @@ export interface PortalContext {
     getSnapshot(): SessionSnapshot;
     subscribe(listener: () => void): () => void;
   };
-  readonly http: unknown;
+  readonly http: PortalHttp;
   readonly reportFailure: (failure: { code: string }) => void;
 }
 
@@ -84,6 +85,7 @@ export async function mount(
           <ClinicalRouteView
             route={route}
             navigation={context.navigation}
+            http={context.http}
             session={context.session.getSnapshot()}
           />
         </ClinicalFailureBoundary>,
