@@ -34,9 +34,11 @@ export interface ClinicalShellContext {
   readonly role?: ClinicalRole;
   readonly staffId?: string;
   readonly staffName?: string;
+  /** Compositor navigation for the demo patient selector (C04). */
+  readonly onSelectPatient?: (patientId: string) => void;
 }
 
-function isClinicalDemo(): boolean {
+export function isClinicalDemo(): boolean {
   return (
     import.meta.env.VITE_CLINICAL_DEMO === 'true' &&
     (import.meta.env.DEV || import.meta.env.MODE === 'demo')
@@ -111,6 +113,7 @@ function ClinicalDemoComposition(context: ClinicalShellContext) {
     <ClinicalDemoPage
       initialPatientId={context.patientId}
       initialRole={context.role}
+      onSelectPatient={context.onSelectPatient}
       readPort={adapter}
       writer={writer}
       authorName={adapter.authorName}
