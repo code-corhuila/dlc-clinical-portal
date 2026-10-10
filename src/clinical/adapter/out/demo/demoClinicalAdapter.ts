@@ -4,6 +4,8 @@ import type { PatientForCarePort } from '../../../application/readPatientForCare
 import type { PatientForCare } from '../../../model/patientForCare';
 import type { TreatmentPort } from '../../../application/treatmentPlan';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
+import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
+import type { CareClosure } from '../../../model/procedureCompletion';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -21,7 +23,8 @@ export interface DemoClinicalAdapter
     ClinicalEntryWritePort,
     PatientForCarePort,
     TreatmentPort,
-    ClinicalEntryAmendPort {
+    ClinicalEntryAmendPort,
+    ProcedureCompletionPort {
   authorName(authorId: string): string;
 }
 
@@ -105,6 +108,43 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'patient-d': [],
   };
   return {
+    async completeProcedure(procedureId, request) {
+      const list = Object.values(treatments).find((items) =>
+        items.some((item) => item.procedures.some((p) => p.id === procedureId)),
+      );
+      const current = list?.find((item) =>
+        item.procedures.some((p) => p.id === procedureId),
+      );
+      if (!list || !current) throw { code: 'NOT_FOUND' };
+      const procedure = current.procedures.find((p) => p.id === procedureId)!;
+      if (
+        current.status !== 'IN_PROGRESS' ||
+        procedure.status === 'COMPLETED' ||
+        current.version !== request.expectedVersion
+      )
+        throw {
+          code: 'CONFLICT',
+          message:
+            'El estado de la atención no permite completar este procedimiento.',
+        };
+      list.splice(list.indexOf(current), 1, {
+        ...current,
+        procedures: current.procedures.map((item) =>
+          item.id === procedureId ? { ...item, status: 'COMPLETED' } : item,
+        ),
+        version: current.version + 1,
+      });
+      const closure: CareClosure = {
+        id: `closure-${procedureId}`,
+        procedureId,
+        appointmentId: procedure.appointmentId,
+        status: 'CLOSURE_PENDING',
+        appointmentOutcome: 'PENDING',
+        billingOutcome: 'PENDING',
+        version: 1,
+      };
+      return closure;
+    },
     async listTreatments(patientId) {
       if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
       return treatments[patientId];
