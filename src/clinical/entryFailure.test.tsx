@@ -36,7 +36,7 @@ describe('Clinical entry failure containment (C07)', () => {
       compositionId: 'composition-1',
       route,
       signal: new AbortController().signal,
-      navigation: {},
+      navigation: { request: async () => ({ status: 'applied' }) },
       session: {
         getSnapshot: () => ({ state: 'anonymous', revision: 0, user: null }),
         subscribe: () => () => {},

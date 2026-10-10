@@ -603,3 +603,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Promotion audit (before this change):** all 32 code commits on `qa` carry `(cherry picked from commit …)` trailers whose sources exist in `develop`; the 6 merges on `qa` come from `promotion/*` PRs branched from `qa` (no develop→qa merge); `main` holds only the two seed commits. 43 develop commits remain to promote.
 - **TDD:** genuine RED: `promotion/clinical-front-only` → `qa` was rejected with `BRANCH_UNKNOWN_PREFIX` (1 test); a target other than `qa` still fails.
 - **Validation (Windows):** `npm test` 273 tests PASS; typecheck, lint, format, build, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-EMBEDDED-DEMO-BAR-038
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C04 and C05 (dlc-docs `638e4f2`). Branch `feat/clinical-embedded-demo-bar-38` from `origin/develop`.
+- **Change:** inside the compositor the view follows the route only: `/{patientId}` shows the clinical record and `/analytics` the dashboard. The demo bar keeps only the patient selector; "Vista", "Rol" and the authorization checkboxes are hidden because the role comes from `context.session` and authorization belongs to the owner. Choosing a patient calls `context.navigation.request({ path: '/app/clinical/{id}' })`, so URL, Back/Forward and shell stay in sync. The `/` prompt "Seleccione un paciente" offers the same selector in the demo build. `.portal-placeholder` drops `min-height: 100vh` inside the host. The standalone demo page keeps the full bar.
+- **TDD:** genuine RED: the embedded record still showed Vista/Rol/authorization controls and did not navigate (1 test); the home prompt had no selector (1 test). The `/analytics` no-selector test passed before and after (regression guard).
+- **Browser verification:** a temporary compositor probe page (not committed) mounted the demo `entry.js` at `/`: prompt without extra vertical scroll; choosing patient A requested `/app/clinical/patient-a` and, after `updateRoute`, the record showed only the patient selector.
+- **Validation (Windows):** `npm test` 276 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
