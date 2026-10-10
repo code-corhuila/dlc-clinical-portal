@@ -214,6 +214,27 @@ describe('Clinical portal entry (composition contract v1)', () => {
       await handle.unmount();
     });
 
+    it('labels the weekly range and links to Appointments through the shell', async () => {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+      const target = host();
+      const ctx = context('/analytics');
+
+      const handle = await mount(target, ctx.value);
+      await vi.waitFor(() =>
+        expect(target.textContent).toContain('Esta semana'),
+      );
+      expect(target.textContent).toContain('Actualizado');
+      const link = [...target.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Ver todas las citas',
+      )!;
+      fireEvent.click(link);
+
+      expect(ctx.value.navigation.request).toHaveBeenCalledWith({
+        path: '/app/appointments/calendar',
+      });
+      await handle.unmount();
+    });
+
     it('shows only the dashboard on /analytics, without demo selectors', async () => {
       vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
       const target = host();
