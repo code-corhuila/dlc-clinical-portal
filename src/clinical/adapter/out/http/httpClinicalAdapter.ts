@@ -5,9 +5,16 @@ import type {
   ProcedurePricePort,
 } from '../../../application/billingEstimate';
 import type { DashboardSnapshotPort } from '../../../application/readDashboard';
+import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
+import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
+import type { TreatmentPort } from '../../../application/treatmentPlan';
+import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
+import type { CareCompletionPort } from '../../../application/declareCareCompletion';
+import type { CareClosurePort } from '../../../application/careClosureTracking';
 import type { ClinicalEntryPage } from '../../../model/clinicalEntry';
 import type { PatientForCare } from '../../../model/patientForCare';
 import type { CareClosure } from '../../../model/procedureCompletion';
+import type { ClinicalCareCompletion } from '../../../model/careCompletion';
 import type { Treatment } from '../../../model/treatment';
 import { send, type PortalHttp } from './portalHttp';
 
@@ -29,10 +36,29 @@ export interface HttpClinicalReads
   readCareClosure(closureId: string): Promise<CareClosure>;
 }
 
+/** Real Clinical adapter: every port over the compositor capability. */
+export type HttpClinicalAdapter = HttpClinicalReads &
+  ClinicalEntryWritePort &
+  ClinicalEntryAmendPort &
+  TreatmentPort &
+  ProcedureCompletionPort &
+  CareCompletionPort &
+  CareClosurePort;
+
 /** Field names follow the OpenAPI; DTOs are mapped here, never in the domain. */
-export function createHttpClinicalAdapter(http: PortalHttp): HttpClinicalReads {
+export function createHttpClinicalAdapter(
+  http: PortalHttp,
+): HttpClinicalAdapter {
   const get = <T>(path: string, query?: Record<string, string[]>) =>
     send<T>(http, { method: 'GET', path: `${API}${path}`, query });
+  // One key per user intent, reused on retries; writes are never retried here.
+  const post = <T>(path: string, body: unknown, idempotencyKey: string) =>
+    send<T>(http, {
+      method: 'POST',
+      path: `${API}${path}`,
+      body,
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
 
   return {
     async readPatient(patientId) {
@@ -80,6 +106,51 @@ export function createHttpClinicalAdapter(http: PortalHttp): HttpClinicalReads {
           currency,
           status,
         }),
+      );
+    },
+    async appendEntry(recordId, request, idempotencyKey) {
+      await post(
+        `/clinical-records/${recordId}/entries`,
+        request,
+        idempotencyKey,
+      );
+    },
+    async amendEntry(entryId, request, idempotencyKey) {
+      await post(
+        `/clinical-entries/${entryId}/amendments`,
+        request,
+        idempotencyKey,
+      );
+    },
+    planTreatment(request, idempotencyKey) {
+      return post<Treatment>('/treatments', request, idempotencyKey);
+    },
+    startTreatment(treatmentId, expectedVersion, idempotencyKey) {
+      return post<Treatment>(
+        `/treatments/${treatmentId}/starts`,
+        { expectedVersion },
+        idempotencyKey,
+      );
+    },
+    completeProcedure(procedureId, request, idempotencyKey) {
+      return post<CareClosure>(
+        `/procedures/${procedureId}/completions`,
+        request,
+        idempotencyKey,
+      );
+    },
+    declareCareCompleted(recordId, request, idempotencyKey) {
+      return post<ClinicalCareCompletion>(
+        `/clinical-records/${recordId}/care-completions`,
+        request,
+        idempotencyKey,
+      );
+    },
+    retryCareClosure(closureId, request, idempotencyKey) {
+      return post<CareClosure>(
+        `/care-closures/${closureId}/retries`,
+        request,
+        idempotencyKey,
       );
     },
     async readDashboard() {
