@@ -21,6 +21,7 @@ function port(): ProcedureCompletionPort {
 const access = (role: ClinicalRole | null, authorized: boolean) => ({
   role,
   clinicalWriteAuthorized: authorized,
+  idempotencyKey: 'intent-1',
 });
 
 const material: ExtraItemDraft = {
@@ -64,28 +65,32 @@ describe('CompleteProcedure', () => {
       ],
     });
 
-    expect(completions.completeProcedure).toHaveBeenCalledWith('procedure-1', {
-      expectedVersion: 3,
-      materialsUsed: [
-        {
-          sourceRecordId: 'source-1',
-          type: 'ADDITIONAL_MATERIAL',
-          code: 'MAT-01',
-          quantity: '1.5',
-          description: 'Resina adicional',
-          clinicalReason: 'Cavidad más profunda de lo previsto',
-        },
-      ],
-      additionalRequirements: [
-        {
-          sourceRecordId: 'source-2',
-          type: 'COMPLEXITY_ADJUSTMENT',
-          quantity: '1',
-          description: 'Anestesia adicional',
-          clinicalReason: 'Sensibilidad persistente',
-        },
-      ],
-    });
+    expect(completions.completeProcedure).toHaveBeenCalledWith(
+      'procedure-1',
+      {
+        expectedVersion: 3,
+        materialsUsed: [
+          {
+            sourceRecordId: 'source-1',
+            type: 'ADDITIONAL_MATERIAL',
+            code: 'MAT-01',
+            quantity: '1.5',
+            description: 'Resina adicional',
+            clinicalReason: 'Cavidad más profunda de lo previsto',
+          },
+        ],
+        additionalRequirements: [
+          {
+            sourceRecordId: 'source-2',
+            type: 'COMPLEXITY_ADJUSTMENT',
+            quantity: '1',
+            description: 'Anestesia adicional',
+            clinicalReason: 'Sensibilidad persistente',
+          },
+        ],
+      },
+      'intent-1',
+    );
     const payload = JSON.stringify(
       vi.mocked(completions.completeProcedure).mock.calls[0],
     );
@@ -101,11 +106,15 @@ describe('CompleteProcedure', () => {
       [],
     );
 
-    expect(completions.completeProcedure).toHaveBeenCalledWith('procedure-1', {
-      expectedVersion: 3,
-      materialsUsed: [],
-      additionalRequirements: [],
-    });
+    expect(completions.completeProcedure).toHaveBeenCalledWith(
+      'procedure-1',
+      {
+        expectedVersion: 3,
+        materialsUsed: [],
+        additionalRequirements: [],
+      },
+      'intent-1',
+    );
   });
 
   it.each<[string, ClinicalRole | null, boolean]>([
@@ -142,6 +151,35 @@ describe('CompleteProcedure', () => {
         access('DENTIST', true),
         target,
         [invalid],
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(completions.completeProcedure).not.toHaveBeenCalled();
+  });
+
+  it('forwards the intent Idempotency-Key with the completion', async () => {
+    const completions = port();
+
+    await new CompleteProcedure(completions, () => 'id').execute(
+      { ...access('DENTIST', true), idempotencyKey: 'intent-done' },
+      { procedureId: 'procedure-1', treatmentVersion: 3 },
+      [],
+    );
+
+    expect(completions.completeProcedure).toHaveBeenCalledWith(
+      'procedure-1',
+      expect.objectContaining({ expectedVersion: 3 }),
+      'intent-done',
+    );
+  });
+
+  it('rejects a completion without an Idempotency-Key', async () => {
+    const completions = port();
+
+    await expect(
+      new CompleteProcedure(completions, () => 'id').execute(
+        { ...access('DENTIST', true), idempotencyKey: '' },
+        { procedureId: 'procedure-1', treatmentVersion: 3 },
+        [],
       ),
     ).rejects.toMatchObject({ code: 'INVALID' });
     expect(completions.completeProcedure).not.toHaveBeenCalled();
