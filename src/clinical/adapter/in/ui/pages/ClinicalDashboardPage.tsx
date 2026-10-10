@@ -12,6 +12,8 @@ export interface ClinicalDashboardPageProps {
   readonly role: ClinicalRole | null;
   readonly staffId: string;
   readonly staffName: string;
+  /** Inside dlc-front: navigation to the Appointments portal (C04). */
+  readonly onViewAllAppointments?: () => void;
 }
 
 type View =
@@ -97,6 +99,7 @@ export function ClinicalDashboardPage({
   role,
   staffId,
   staffName,
+  onViewAllAppointments,
 }: ClinicalDashboardPageProps) {
   const key = `${role}:${staffId}`;
   const [loaded, setLoaded] = useState<{ key: string; view: View }>();
@@ -153,7 +156,11 @@ export function ClinicalDashboardPage({
           </div>
           <div className="db-grid">
             <section aria-label="Actividad semanal" className="db-card">
-              <h2>Actividad semanal</h2>
+              <div className="db-card-header">
+                <h2>Actividad semanal</h2>
+                {/* Fixed range: no contract defines other periods yet. */}
+                <span>Esta semana</span>
+              </div>
               <WeeklyChart activity={view.snapshot.weeklyActivity} />
               <ul className="db-chart-text db-sr">
                 {view.snapshot.weeklyActivity.map((item) => (
@@ -189,8 +196,18 @@ export function ClinicalDashboardPage({
                   </li>
                 ))}
               </ul>
+              {onViewAllAppointments && (
+                <button
+                  type="button"
+                  className="db-link"
+                  onClick={onViewAllAppointments}
+                >
+                  Ver todas las citas
+                </button>
+              )}
             </section>
           </div>
+          {/* HU-CLN-003: stale data must be identifiable, so freshness stays visible. */}
           <p>Actualizado: {view.snapshot.asOf.slice(11, 16)} UTC</p>
         </>
       )}

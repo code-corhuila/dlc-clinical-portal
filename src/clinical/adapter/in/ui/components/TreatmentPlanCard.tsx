@@ -345,13 +345,6 @@ export function TreatmentPlanCard({
               Planificar nuevo tratamiento
             </button>
           )}
-          <button
-            type="button"
-            className="tp-start"
-            onClick={() => window.print()}
-          >
-            Imprimir plan
-          </button>
           {onDeclareOpen && (
             <button
               type="button"
