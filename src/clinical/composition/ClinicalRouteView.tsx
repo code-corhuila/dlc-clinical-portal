@@ -43,7 +43,14 @@ export function ClinicalRouteView({
     );
   const segments = route.localPath.split('/').filter(Boolean);
   if (segments.length === 1 && segments[0] === 'analytics')
-    return <ClinicalDashboardComposition {...viewer(session)} />;
+    return (
+      <ClinicalDashboardComposition
+        {...viewer(session)}
+        onViewAllAppointments={() =>
+          void navigation.request({ path: '/app/appointments/calendar' })
+        }
+      />
+    );
   if (segments.length === 1)
     return (
       <ClinicalPortalComposition

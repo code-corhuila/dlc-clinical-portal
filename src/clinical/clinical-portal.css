@@ -2,7 +2,6 @@
 .portal-placeholder {
   box-sizing: border-box;
   max-width: 1200px;
-  min-height: 100vh;
   margin: 0 auto;
   padding: 32px;
   background: #f7f9fa;
@@ -312,16 +311,6 @@
   color: #fff;
   font-weight: 600;
   cursor: pointer;
-}
-
-@media print {
-  .cl-demo > :not(.portal-placeholder),
-  .cl-patient__action,
-  .cl-aside,
-  .tp-footer,
-  .tp-form {
-    display: none;
-  }
 }
 
 .cl-icon {
