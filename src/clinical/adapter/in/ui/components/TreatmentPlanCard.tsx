@@ -38,6 +38,7 @@ export interface TreatmentPlanCardProps {
   ) => Promise<CareClosure>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly loadPrices?: () => Promise<PriceEstimate>;
+  readonly onDeclareOpen?: () => void;
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
 }
@@ -52,6 +53,7 @@ export function TreatmentPlanCard({
   onRetryClosure,
   catalog,
   loadPrices,
+  onDeclareOpen,
   diagnoses,
   appointmentId = '',
 }: TreatmentPlanCardProps) {
@@ -204,6 +206,9 @@ export function TreatmentPlanCard({
         <table>
           <thead>
             <tr>
+              <th scope="col">
+                <span className="cr-label">Completado</span>
+              </th>
               <th scope="col">Procedimiento</th>
               {prices && <th scope="col">Costo (COP)</th>}
               <th scope="col">Estado</th>
@@ -216,25 +221,24 @@ export function TreatmentPlanCard({
               treatment.procedures.map((procedure, index) => (
                 <tr key={procedure.id}>
                   <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`Completar ${label(procedure.procedureCode)}`}
+                      checked={procedure.status === 'COMPLETED'}
+                      disabled={
+                        !onComplete ||
+                        treatment.status !== 'IN_PROGRESS' ||
+                        procedure.status === 'COMPLETED'
+                      }
+                      onChange={() =>
+                        setCompleting({ treatment, procedureId: procedure.id })
+                      }
+                    />
+                  </td>
+                  <td>
                     {label(procedure.procedureCode)}
                     {procedure.status !== 'PLANNED' &&
                       ` · ${TREATMENT_STATUS_LABELS[procedure.status]}`}
-                    {onComplete &&
-                      treatment.status === 'IN_PROGRESS' &&
-                      procedure.status !== 'COMPLETED' && (
-                        <button
-                          type="button"
-                          className="tp-start"
-                          onClick={() =>
-                            setCompleting({
-                              treatment,
-                              procedureId: procedure.id,
-                            })
-                          }
-                        >
-                          Completar procedimiento
-                        </button>
-                      )}
                   </td>
                   {prices && (
                     <td>
@@ -313,14 +317,34 @@ export function TreatmentPlanCard({
           }}
         />
       )}
-      {onPlan && treatments && !planning && (
-        <button
-          type="button"
-          className="tp-start"
-          onClick={() => setPlanning(true)}
-        >
-          Planificar nuevo tratamiento
-        </button>
+      {treatments && !planning && (
+        <div className="tp-footer">
+          {onPlan && (
+            <button
+              type="button"
+              className="tp-start"
+              onClick={() => setPlanning(true)}
+            >
+              Planificar nuevo tratamiento
+            </button>
+          )}
+          <button
+            type="button"
+            className="tp-start"
+            onClick={() => window.print()}
+          >
+            Imprimir plan
+          </button>
+          {onDeclareOpen && (
+            <button
+              type="button"
+              className="tp-primary"
+              onClick={onDeclareOpen}
+            >
+              Declarar atención completada
+            </button>
+          )}
+        </div>
       )}
       {onPlan && treatments && planning && (
         <form className="tp-form" onSubmit={plan} noValidate>
