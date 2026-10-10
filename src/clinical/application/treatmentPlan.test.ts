@@ -31,6 +31,7 @@ const access = (role: ClinicalRole | null, authorized: boolean) => ({
   patientId: 'patient-1',
   role,
   clinicalAuthorized: authorized,
+  idempotencyKey: 'intent-1',
 });
 
 const plan = {
@@ -47,7 +48,11 @@ describe('TreatmentPlan start', () => {
       treatment,
     );
 
-    expect(treatments.startTreatment).toHaveBeenCalledWith('treatment-1', 1);
+    expect(treatments.startTreatment).toHaveBeenCalledWith(
+      'treatment-1',
+      1,
+      'intent-1',
+    );
   });
 
   it.each<[string, ClinicalRole | null, boolean]>([
@@ -81,10 +86,13 @@ describe('TreatmentPlan planning', () => {
 
     await new TreatmentPlan(treatments).plan(access('DENTIST', true), plan);
 
-    expect(treatments.planTreatment).toHaveBeenCalledWith({
-      patientId: 'patient-1',
-      ...plan,
-    });
+    expect(treatments.planTreatment).toHaveBeenCalledWith(
+      {
+        patientId: 'patient-1',
+        ...plan,
+      },
+      'intent-1',
+    );
   });
 
   it('accepts a diagnosis instead of a clinical reason', async () => {
@@ -99,10 +107,13 @@ describe('TreatmentPlan planning', () => {
       byDiagnosis,
     );
 
-    expect(treatments.planTreatment).toHaveBeenCalledWith({
-      patientId: 'patient-1',
-      ...byDiagnosis,
-    });
+    expect(treatments.planTreatment).toHaveBeenCalledWith(
+      {
+        patientId: 'patient-1',
+        ...byDiagnosis,
+      },
+      'intent-1',
+    );
   });
 
   it.each<[string, ClinicalRole | null, boolean]>([
@@ -165,5 +176,40 @@ describe('TreatmentPlan', () => {
       new TreatmentPlan(treatments).list(access(role, authorized)),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(treatments.listTreatments).not.toHaveBeenCalled();
+  });
+
+  it('forwards the intent Idempotency-Key when planning and starting', async () => {
+    const treatments = port();
+    const write = { ...access('DENTIST', true), idempotencyKey: 'intent-plan' };
+
+    await new TreatmentPlan(treatments).plan(write, plan);
+    await new TreatmentPlan(treatments).start(
+      { ...write, idempotencyKey: 'intent-start' },
+      treatment,
+    );
+
+    expect(treatments.planTreatment).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: 'patient-1' }),
+      'intent-plan',
+    );
+    expect(treatments.startTreatment).toHaveBeenCalledWith(
+      treatment.id,
+      treatment.version,
+      'intent-start',
+    );
+  });
+
+  it('rejects planning or starting without an Idempotency-Key', async () => {
+    const treatments = port();
+    const write = { ...access('DENTIST', true), idempotencyKey: '' };
+
+    await expect(
+      new TreatmentPlan(treatments).plan(write, plan),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    await expect(
+      new TreatmentPlan(treatments).start(write, treatment),
+    ).rejects.toMatchObject({ code: 'INVALID' });
+    expect(treatments.planTreatment).not.toHaveBeenCalled();
+    expect(treatments.startTreatment).not.toHaveBeenCalled();
   });
 });

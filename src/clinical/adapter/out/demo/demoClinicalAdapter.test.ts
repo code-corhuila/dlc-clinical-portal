@@ -141,11 +141,16 @@ describe('demoClinicalAdapter', () => {
     const adapter = createDemoClinicalAdapter();
     const before = await adapter.listTreatments('patient-a');
 
-    const planned = await adapter.planTreatment({
-      patientId: 'patient-a',
-      clinicalReason: 'Dolor agudo',
-      procedures: [{ procedureCode: 'D2391', appointmentId: 'appointment-a' }],
-    });
+    const planned = await adapter.planTreatment(
+      {
+        patientId: 'patient-a',
+        clinicalReason: 'Dolor agudo',
+        procedures: [
+          { procedureCode: 'D2391', appointmentId: 'appointment-a' },
+        ],
+      },
+      'k-intent-12',
+    );
 
     expect(planned).toMatchObject({ status: 'PLANNED', version: 1 });
     expect(planned.procedures[0]).toMatchObject({ status: 'PLANNED' });
@@ -154,7 +159,10 @@ describe('demoClinicalAdapter', () => {
     );
     expect(await adapter.listTreatments('patient-b')).toEqual([]);
     await expect(
-      adapter.planTreatment({ ...planned, patientId: 'patient-c' }),
+      adapter.planTreatment(
+        { ...planned, patientId: 'patient-c' },
+        'k-intent-11',
+      ),
     ).rejects.toMatchObject({ code: 'FORBIDDEN' });
     expect(JSON.stringify(planned)).not.toMatch(/price|amount|cost/i);
   });
@@ -164,9 +172,13 @@ describe('demoClinicalAdapter', () => {
     const [planned] = await adapter.listTreatments('patient-a');
 
     await expect(
-      adapter.startTreatment(planned.id, planned.version + 1),
+      adapter.startTreatment(planned.id, planned.version + 1, 'k-intent-10'),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
-    const started = await adapter.startTreatment(planned.id, planned.version);
+    const started = await adapter.startTreatment(
+      planned.id,
+      planned.version,
+      'k-intent-9',
+    );
 
     expect(started).toMatchObject({
       status: 'IN_PROGRESS',
@@ -176,10 +188,10 @@ describe('demoClinicalAdapter', () => {
       'IN_PROGRESS',
     );
     await expect(
-      adapter.startTreatment(started.id, started.version),
+      adapter.startTreatment(started.id, started.version, 'k-intent-8'),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     await expect(
-      adapter.startTreatment('unknown-treatment', 1),
+      adapter.startTreatment('unknown-treatment', 1, 'k-intent-7'),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
@@ -249,26 +261,38 @@ describe('demoClinicalAdapter', () => {
     const procedureId = planned.procedures[0].id;
 
     await expect(
-      adapter.completeProcedure(procedureId, {
-        expectedVersion: planned.version,
-        materialsUsed: [],
-        additionalRequirements: [],
-      }),
-    ).rejects.toMatchObject({ code: 'CONFLICT' });
-    const started = await adapter.startTreatment(planned.id, planned.version);
-    const closure = await adapter.completeProcedure(procedureId, {
-      expectedVersion: started.version,
-      materialsUsed: [
+      adapter.completeProcedure(
+        procedureId,
         {
-          sourceRecordId: 'source-1',
-          type: 'ADDITIONAL_MATERIAL',
-          quantity: '2',
-          description: 'Resina',
-          clinicalReason: 'Cavidad profunda',
+          expectedVersion: planned.version,
+          materialsUsed: [],
+          additionalRequirements: [],
         },
-      ],
-      additionalRequirements: [],
-    });
+        'k-intent-6',
+      ),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    const started = await adapter.startTreatment(
+      planned.id,
+      planned.version,
+      'k-intent-5',
+    );
+    const closure = await adapter.completeProcedure(
+      procedureId,
+      {
+        expectedVersion: started.version,
+        materialsUsed: [
+          {
+            sourceRecordId: 'source-1',
+            type: 'ADDITIONAL_MATERIAL',
+            quantity: '2',
+            description: 'Resina',
+            clinicalReason: 'Cavidad profunda',
+          },
+        ],
+        additionalRequirements: [],
+      },
+      'k-intent-4',
+    );
 
     expect(closure).toMatchObject({
       procedureId,
@@ -282,11 +306,15 @@ describe('demoClinicalAdapter', () => {
     expect(after.version).toBe(started.version + 1);
     expect(JSON.stringify(closure)).not.toMatch(/price|amount|cost/i);
     await expect(
-      adapter.completeProcedure(procedureId, {
-        expectedVersion: after.version,
-        materialsUsed: [],
-        additionalRequirements: [],
-      }),
+      adapter.completeProcedure(
+        procedureId,
+        {
+          expectedVersion: after.version,
+          materialsUsed: [],
+          additionalRequirements: [],
+        },
+        'k-intent-3',
+      ),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
@@ -360,7 +388,11 @@ describe('demoClinicalAdapter', () => {
   async function completeFirstProcedure(withNeed: boolean) {
     const adapter = createDemoClinicalAdapter();
     const [planned] = await adapter.listTreatments('patient-a');
-    const started = await adapter.startTreatment(planned.id, planned.version);
+    const started = await adapter.startTreatment(
+      planned.id,
+      planned.version,
+      'k-intent-2',
+    );
     const need = {
       sourceRecordId: 'source-1',
       type: 'COMPLEXITY_ADJUSTMENT' as const,
@@ -368,11 +400,15 @@ describe('demoClinicalAdapter', () => {
       description: 'Anestesia',
       clinicalReason: 'Sensibilidad',
     };
-    const closure = await adapter.completeProcedure(started.procedures[0].id, {
-      expectedVersion: started.version,
-      materialsUsed: [],
-      additionalRequirements: withNeed ? [need] : [],
-    });
+    const closure = await adapter.completeProcedure(
+      started.procedures[0].id,
+      {
+        expectedVersion: started.version,
+        materialsUsed: [],
+        additionalRequirements: withNeed ? [need] : [],
+      },
+      'k-intent-1',
+    );
     return { adapter, closure };
   }
 
@@ -497,5 +533,48 @@ describe('demoClinicalAdapter', () => {
     expect(await adapter.readRecordVersion(record)).toBe(
       request.expectedVersion + 1,
     );
+  });
+
+  it('replays repeated plan, start and completion intents without a second effect', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const [planned] = await adapter.listTreatments('patient-a');
+
+    const started = await adapter.startTreatment(
+      planned.id,
+      planned.version,
+      'k-start',
+    );
+    const replayed = await adapter.startTreatment(
+      planned.id,
+      planned.version,
+      'k-start',
+    );
+    expect(replayed).toEqual(started);
+
+    const request = {
+      patientId: 'patient-b',
+      clinicalReason: 'Control',
+      procedures: [{ procedureCode: 'D1110', appointmentId: 'appointment-b' }],
+    };
+    await adapter.planTreatment(request, 'k-plan');
+    await adapter.planTreatment(request, 'k-plan');
+    expect(await adapter.listTreatments('patient-b')).toHaveLength(1);
+
+    const completion = {
+      expectedVersion: started.version,
+      materialsUsed: [],
+      additionalRequirements: [],
+    };
+    const first = await adapter.completeProcedure(
+      started.procedures[0].id,
+      completion,
+      'k-done',
+    );
+    const again = await adapter.completeProcedure(
+      started.procedures[0].id,
+      completion,
+      'k-done',
+    );
+    expect(again).toEqual(first);
   });
 });

@@ -234,9 +234,9 @@ export function ClinicalPortalPage({
                   treatments.completer &&
                   resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                     'granted'
-                    ? async (treatment, procedureId, extras) =>
+                    ? async (treatment, procedureId, extras, idempotencyKey) =>
                         await treatments.completer!.execute(
-                          { role, clinicalWriteAuthorized },
+                          { role, clinicalWriteAuthorized, idempotencyKey },
                           { procedureId, treatmentVersion: treatment.version },
                           extras,
                         )
@@ -270,12 +270,13 @@ export function ClinicalPortalPage({
                 onStart={
                   resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                   'granted'
-                    ? (treatment) =>
+                    ? (treatment, idempotencyKey) =>
                         treatments.plan.start(
                           {
                             patientId,
                             role,
                             clinicalAuthorized: clinicalWriteAuthorized,
+                            idempotencyKey,
                           },
                           treatment,
                         )
@@ -284,12 +285,13 @@ export function ClinicalPortalPage({
                 onPlan={
                   resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                   'granted'
-                    ? (draft) =>
+                    ? (draft, idempotencyKey) =>
                         treatments.plan.plan(
                           {
                             patientId,
                             role,
                             clinicalAuthorized: clinicalWriteAuthorized,
+                            idempotencyKey,
                           },
                           draft,
                         )

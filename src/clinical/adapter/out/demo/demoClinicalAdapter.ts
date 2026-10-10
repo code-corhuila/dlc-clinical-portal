@@ -238,89 +238,94 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         closures[closureId] = { ...retried, needsPrice: false };
         return retried;
       }),
-    async completeProcedure(procedureId, request) {
-      const list = Object.values(treatments).find((items) =>
-        items.some((item) => item.procedures.some((p) => p.id === procedureId)),
-      );
-      const current = list?.find((item) =>
-        item.procedures.some((p) => p.id === procedureId),
-      );
-      if (!list || !current) throw { code: 'NOT_FOUND' };
-      const procedure = current.procedures.find((p) => p.id === procedureId)!;
-      if (
-        current.status !== 'IN_PROGRESS' ||
-        procedure.status === 'COMPLETED' ||
-        current.version !== request.expectedVersion
-      )
-        throw {
-          code: 'CONFLICT',
-          message:
-            'El estado de la atención no permite completar este procedimiento.',
+    completeProcedure: (procedureId, request, idempotencyKey) =>
+      replay(idempotencyKey, async () => {
+        const list = Object.values(treatments).find((items) =>
+          items.some((item) =>
+            item.procedures.some((p) => p.id === procedureId),
+          ),
+        );
+        const current = list?.find((item) =>
+          item.procedures.some((p) => p.id === procedureId),
+        );
+        if (!list || !current) throw { code: 'NOT_FOUND' };
+        const procedure = current.procedures.find((p) => p.id === procedureId)!;
+        if (
+          current.status !== 'IN_PROGRESS' ||
+          procedure.status === 'COMPLETED' ||
+          current.version !== request.expectedVersion
+        )
+          throw {
+            code: 'CONFLICT',
+            message:
+              'El estado de la atención no permite completar este procedimiento.',
+          };
+        list.splice(list.indexOf(current), 1, {
+          ...current,
+          procedures: current.procedures.map((item) =>
+            item.id === procedureId ? { ...item, status: 'COMPLETED' } : item,
+          ),
+          version: current.version + 1,
+        });
+        const closure: CareClosure = {
+          id: `closure-${procedureId}`,
+          procedureId,
+          appointmentId: procedure.appointmentId,
+          status: 'CLOSURE_PENDING',
+          appointmentOutcome: 'PENDING',
+          billingOutcome: 'PENDING',
+          version: 1,
         };
-      list.splice(list.indexOf(current), 1, {
-        ...current,
-        procedures: current.procedures.map((item) =>
-          item.id === procedureId ? { ...item, status: 'COMPLETED' } : item,
-        ),
-        version: current.version + 1,
-      });
-      const closure: CareClosure = {
-        id: `closure-${procedureId}`,
-        procedureId,
-        appointmentId: procedure.appointmentId,
-        status: 'CLOSURE_PENDING',
-        appointmentOutcome: 'PENDING',
-        billingOutcome: 'PENDING',
-        version: 1,
-      };
-      closures[closure.id] = {
-        ...closure,
-        needsPrice: request.additionalRequirements.length > 0,
-      };
-      return closure;
-    },
+        closures[closure.id] = {
+          ...closure,
+          needsPrice: request.additionalRequirements.length > 0,
+        };
+        return closure;
+      }),
     async listTreatments(patientId) {
       if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
       return treatments[patientId];
     },
-    async startTreatment(treatmentId, expectedVersion) {
-      const list = Object.values(treatments).find((items) =>
-        items.some((item) => item.id === treatmentId),
-      );
-      const current = list?.find((item) => item.id === treatmentId);
-      if (!list || !current) throw { code: 'NOT_FOUND' };
-      if (current.version !== expectedVersion || current.status !== 'PLANNED')
-        throw {
-          code: 'CONFLICT',
-          message:
-            'El tratamiento cambió. Recargue el plan antes de iniciarlo.',
+    startTreatment: (treatmentId, expectedVersion, idempotencyKey) =>
+      replay(idempotencyKey, async () => {
+        const list = Object.values(treatments).find((items) =>
+          items.some((item) => item.id === treatmentId),
+        );
+        const current = list?.find((item) => item.id === treatmentId);
+        if (!list || !current) throw { code: 'NOT_FOUND' };
+        if (current.version !== expectedVersion || current.status !== 'PLANNED')
+          throw {
+            code: 'CONFLICT',
+            message:
+              'El tratamiento cambió. Recargue el plan antes de iniciarlo.',
+          };
+        const started: Treatment = {
+          ...current,
+          status: 'IN_PROGRESS',
+          version: current.version + 1,
         };
-      const started: Treatment = {
-        ...current,
-        status: 'IN_PROGRESS',
-        version: current.version + 1,
-      };
-      list.splice(list.indexOf(current), 1, started);
-      return started;
-    },
-    async planTreatment(request) {
-      const list = treatments[request.patientId];
-      if (!list) throw { code: 'FORBIDDEN' };
-      const id = `treatment-${request.patientId}-${list.length + 1}`;
-      const treatment: Treatment = {
-        ...request,
-        id,
-        status: 'PLANNED',
-        procedures: request.procedures.map((item, index) => ({
-          ...item,
-          id: `${id}-procedure-${index + 1}`,
+        list.splice(list.indexOf(current), 1, started);
+        return started;
+      }),
+    planTreatment: (request, idempotencyKey) =>
+      replay(idempotencyKey, async () => {
+        const list = treatments[request.patientId];
+        if (!list) throw { code: 'FORBIDDEN' };
+        const id = `treatment-${request.patientId}-${list.length + 1}`;
+        const treatment: Treatment = {
+          ...request,
+          id,
           status: 'PLANNED',
-        })),
-        version: 1,
-      };
-      treatments[request.patientId] = [...list, treatment];
-      return treatment;
-    },
+          procedures: request.procedures.map((item, index) => ({
+            ...item,
+            id: `${id}-procedure-${index + 1}`,
+            status: 'PLANNED',
+          })),
+          version: 1,
+        };
+        treatments[request.patientId] = [...list, treatment];
+        return treatment;
+      }),
     async readPatient(patientId) {
       const patient = patients[patientId];
       if (!patient) throw { code: 'FORBIDDEN' };
