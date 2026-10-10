@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIntentKey } from './useIntentKey';
 import { portFailureMessage } from '../../../../model/portFailure';
 import {
   EXTRA_ITEM_TYPE_LABELS,
@@ -7,7 +8,10 @@ import {
 } from '../../../../model/procedureCompletion';
 
 export interface CompleteProcedureFormProps {
-  readonly onComplete: (extras: readonly ExtraItemDraft[]) => Promise<void>;
+  readonly onComplete: (
+    extras: readonly ExtraItemDraft[],
+    idempotencyKey: string,
+  ) => Promise<void>;
   readonly onCancel: () => void;
 }
 
@@ -35,6 +39,8 @@ export function CompleteProcedureForm({
   const [items, setItems] = useState<readonly ExtraItemDraft[]>([]);
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
+  // The form closes on success, so one key covers this completion intent.
+  const [intentKey] = useIntentKey();
   const update = (index: number, change: Partial<ExtraItemDraft>) =>
     setItems(
       items.map((item, at) => (at === index ? { ...item, ...change } : item)),
@@ -46,7 +52,7 @@ export function CompleteProcedureForm({
     setPending(true);
     setMessage(undefined);
     try {
-      await onComplete(items);
+      await onComplete(items, intentKey);
     } catch (error) {
       setMessage(
         portFailureMessage(error, 'No fue posible completar el procedimiento.'),
