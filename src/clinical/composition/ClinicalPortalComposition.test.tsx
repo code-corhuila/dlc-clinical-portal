@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, within, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   consultationEntry,
@@ -153,9 +153,10 @@ describe('ClinicalPortalComposition', () => {
         selector: '.cr-entry__text',
       }),
     ).toBeInTheDocument();
+    // Two seeded diagnoses plus the new one.
     expect(
-      screen.getByText('Diagnóstico', { selector: '.cr-entry__kind' }),
-    ).toBeInTheDocument();
+      screen.getAllByText('Diagnóstico', { selector: '.cr-entry__kind' }),
+    ).toHaveLength(3);
   });
 
   it('adds a quick evolution note from the Evolución card', async () => {
@@ -195,9 +196,7 @@ describe('ClinicalPortalComposition', () => {
     expect(
       await screen.findByRole('cell', { name: 'Limpieza profunda' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('cell', { name: 'Planificado' }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Estado: Planificado')).toBeInTheDocument();
     expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
@@ -217,11 +216,11 @@ describe('ClinicalPortalComposition', () => {
     );
 
     expect(
-      await screen.findByRole('cell', { name: 'Resina simple' }),
+      await screen.findByRole('cell', { name: /Caries en pieza 18/ }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('cell', { name: 'Caries en pieza 18' }),
-    ).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: 'Resina simple' })).toHaveLength(
+      2,
+    );
     expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
 
@@ -248,16 +247,12 @@ describe('ClinicalPortalComposition', () => {
     renderDemo();
 
     await screen.findByRole('cell', { name: 'Limpieza profunda' });
-    expect(
-      screen.getByRole('cell', { name: 'Planificado' }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Estado: Planificado')).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole('button', { name: 'Iniciar tratamiento' }),
     );
 
-    expect(
-      await screen.findByRole('cell', { name: 'En curso' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Estado: En curso')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Iniciar tratamiento' }),
     ).toBeNull();
@@ -499,7 +494,7 @@ describe('ClinicalPortalComposition', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Costo (COP)' }),
     ).toBeInTheDocument();
-    expect(plan).toHaveTextContent(/Total estimado.*180\.000,00/);
+    expect(plan).toHaveTextContent(/Total estimado.*550\.000,00/);
     expect(plan).toHaveTextContent('Valores de solo lectura de Facturación');
     expect(screen.queryByLabelText(/Precio|Costo|Valor/)).toBeNull();
   });
@@ -599,7 +594,9 @@ describe('ClinicalPortalComposition', () => {
     });
     addEntry('Caries oclusal profunda');
 
-    const card = await screen.findByRole('region', { name: 'Diagnósticos' });
+    const card = await screen.findByRole('region', {
+      name: 'Diagnósticos Activos',
+    });
     expect(
       await screen.findByText(/Detectado: 08 oct 2026/),
     ).toBeInTheDocument();
@@ -621,8 +618,10 @@ describe('ClinicalPortalComposition', () => {
   it('lists recorded diagnoses in the side column card', async () => {
     renderDemo();
 
-    const card = await screen.findByRole('region', { name: 'Diagnósticos' });
-    expect(card).toHaveTextContent('Sin diagnósticos registrados.');
+    const card = await screen.findByRole('region', {
+      name: 'Diagnósticos Activos',
+    });
+    expect(card).toHaveTextContent('Gingivitis leve localizada');
     openComposer();
     fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
       target: { value: 'DIAGNOSIS' },
@@ -641,12 +640,14 @@ describe('ClinicalPortalComposition', () => {
   it('hides diagnoses from a secretary assistant', async () => {
     renderDemo();
 
-    await screen.findByRole('region', { name: 'Diagnósticos' });
+    await screen.findByRole('region', { name: 'Diagnósticos Activos' });
     fireEvent.change(screen.getByLabelText('Rol'), {
       target: { value: 'SECRETARY_ASSISTANT' },
     });
 
-    expect(screen.queryByRole('region', { name: 'Diagnósticos' })).toBeNull();
+    expect(
+      screen.queryByRole('region', { name: 'Diagnósticos Activos' }),
+    ).toBeNull();
   });
 
   it('keeps the plan readable but not editable without write authorization', async () => {
@@ -706,7 +707,9 @@ describe('ClinicalPortalComposition', () => {
     renderDemo();
 
     await screen.findByText(consultationEntry.text);
-    fireEvent.click(screen.getByRole('button', { name: 'Corregir entrada' }));
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Corregir entrada' })[0],
+    );
     fireEvent.change(screen.getByLabelText('Texto corregido'), {
       target: { value: 'Consulta corregida' },
     });
@@ -721,10 +724,12 @@ describe('ClinicalPortalComposition', () => {
     const texts = [...document.querySelectorAll('.cr-entry__text')].map(
       (element) => element.textContent,
     );
-    expect(texts).toEqual([
-      `Texto${consultationEntry.text}`,
-      'TextoConsulta corregida',
-    ]);
+    expect(texts).toEqual(
+      expect.arrayContaining([
+        `Texto${consultationEntry.text}`,
+        'TextoConsulta corregida',
+      ]),
+    );
     expect(screen.getByText('Corregida')).toBeInTheDocument();
   });
 
@@ -949,5 +954,41 @@ describe('ClinicalPortalComposition', () => {
 
     expect(await screen.findByText(consultationEntry.text)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nueva entrada' })).toBeNull();
+  });
+
+  describe('mockup fidelity for the demo patient', () => {
+    it('shows the planned procedures with read-only COP costs and the clinical reason', async () => {
+      renderDemo();
+
+      const plan = await screen.findByRole('region', {
+        name: 'Plan de Tratamiento y Procedimientos',
+      });
+      await screen.findByRole('cell', { name: /^Limpieza profunda/ });
+      expect(
+        within(plan)
+          .getAllByRole('columnheader')
+          .map((header) => header.textContent),
+      ).toEqual(['Completado', 'Procedimiento', 'Costo (COP)', 'Motivo']);
+      expect(
+        screen.getByRole('cell', { name: /^Resina simple/ }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('cell', { name: /^Extracción simple/ }),
+      ).toBeInTheDocument();
+      expect(plan).toHaveTextContent(/Total estimado.*550\.000,00/);
+      expect(within(plan).queryByRole('textbox')).toBeNull();
+    });
+
+    it('lists the active diagnoses recorded in the consultation', async () => {
+      renderDemo();
+
+      const card = await screen.findByRole('region', {
+        name: 'Diagnósticos Activos',
+      });
+      expect(
+        await within(card).findByText(/Caries oclusal profunda - Pieza 18/),
+      ).toBeInTheDocument();
+      expect(card).toHaveTextContent('Gingivitis leve localizada');
+    });
   });
 });

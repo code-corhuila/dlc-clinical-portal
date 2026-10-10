@@ -542,3 +542,34 @@ No terminal logs or timestamps are invented for this historical note.
 - **Not included (no contract):** the mockup's "This Week" range selector and "View All Appointments" link.
 - **TDD:** genuine RED for the compact COP format, the compact revenue card with the accessible exact amount, and the peak-day marker (3 tests).
 - **Validation (Windows):** `npm test` 252 tests PASS; typecheck, lint, format and `npm run build` (no synthetic strings) PASS; size gate PASS. Browser screenshot at 1280 px compared with the mockup.
+
+## DEV-CLIN-PORTAL-INTENT-KEYS-029
+
+- **Story:** HU-XCT-001 (code-corhuila/dlc-clinical-portal#6), Annex H idempotency (A2, part 1). Branch `feat/clinical-intent-keys-29` from `origin/develop` `5c92c8e`.
+- **Change:** the care-completion declaration and the care-closure retry now require an `Idempotency-Key` per user intent, as `clinical-service.yaml` declares for `POST /clinical-records/{id}/care-completions` and `POST /care-closures/{id}/retries`. The declaration card keeps one key for its intent; the closure tracker keeps one key per failed closure version, reused across retries of that failure. The demo adapter replays a repeated key without a second effect.
+- **Pending (A2, part 2):** keys for plan treatment, start treatment and procedure completion.
+- **TDD:** genuine RED: use cases ignored the key (4 tests), the demo adapter applied a repeated declaration twice (1 test), and the UI sent no key (2 tests).
+- **Validation (Windows):** `npm test` 259 tests PASS; coverage 95.46 % statements; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. No browser verification claimed for this increment (no visual change).
+## DEV-CLIN-PORTAL-DASHBOARD-REVIEW-030
+
+- **Story:** HU-CLN-003 presentation (code-corhuila/dlc-clinical-portal#5); follow-up to the review of code-corhuila/dlc-clinical-portal#50. Branch `fix/clinical-dashboard-ties-30` from `origin/develop` `f58d983`; replaces code-corhuila/dlc-clinical-portal#52 by cherry-pick after #51 merged (no merge commit).
+- **Changes:** every weekday tied for the week's maximum is marked as a peak (previously only the first by array order); the duplicated `.db-bar > span` rules are consolidated into one.
+- **Review points checked, no change needed:** `formatCopCompact` output was executed, not assumed: Node 78.3 ICU, the GitHub Actions run 37981871337 (Linux) and the in-app browser all produce `$980 k` and `$14,5 M` for `es-CO`. The `DEV-CLIN-PORTAL-DASHBOARD-FIDELITY-028` entry is present in #50; the table realignment in that PR came from a Prettier pass and will be kept in separate `chore` commits from now on.
+- **TDD:** genuine RED for tied busiest days (1 test).
+- **Validation (Windows):** `npm test` 253 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. Browser inspection of the demo dashboard: peak bar highlighted, other bars gray.
+
+## DEV-CLIN-PORTAL-RECORD-FIDELITY-031
+
+- **Story:** HU-CLN-001 / HU-CLN-002 presentation (code-corhuila/dlc-clinical-portal#3, #4), mockup "Expediente" view. Branch `feat/clinical-record-fidelity-31` from `origin/develop` `3a21818`.
+- **Changes:** the synthetic patient A now matches the mockup (three planned procedures: Limpieza profunda, Resina simple, Extracción simple; diagnoses "Caries oclusal profunda - Pieza 18" and "Gingivitis leve localizada" linked to the consultation). The plan table shows Procedimiento, Costo (COP, read-only from Billing) and Motivo; the treatment status lives in the card header ("Estado: …", and per row only when several treatments exist) and "Iniciar tratamiento" moved to the plan footer. The diagnoses card is titled "Diagnósticos Activos"; the patient name uses the mockup size.
+- **Intentional differences (owner decision 2026-10-09):** editable costs are not reproduced (CLN-006: Clinical never edits money; costs stay read-only in COP); per-procedure notes and tooth, patient age/birth date/photo/readable ID, "Editar perfil" and a diagnosis monitoring state have no Clinical contract; the top bar (breadcrumb, search, notifications, settings, avatar) belongs to `dlc-front`.
+- **TDD:** genuine RED for the plan columns/procedures/COP total and the active diagnoses card (2 tests); seven existing demo tests were updated to the new seed and table layout.
+- **Validation (Windows):** `npm test` 262 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. Browser inspection at 1280 px compared with the mockup.
+
+## DEV-CLIN-PORTAL-DOCKER-DEMO-032
+
+- **Request (2026-10-09, project owner):** two containers, the synthetic demo and the real remote. Branch `feat/clinical-docker-demo-32` from `origin/develop` `7657d41`.
+- **Changes:** `deploy/Dockerfile` takes `BUILD_SCRIPT` (`build` or `build:demo`); `deploy/compose.yml` defines `clinical-portal` (real, port 4173) and `clinical-portal-demo` (synthetic, port 4175, `PORTAL_DEMO_PORT`); `.dockerignore` admits only `.env.demo` (the demo flag, no secrets); README documents both services.
+- **Verification (Docker 29.7.2):** `docker compose -f deploy/compose.yml up --build -d` started both containers. Real container: 0 bundle files with synthetic strings, `remoteEntry.js` 200 with `Cache-Control: no-store`, page shows the federation placeholder. Demo container: synthetic data present, `remoteEntry.js` 200 `no-store`, page shows the demo selector and patient A. Inspected in the in-app browser.
+- **TDD:** configuration only; no unit RED. Regression: `npm test` 262 tests PASS.
+- **Validation (Windows):** typecheck, lint, format, `npm run build`, `git diff --check` and size gate PASS.

@@ -36,6 +36,7 @@ export interface TreatmentPlanCardProps {
   readonly onRetryClosure?: (
     closure: CareClosure,
     reason: string,
+    idempotencyKey: string,
   ) => Promise<CareClosure>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly loadPrices?: () => Promise<PriceEstimate>;
@@ -185,9 +186,7 @@ export function TreatmentPlanCard({
               </th>
               <th scope="col">Procedimiento</th>
               {prices && <th scope="col">Costo (COP)</th>}
-              <th scope="col">Estado</th>
               <th scope="col">Motivo</th>
-              {onStart && <th scope="col">Acción</th>}
             </tr>
           </thead>
           <tbody>
@@ -224,29 +223,17 @@ export function TreatmentPlanCard({
                   {index === 0 && (
                     <>
                       <td rowSpan={treatment.procedures.length}>
-                        {TREATMENT_STATUS_LABELS[treatment.status]}
-                      </td>
-                      <td rowSpan={treatment.procedures.length}>
+                        {treatments.length > 1 && (
+                          <small className="tp-row-status">
+                            {TREATMENT_STATUS_LABELS[treatment.status]}
+                          </small>
+                        )}
                         {treatment.clinicalReason ??
                           diagnoses.find(
                             (item) => item.id === treatment.diagnosisId,
                           )?.label ??
                           'Diagnóstico registrado'}
                       </td>
-                      {onStart && (
-                        <td rowSpan={treatment.procedures.length}>
-                          {treatment.status === 'PLANNED' && (
-                            <button
-                              type="button"
-                              className="tp-start"
-                              disabled={pending}
-                              onClick={() => start(treatment)}
-                            >
-                              Iniciar tratamiento
-                            </button>
-                          )}
-                        </td>
-                      )}
                     </>
                   )}
                 </tr>
@@ -335,6 +322,20 @@ export function TreatmentPlanCard({
       )}
       {treatments && !planning && (
         <div className="tp-footer">
+          {onStart &&
+            treatments
+              .filter((treatment) => treatment.status === 'PLANNED')
+              .map((treatment) => (
+                <button
+                  key={treatment.id}
+                  type="button"
+                  className="tp-start"
+                  disabled={pending}
+                  onClick={() => start(treatment)}
+                >
+                  Iniciar tratamiento
+                </button>
+              ))}
           {onPlan && (
             <button
               type="button"

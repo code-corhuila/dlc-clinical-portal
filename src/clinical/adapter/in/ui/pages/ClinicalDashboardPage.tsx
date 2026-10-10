@@ -26,14 +26,13 @@ const initials = (name: string) =>
     .map((part) => part[0])
     .join('');
 
-/** Bar chart; the list below it is the required textual alternative. The busiest day is highlighted as in the mockup. */
+/** Bar chart; the list below it is the required textual alternative. Every day tied for the busiest is highlighted, as in the mockup. */
 function WeeklyChart({
   activity,
 }: {
   readonly activity: DashboardSnapshot['weeklyActivity'];
 }) {
   const max = Math.max(1, ...activity.map((item) => item.count));
-  const peak = activity.find((item) => item.count === max);
   return (
     <div
       className="db-chart"
@@ -46,10 +45,10 @@ function WeeklyChart({
         <span
           key={item.day}
           className="db-bar"
-          data-peak={item === peak ? 'true' : undefined}
+          data-peak={item.count === max ? 'true' : undefined}
         >
           <span style={{ height: `${(item.count / max) * 100}%` }}>
-            {item === peak && <b aria-hidden="true">{item.count}</b>}
+            {item.count === max && <b aria-hidden="true">{item.count}</b>}
           </span>
           <small>{item.day}</small>
         </span>

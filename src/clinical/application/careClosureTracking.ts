@@ -11,6 +11,7 @@ export interface CareClosurePort {
   retryCareClosure(
     closureId: string,
     request: { reason: string; expectedVersion: number },
+    idempotencyKey: string,
   ): Promise<CareClosure>;
 }
 
@@ -37,7 +38,7 @@ export class CareClosureTracking {
   }
 
   async retry(
-    access: CareClosureAccess,
+    access: CareClosureAccess & { readonly idempotencyKey: string },
     closure: CareClosure,
     reason: string,
   ): Promise<CareClosure> {
@@ -55,9 +56,18 @@ export class CareClosureTracking {
         code: 'INVALID',
         message: 'Indique el motivo del reintento (máximo 1000 caracteres).',
       };
-    return this.port.retryCareClosure(closure.id, {
-      reason,
-      expectedVersion: closure.version,
-    });
+    if (!access.idempotencyKey)
+      throw {
+        code: 'INVALID',
+        message: 'Falta la clave de idempotencia de la operación.',
+      };
+    return this.port.retryCareClosure(
+      closure.id,
+      {
+        reason,
+        expectedVersion: closure.version,
+      },
+      access.idempotencyKey,
+    );
   }
 }

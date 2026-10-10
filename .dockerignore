@@ -3,6 +3,8 @@ node_modules
 dist
 .env
 .env.*
+# Demo mode flag only (VITE_CLINICAL_DEMO=true); no secrets.
+!.env.demo
 .__mf__temp
 coverage
 *.log
