@@ -25,6 +25,31 @@ const initials = (name: string) =>
     .map((part) => part[0])
     .join('');
 
+/** Bar chart; the list below it is the required textual alternative. */
+function WeeklyChart({
+  activity,
+}: {
+  readonly activity: DashboardSnapshot['weeklyActivity'];
+}) {
+  const max = Math.max(1, ...activity.map((item) => item.count));
+  return (
+    <div
+      className="db-chart"
+      role="img"
+      aria-label={`Actividad semanal: ${activity
+        .map((item) => `${item.day} ${item.count}`)
+        .join(', ')}`}
+    >
+      {activity.map((item) => (
+        <span key={item.day} className="db-bar">
+          <span style={{ height: `${(item.count / max) * 100}%` }} />
+          <small>{item.day}</small>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** KPI cards; revenue appears only when the use case kept it (Administrator). */
 function kpis(data: DashboardSnapshot): [string, string | number, string][] {
   const { count, deltaVsYesterday: delta } = data.todayAppointments;
@@ -107,7 +132,8 @@ export function ClinicalDashboardPage({
           <div className="db-grid">
             <section aria-label="Actividad semanal" className="db-card">
               <h2>Actividad semanal</h2>
-              <ul>
+              <WeeklyChart activity={view.snapshot.weeklyActivity} />
+              <ul className="db-chart-text">
                 {view.snapshot.weeklyActivity.map((item) => (
                   <li key={item.day}>
                     {item.day}: {item.count}
