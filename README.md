@@ -44,7 +44,7 @@ The compose file builds two containers from the same image recipe:
 
 | Service | Build | URL | Content |
 | --- | --- | --- | --- |
-| `clinical-portal` | `npm run build` | `http://localhost:4173` | Real remote: no synthetic data; workflows wait for the `dlc-front` session and client. |
+| `clinical-portal-dlc-front` | `npm run build` | `http://localhost:4173` | Real remote: no synthetic data; workflows wait for the `dlc-front` session and client. |
 | `clinical-portal-demo` | `npm run build:demo` | `http://localhost:4175` | Front-only delivery: synthetic data with the role/patient selector. |
 
 Both publish `remoteEntry.js` for `dlc-front`. Ports can be changed with `PORTAL_PORT` and `PORTAL_DEMO_PORT`.
@@ -97,7 +97,27 @@ The `shell/apiClient` operations and the session/role contract remain unpublishe
 its TypeScript type stays an intentionally empty boundary that this repository must not extend.
 Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
 
-### Federated modules (public interface)
+### Composition contract v1 entry (ADR-011)
+
+The current integration interface with `dlc-front` is the framework-neutral entry defined in
+dlc-docs `05-architecture/frontend-composition.md` (C01-C04). Both builds emit it next to the
+remote:
+
+| Build | Entry | Content |
+| --- | --- | --- |
+| `npm run build` | `/portals/clinical/0.1.0/entry.js` + `entry.css` | Real portal, no synthetic data |
+| `npm run build:demo` | `/portals/clinical/0.1.0-demo/entry.js` + `entry.css` | Synthetic demo |
+
+The ES module exports `portalId: 'clinical'`, `contractVersion: 1` and `mount(host, context)`.
+React is bundled (no bare imports or shared globals); importing it has no side effects. `mount`
+renders inside the supplied host, attaches `entry.css` inside that host and returns
+`updateRoute`, `canLeave` and an idempotent `unmount` (also on `context.signal` abort). Local
+paths: `/analytics` (Clinical Analytics in `/app/dashboard`), `/{patientId}` (clinical record in
+`/app/clinical`), `/` (patient prompt), anything else (portal 404). The release defaults to the
+package version (`-demo` suffix in demo mode) and can be set with `CLINICAL_RELEASE`. nginx
+serves `/portals/` with `Cache-Control: no-store`.
+
+### Federated modules (legacy interface, retired once dlc-front consumes v1)
 
 | Expose | Intended mount in `dlc-front` | Outside the dev demo |
 |---|---|---|

@@ -573,3 +573,33 @@ No terminal logs or timestamps are invented for this historical note.
 - **Verification (Docker 29.7.2):** `docker compose -f deploy/compose.yml up --build -d` started both containers. Real container: 0 bundle files with synthetic strings, `remoteEntry.js` 200 with `Cache-Control: no-store`, page shows the federation placeholder. Demo container: synthetic data present, `remoteEntry.js` 200 `no-store`, page shows the demo selector and patient A. Inspected in the in-app browser.
 - **TDD:** configuration only; no unit RED. Regression: `npm test` 262 tests PASS.
 - **Validation (Windows):** typecheck, lint, format, `npm run build`, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-CONTAINER-NAMES-033
+
+- **Request (2026-10-09, project owner):** container names must say which one is the demo and which one is mounted by `dlc-front`. Branch `chore/clinical-container-names-33` from `origin/develop` `5bb8b8e`.
+- **Change:** compose services and containers renamed to `clinical-portal-dlc-front` (real remote, port 4173) and `clinical-portal-demo` (synthetic, port 4175); README table updated.
+- **Verification (Docker 29.7.2):** `docker compose -f deploy/compose.yml up --build -d` started both containers with those names; `remoteEntry.js` answered 200 on 4173 and 4175. Configuration only, no unit RED.
+
+## DEV-CLIN-PORTAL-MOUNT-ADAPTER-034
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); dlc-docs `638e4f2`, ADR-011 and composition contract v1 (`05-architecture/frontend-composition.md`, C01-C04). Branch `feat/clinical-portal-mount-34` from `origin/develop` `b637357`.
+- **Change:** `src/clinical/entry.tsx` exports `portalId: 'clinical'`, `contractVersion: 1` and `mount(host, context)`. The handle offers `updateRoute`, `canLeave` and an idempotent `unmount` that also runs when `context.signal` aborts and removes the session subscription. `ClinicalRouteView` interprets the local path: `/analytics` mounts Clinical Analytics, `/{patientId}` the clinical record, `/` asks for a patient and any other path shows the portal 404. The viewer (role, id, name) comes from the Auth session snapshot; UI claims are not authorization.
+- **Pending (next increments):** build the independent `entry.js` ES module under `/portals/clinical/{release}/` with no bare imports and no import side effects, wire `context.http` into real adapters, report render failures through `reportFailure`, and retire the Module Federation entries once dlc-front consumes v1.
+- **TDD:** genuine RED: the `entry` module did not exist (6 tests).
+- **Validation (Windows):** `npm test` 268 tests PASS; coverage 95.55 % statements; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate PASS. No browser verification claimed (no compositor exists yet).
+
+## DEV-CLIN-PORTAL-ENTRY-BUILD-035
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C01 and C03 (dlc-docs `638e4f2`). Branch `feat/clinical-portal-entry-build-35` from `origin/develop` `00e5ce7`.
+- **Change:** `vite.entry.config.ts` builds `src/clinical/entry.tsx` as one independent ES module at `/portals/clinical/{release}/entry.js` with a sibling `entry.css`; React is bundled, release defaults to the package version (`-demo` in demo mode) and is validated against C01's release pattern. `npm run build` and `npm run build:demo` now emit it. `mount` attaches `entry.css` and its render frame inside the host and removes both on unmount. nginx serves `/portals/` with `no-store`. README documents the v1 entry.
+- **TDD:** genuine RED: the entry build configuration did not exist (build test failed) and mount attached no stylesheet inside the host (1 test). The build test checks the release directory, absence of bare imports and that importing the built module exposes the v1 identity without side effects.
+- **Browser verification:** a temporary compositor probe page (not committed) imported `/portals/clinical/0.1.0-demo/entry.js` and mounted patient A as Dentist: styled record, `entry.css` link inside the host and no styles added to `<head>`; `updateRoute('/analytics')` showed the Dentist dashboard without revenue; `unmount` left the host empty and removed the stylesheet.
+- **Containers (Docker 29.7.2):** rebuilt; `entry.js` and `entry.css` answer 200 with `Cache-Control: no-store` on 4173 (`0.1.0`) and 4175 (`0.1.0-demo`); an unknown release returns 404; the real entry contains no synthetic strings.
+- **Validation (Windows):** `npm test` 270 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-FAILURE-CONTAINMENT-036
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C05 and C07 (dlc-docs `638e4f2`). Branch `feat/clinical-portal-failure-report-36` from `origin/develop` `042b84f`.
+- **Change:** `ClinicalFailureBoundary` wraps the mounted view; a rendering failure shows a local unavailable notice inside the host and calls `reportFailure({ code: 'PORTAL_RENDER_FAILED' })` once, with no exception text or patient data and not after the context is aborted. When the session snapshot stops being `authenticated`, the route view replaces any private clinical content with "Sesión no disponible".
+- **TDD:** genuine RED: a throwing route view was not reported (1 test) and an expired session kept the clinical record rendered (1 test).
+- **Validation (Windows):** `npm test` 272 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings in the remote or the real entry), `git diff --check` and size gate PASS. No browser verification claimed for this increment (behavior covered by tests; no compositor yet).
