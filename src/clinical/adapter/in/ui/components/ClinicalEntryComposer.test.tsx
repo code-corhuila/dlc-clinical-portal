@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ClinicalEntryComposer } from './ClinicalEntryComposer';
 
@@ -21,6 +21,63 @@ function submit(text: string) {
 }
 
 describe('ClinicalEntryComposer', () => {
+  const consultations = [
+    { id: 'c-1', label: '02 mar 2026 · Revisión inicial' },
+  ];
+
+  it('clears the narrative after a successful submission', async () => {
+    renderComposer({ onSubmit: vi.fn().mockResolvedValue(undefined) });
+    submit('Consulta guardada');
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Narrativa clínica')).toHaveValue(''),
+    );
+  });
+
+  it('keeps the narrative when the submission fails', async () => {
+    renderComposer({ onSubmit: vi.fn().mockRejectedValue(new Error('x')) });
+    submit('Consulta fallida');
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByLabelText('Narrativa clínica')).toHaveValue(
+      'Consulta fallida',
+    );
+  });
+
+  it('requires an explicit consultation for a diagnosis', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderComposer({ onSubmit, consultations });
+    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
+      target: { value: 'DIAGNOSIS' },
+    });
+
+    expect(screen.getByLabelText('Consulta asociada')).toHaveValue('');
+    submit('Caries oclusal');
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Seleccione la consulta asociada al diagnóstico.',
+    );
+  });
+
+  it('submits a diagnosis with the selected consultation', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderComposer({ onSubmit, consultations });
+    fireEvent.change(screen.getByLabelText('Tipo de entrada'), {
+      target: { value: 'DIAGNOSIS' },
+    });
+    fireEvent.change(screen.getByLabelText('Consulta asociada'), {
+      target: { value: 'c-1' },
+    });
+    submit('Caries oclusal');
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      kind: 'DIAGNOSIS',
+      text: 'Caries oclusal',
+      consultationId: 'c-1',
+    });
+  });
+
   it('submits an exact CONSULTATION request', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderComposer({ onSubmit });

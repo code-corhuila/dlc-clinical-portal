@@ -13,6 +13,7 @@ export interface ClinicalEntryComposerProps {
   readonly clinicalWriteAuthorized?: boolean;
   readonly recordWritable?: boolean;
   readonly onSubmit?: (request: ClinicalEntryRequest) => Promise<void>;
+  readonly consultations?: readonly { id: string; label: string }[];
 }
 
 /** UI-only composer; the supplied port is responsible for integrated submission. */
@@ -21,9 +22,11 @@ export function ClinicalEntryComposer({
   clinicalWriteAuthorized,
   recordWritable,
   onSubmit,
+  consultations = [],
 }: ClinicalEntryComposerProps) {
   const [kind, setKind] = useState<ClinicalEntryRequestKind>('CONSULTATION');
   const [text, setText] = useState('');
+  const [consultationId, setConsultationId] = useState('');
   const [message, setMessage] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const allowed =
@@ -34,7 +37,7 @@ export function ClinicalEntryComposer({
     event.preventDefault();
     if (!onSubmit || submitting) return;
 
-    const request = validateClinicalEntryRequest(kind, text);
+    const request = validateClinicalEntryRequest(kind, text, consultationId);
     if (typeof request === 'string') {
       setMessage(request);
       return;
@@ -43,6 +46,7 @@ export function ClinicalEntryComposer({
     setSubmitting(true);
     try {
       await onSubmit(request);
+      setText('');
     } catch {
       setMessage(
         'No fue posible enviar la entrada clínica. Inténtelo de nuevo.',
@@ -75,8 +79,27 @@ export function ClinicalEntryComposer({
           }
         >
           <option value="CONSULTATION">Consulta</option>
+          <option value="DIAGNOSIS">Diagnóstico</option>
           <option value="EVOLUTION">Evolución</option>
         </select>
+        {kind === 'DIAGNOSIS' && (
+          <>
+            <label htmlFor="entry-consultation">Consulta asociada</label>
+            <select
+              id="entry-consultation"
+              value={consultationId}
+              disabled={submitting}
+              onChange={(event) => setConsultationId(event.target.value)}
+            >
+              <option value="">Seleccione una consulta</option>
+              {consultations.map((consultation) => (
+                <option key={consultation.id} value={consultation.id}>
+                  {consultation.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <label htmlFor="entry-text">Narrativa clínica</label>
         <textarea
           id="entry-text"

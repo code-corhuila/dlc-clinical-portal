@@ -93,6 +93,26 @@ describe('ClinicalRecordEntries', () => {
   });
 
   describe('data state', () => {
+    it('shows the consultation a diagnosis is linked to', () => {
+      renderEntries({
+        status: readyStatus([
+          consultationEntry,
+          {
+            ...evolutionEntry,
+            id: 'diagnosis-1',
+            kind: 'DIAGNOSIS',
+            text: 'Caries oclusal',
+            consultationId: consultationEntry.id,
+          },
+        ]),
+      });
+
+      expect(screen.getByText('Diagnóstico')).toBeInTheDocument();
+      expect(screen.getByText(/Vinculado a la consulta del/)).toHaveTextContent(
+        '2026',
+      );
+    });
+
     it('renders a CONSULTATION entry with text, author and formatted createdAt', () => {
       renderEntries({ status: readyStatus([consultationEntry]) });
 
@@ -118,7 +138,9 @@ describe('ClinicalRecordEntries', () => {
     it('renders an EVOLUTION entry with its text and author', () => {
       renderEntries({ status: readyStatus([evolutionEntry]) });
 
-      expect(screen.getByText('Evolución')).toBeInTheDocument();
+      expect(
+        screen.getByText('Evolución', { selector: '.cr-entry__kind' }),
+      ).toBeInTheDocument();
       expect(screen.getByText(evolutionEntry.text)).toBeInTheDocument();
       expect(screen.getByText(evolutionEntry.authorId)).toBeInTheDocument();
     });

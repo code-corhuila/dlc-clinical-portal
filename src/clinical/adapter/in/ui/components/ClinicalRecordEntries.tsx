@@ -35,6 +35,7 @@ export interface ClinicalRecordEntriesProps {
   readonly status: ClinicalRecordStatus;
   readonly onRetry?: () => void;
   readonly authorName?: (authorId: string) => string;
+  readonly children?: React.ReactNode;
 }
 
 /** Read-only clinical record slice; denied access wins before any narrative. */
@@ -44,6 +45,7 @@ export function ClinicalRecordEntries({
   status,
   onRetry,
   authorName = (authorId) => authorId,
+  children,
 }: ClinicalRecordEntriesProps) {
   const view = toClinicalRecordViewModel(
     resolveClinicalAccess(role, clinicalReadAuthorized === true),
@@ -53,9 +55,10 @@ export function ClinicalRecordEntries({
   return (
     <section className="cr-card" aria-labelledby="clinical-record-title">
       <h2 className="cr-title" id="clinical-record-title">
-        Registro clínico
+        Evolución
       </h2>
       {renderState(view, authorName, onRetry)}
+      {(view.state === 'data' || view.state === 'empty') && children}
     </section>
   );
 }
@@ -112,6 +115,9 @@ function renderState(
               key={entry.id}
               entry={entry}
               author={authorName(entry.authorId)}
+              consultation={view.entries.find(
+                (item) => item.id === entry.consultationId,
+              )}
             />
           ))}
         </ul>
@@ -122,9 +128,11 @@ function renderState(
 function Entry({
   entry,
   author,
+  consultation,
 }: {
   readonly entry: ClinicalEntry;
   readonly author: string;
+  readonly consultation?: ClinicalEntry;
 }) {
   return (
     <li className="cr-entry">
@@ -153,6 +161,11 @@ function Entry({
           <span className="cr-label">Texto</span>
           {entry.text}
         </p>
+        {consultation?.createdAt && (
+          <p className="cr-entry__link">
+            Vinculado a la consulta del {formatDate(consultation.createdAt)}
+          </p>
+        )}
       </div>
     </li>
   );
