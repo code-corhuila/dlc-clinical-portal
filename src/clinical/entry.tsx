@@ -26,6 +26,14 @@ export interface SessionSnapshot {
   } | null;
 }
 
+/** C04: the only way a portal changes the global URL. */
+export interface PortalNavigation {
+  request(target: {
+    path: string;
+    replace?: boolean;
+  }): Promise<{ status: string }>;
+}
+
 export interface PortalContext {
   readonly contractVersion: number;
   readonly portalId: string;
@@ -33,7 +41,7 @@ export interface PortalContext {
   readonly compositionId: string;
   readonly route: PortalRoute;
   readonly signal: AbortSignal;
-  readonly navigation: unknown;
+  readonly navigation: PortalNavigation;
   readonly session: {
     getSnapshot(): SessionSnapshot;
     subscribe(listener: () => void): () => void;
@@ -75,6 +83,7 @@ export async function mount(
         <ClinicalFailureBoundary onFailure={onFailure}>
           <ClinicalRouteView
             route={route}
+            navigation={context.navigation}
             session={context.session.getSnapshot()}
           />
         </ClinicalFailureBoundary>,

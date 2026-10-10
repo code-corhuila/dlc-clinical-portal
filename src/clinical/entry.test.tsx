@@ -1,3 +1,4 @@
+import { fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { contractVersion, mount, portalId, type PortalContext } from './entry';
 
@@ -166,5 +167,64 @@ describe('Clinical portal entry (composition contract v1)', () => {
     expect(target.textContent).not.toContain('Mateo Herrera');
     expect(target.textContent).toContain('Sesión no disponible');
     await handle.unmount();
+  });
+
+  describe('demo bar inside the compositor', () => {
+    it('keeps only the patient selector in the record and navigates through the shell', async () => {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+      const target = host();
+      const ctx = context('/patient-b');
+
+      const handle = await mount(target, ctx.value);
+      await vi.waitFor(() =>
+        expect(target.textContent).toContain('Mateo Herrera'),
+      );
+
+      const labels = [...target.querySelectorAll('.cl-demo > label')].map(
+        (label) => label.textContent,
+      );
+      expect(
+        labels.some((text) => /Vista|Rol|Autorización/.test(text ?? '')),
+      ).toBe(false);
+      const select = target.querySelector<HTMLSelectElement>(
+        'select[aria-label="Paciente"]',
+      )!;
+      expect(select.value).toBe('patient-b');
+      fireEvent.change(select, { target: { value: 'patient-c' } });
+      expect(ctx.value.navigation.request).toHaveBeenCalledWith({
+        path: '/app/clinical/patient-c',
+      });
+      await handle.unmount();
+    });
+
+    it('offers the patient selector on the clinical home prompt', async () => {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+      const target = host();
+      const ctx = context('/');
+
+      const handle = await mount(target, ctx.value);
+
+      expect(target.textContent).toContain('Seleccione un paciente');
+      fireEvent.change(target.querySelector('select[aria-label="Paciente"]')!, {
+        target: { value: 'patient-a' },
+      });
+      expect(ctx.value.navigation.request).toHaveBeenCalledWith({
+        path: '/app/clinical/patient-a',
+      });
+      await handle.unmount();
+    });
+
+    it('shows only the dashboard on /analytics, without demo selectors', async () => {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+      const target = host();
+
+      const handle = await mount(target, context('/analytics').value);
+
+      await vi.waitFor(() =>
+        expect(target.textContent).toContain('Bienvenida'),
+      );
+      expect(target.querySelector('select')).toBeNull();
+      await handle.unmount();
+    });
   });
 });
