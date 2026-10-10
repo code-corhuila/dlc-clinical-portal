@@ -141,4 +141,30 @@ describe('Clinical portal entry (composition contract v1)', () => {
     await handle.unmount();
     expect(target.querySelector('link')).toBeNull();
   });
+
+  it('clears private clinical content when the session stops being authenticated', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+    const target = host();
+    const ctx = context('/patient-b');
+    let state = 'authenticated';
+    const getSnapshot = ctx.value.session.getSnapshot;
+    const session = {
+      ...ctx.value.session,
+      getSnapshot: () =>
+        state === 'authenticated'
+          ? getSnapshot()
+          : { state, revision: 2, user: null },
+    };
+    const handle = await mount(target, { ...ctx.value, session });
+    await vi.waitFor(() =>
+      expect(target.textContent).toContain('Mateo Herrera'),
+    );
+
+    state = 'expired';
+    ctx.listeners.forEach((listener) => listener());
+
+    expect(target.textContent).not.toContain('Mateo Herrera');
+    expect(target.textContent).toContain('Sesión no disponible');
+    await handle.unmount();
+  });
 });
