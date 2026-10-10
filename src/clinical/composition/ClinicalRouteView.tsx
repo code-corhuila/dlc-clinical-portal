@@ -27,6 +27,13 @@ export function ClinicalRouteView({
   readonly route: PortalRoute;
   readonly session: SessionSnapshot;
 }) {
+  // C05/C07: without an authenticated session no private clinical content stays rendered.
+  if (session.state !== 'authenticated')
+    return (
+      <main className="portal-placeholder">
+        <h1>Sesión no disponible</h1>
+      </main>
+    );
   const segments = route.localPath.split('/').filter(Boolean);
   if (segments.length === 1 && segments[0] === 'analytics')
     return <ClinicalDashboardComposition {...viewer(session)} />;
