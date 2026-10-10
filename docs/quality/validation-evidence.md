@@ -587,3 +587,10 @@ No terminal logs or timestamps are invented for this historical note.
 - **Browser verification:** a temporary compositor probe page (not committed) imported `/portals/clinical/0.1.0-demo/entry.js` and mounted patient A as Dentist: styled record, `entry.css` link inside the host and no styles added to `<head>`; `updateRoute('/analytics')` showed the Dentist dashboard without revenue; `unmount` left the host empty and removed the stylesheet.
 - **Containers (Docker 29.7.2):** rebuilt; `entry.js` and `entry.css` answer 200 with `Cache-Control: no-store` on 4173 (`0.1.0`) and 4175 (`0.1.0-demo`); an unknown release returns 404; the real entry contains no synthetic strings.
 - **Validation (Windows):** `npm test` 270 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-FAILURE-CONTAINMENT-036
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C05 and C07 (dlc-docs `638e4f2`). Branch `feat/clinical-portal-failure-report-36` from `origin/develop` `042b84f`.
+- **Change:** `ClinicalFailureBoundary` wraps the mounted view; a rendering failure shows a local unavailable notice inside the host and calls `reportFailure({ code: 'PORTAL_RENDER_FAILED' })` once, with no exception text or patient data and not after the context is aborted. When the session snapshot stops being `authenticated`, the route view replaces any private clinical content with "Sesión no disponible".
+- **TDD:** genuine RED: a throwing route view was not reported (1 test) and an expired session kept the clinical record rendered (1 test).
+- **Validation (Windows):** `npm test` 272 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings in the remote or the real entry), `git diff --check` and size gate PASS. No browser verification claimed for this increment (behavior covered by tests; no compositor yet).
