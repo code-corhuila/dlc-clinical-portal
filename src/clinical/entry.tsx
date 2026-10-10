@@ -1,5 +1,6 @@
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
+import { ClinicalFailureBoundary } from './composition/ClinicalFailureBoundary';
 import { ClinicalRouteView } from './composition/ClinicalRouteView';
 
 /** Composition contract v1 (dlc-docs 05-architecture/frontend-composition.md, C01-C04). */
@@ -61,13 +62,22 @@ export async function mount(
   host.append(stylesheet, frame);
   let root: Root | null = createRoot(frame);
   let route = context.route;
+  let reported = false;
+  // C07: report once with the contract code only; the compositor ends the mount.
+  const onFailure = () => {
+    if (reported || context.signal.aborted) return;
+    reported = true;
+    context.reportFailure({ code: 'PORTAL_RENDER_FAILED' });
+  };
   const render = () =>
     flushSync(() =>
       root?.render(
-        <ClinicalRouteView
-          route={route}
-          session={context.session.getSnapshot()}
-        />,
+        <ClinicalFailureBoundary onFailure={onFailure}>
+          <ClinicalRouteView
+            route={route}
+            session={context.session.getSnapshot()}
+          />
+        </ClinicalFailureBoundary>,
       ),
     );
   const unsubscribe = context.session.subscribe(render);
