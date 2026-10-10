@@ -594,3 +594,12 @@ No terminal logs or timestamps are invented for this historical note.
 - **Change:** `ClinicalFailureBoundary` wraps the mounted view; a rendering failure shows a local unavailable notice inside the host and calls `reportFailure({ code: 'PORTAL_RENDER_FAILED' })` once, with no exception text or patient data and not after the context is aborted. When the session snapshot stops being `authenticated`, the route view replaces any private clinical content with "Sesión no disponible".
 - **TDD:** genuine RED: a throwing route view was not reported (1 test) and an expired session kept the clinical record rendered (1 test).
 - **Validation (Windows):** `npm test` 272 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings in the remote or the real entry), `git diff --check` and size gate PASS. No browser verification claimed for this increment (behavior covered by tests; no compositor yet).
+
+## DEV-CLIN-PORTAL-PROMOTION-BRANCH-GATE-037
+
+- **Decision (2026-10-09, project owner, option A):** keep `promotion/*` as the controlled exception for QA promotions. Norm 6.3.3 and dlc-docs `00-governance/git-conventions.md` name `qa/*`, but Git cannot create `refs/heads/qa/*` while the permanent `qa` branch exists (verified: "'refs/heads/qa' exists; cannot create 'refs/heads/qa/x'"). Previous promotions #7, #8, #12, #13, #15 and #17 already used `promotion/*`.
+- **Branch:** `chore/clinical-promotion-branch-gate` from `origin/develop` `84becf5`.
+- **Change:** the branch gate admits `promotion/` only into `qa`; the `qa/*` nomenclature conflict finding is kept unchanged.
+- **Promotion audit (before this change):** all 32 code commits on `qa` carry `(cherry picked from commit …)` trailers whose sources exist in `develop`; the 6 merges on `qa` come from `promotion/*` PRs branched from `qa` (no develop→qa merge); `main` holds only the two seed commits. 43 develop commits remain to promote.
+- **TDD:** genuine RED: `promotion/clinical-front-only` → `qa` was rejected with `BRANCH_UNKNOWN_PREFIX` (1 test); a target other than `qa` still fails.
+- **Validation (Windows):** `npm test` 273 tests PASS; typecheck, lint, format, build, `git diff --check` and size gate PASS.
