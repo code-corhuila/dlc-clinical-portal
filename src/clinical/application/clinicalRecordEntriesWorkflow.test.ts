@@ -197,6 +197,49 @@ describe('ClinicalRecordEntriesWorkflow', () => {
 
     await workflow.load('patient-1');
 
-    expect(workflow.status).toEqual({ kind: 'error', message: 'offline' });
+    // C06: technical errors never reach the user; the safe fallback is shown.
+    expect(workflow.status).toEqual({
+      kind: 'error',
+      message: 'No fue posible cargar el registro clínico.',
+    });
+  });
+
+  it('shows the owner message with its support reference', async () => {
+    const workflow = new ClinicalRecordEntriesWorkflow({
+      findRecordId: async () => {
+        throw {
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Servicio no disponible.',
+          traceId: 'trace-1',
+        };
+      },
+      readEntries: async () => ({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      }),
+    });
+
+    await workflow.load('p-1');
+
+    expect(workflow.status).toEqual({
+      kind: 'error',
+      message: 'Servicio no disponible. Referencia: trace-1',
+    });
+  });
+
+  it('ignores a cancelled request instead of showing an error', async () => {
+    const workflow = new ClinicalRecordEntriesWorkflow({
+      findRecordId: async () => {
+        throw { code: 'CANCELLED' };
+      },
+      readEntries: async () => ({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      }),
+    });
+
+    await workflow.load('p-1');
+
+    expect(workflow.status).toEqual({ kind: 'loading' });
   });
 });

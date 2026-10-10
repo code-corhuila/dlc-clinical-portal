@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { ClinicalRole } from '../model/clinicalAccess';
+import type { PortalHttp } from '../adapter/out/http/portalHttp';
+import { ClinicalRealComposition } from './realComposition';
 import '../clinical-portal.css';
 import { ClinicalDemoPage } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
@@ -38,6 +40,8 @@ export interface ClinicalShellContext {
   readonly onSelectPatient?: (patientId: string) => void;
   /** Compositor navigation to the Appointments portal from the dashboard (C04). */
   readonly onViewAllAppointments?: () => void;
+  /** Compositor http capability (C06); passed down, never kept in globals. */
+  readonly http?: PortalHttp;
 }
 
 export function isClinicalDemo(): boolean {
@@ -57,6 +61,13 @@ export function ClinicalPortalComposition(context: ClinicalShellContext) {
     <ClinicalDemoComposition
       key={`${context.patientId}:${context.role}`}
       {...context}
+    />
+  ) : context.http ? (
+    <ClinicalRealComposition
+      key={`${context.patientId}:${context.role}`}
+      http={context.http}
+      patientId={context.patientId}
+      role={context.role}
     />
   ) : (
     <ClinicalPortalPage />

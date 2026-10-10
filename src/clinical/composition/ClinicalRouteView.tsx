@@ -1,5 +1,6 @@
 import type { ClinicalRole } from '../model/clinicalAccess';
 import type { PortalNavigation, PortalRoute, SessionSnapshot } from '../entry';
+import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import { DEMO_PATIENTS } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import {
   ClinicalDashboardComposition,
@@ -26,10 +27,12 @@ export function ClinicalRouteView({
   route,
   session,
   navigation,
+  http,
 }: {
   readonly route: PortalRoute;
   readonly session: SessionSnapshot;
   readonly navigation: PortalNavigation;
+  readonly http?: PortalHttp;
 }) {
   // C04: the shell owns the URL; selecting a patient is a navigation request.
   const onSelectPatient = (patientId: string) =>
@@ -57,6 +60,7 @@ export function ClinicalRouteView({
         {...viewer(session)}
         patientId={segments[0]}
         onSelectPatient={onSelectPatient}
+        http={http}
       />
     );
   return (
