@@ -1,8 +1,10 @@
 import type { ClinicalRole } from '../model/clinicalAccess';
-import type { PortalRoute, SessionSnapshot } from '../entry';
+import type { PortalNavigation, PortalRoute, SessionSnapshot } from '../entry';
+import { DEMO_PATIENTS } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import {
   ClinicalDashboardComposition,
   ClinicalPortalComposition,
+  isClinicalDemo,
   type ClinicalShellContext,
 } from './ClinicalPortalComposition';
 
@@ -23,10 +25,15 @@ function viewer(snapshot: SessionSnapshot): ClinicalShellContext {
 export function ClinicalRouteView({
   route,
   session,
+  navigation,
 }: {
   readonly route: PortalRoute;
   readonly session: SessionSnapshot;
+  readonly navigation: PortalNavigation;
 }) {
+  // C04: the shell owns the URL; selecting a patient is a navigation request.
+  const onSelectPatient = (patientId: string) =>
+    void navigation.request({ path: `/app/clinical/${patientId}` });
   // C05/C07: without an authenticated session no private clinical content stays rendered.
   if (session.state !== 'authenticated')
     return (
@@ -39,7 +46,11 @@ export function ClinicalRouteView({
     return <ClinicalDashboardComposition {...viewer(session)} />;
   if (segments.length === 1)
     return (
-      <ClinicalPortalComposition {...viewer(session)} patientId={segments[0]} />
+      <ClinicalPortalComposition
+        {...viewer(session)}
+        patientId={segments[0]}
+        onSelectPatient={onSelectPatient}
+      />
     );
   return (
     <main className="portal-placeholder">
@@ -48,6 +59,22 @@ export function ClinicalRouteView({
           ? 'Seleccione un paciente'
           : 'Página clínica no encontrada'}
       </h1>
+      {segments.length === 0 && isClinicalDemo() && (
+        <select
+          aria-label="Paciente"
+          defaultValue=""
+          onChange={(event) => onSelectPatient(event.target.value)}
+        >
+          <option value="" disabled>
+            Paciente sintético…
+          </option>
+          {DEMO_PATIENTS.map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      )}
     </main>
   );
 }
