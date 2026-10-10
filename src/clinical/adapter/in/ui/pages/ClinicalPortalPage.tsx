@@ -200,6 +200,20 @@ export function ClinicalPortalPage({
                       .map((entry) => ({ id: entry.id, label: entry.text }))
                   : []
               }
+              onStart={
+                resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
+                'granted'
+                  ? (treatment) =>
+                      treatments.plan.start(
+                        {
+                          patientId,
+                          role,
+                          clinicalAuthorized: clinicalWriteAuthorized,
+                        },
+                        treatment,
+                      )
+                  : undefined
+              }
               onPlan={
                 resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                 'granted'
