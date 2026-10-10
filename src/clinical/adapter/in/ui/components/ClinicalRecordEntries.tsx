@@ -11,6 +11,24 @@ import {
   type ClinicalRecordViewModel,
 } from '../../../../model/clinicalRecordView';
 
+function formatDate(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return isoString;
+    return new Intl.DateTimeFormat('es', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
+    }).format(date);
+  } catch {
+    return isoString;
+  }
+}
+
 export interface ClinicalRecordEntriesProps {
   readonly role: ClinicalRole | null;
   readonly clinicalReadAuthorized?: boolean;
@@ -94,23 +112,32 @@ function renderState(view: ClinicalRecordViewModel, onRetry?: () => void) {
 function Entry({ entry }: { readonly entry: ClinicalEntry }) {
   return (
     <li className="cr-entry">
-      <div className="cr-entry__header">
-        <span className="cr-entry__kind">{clinicalEntryLabel(entry.kind)}</span>
-        <span>
-          <span className="cr-label">Autor</span>
-          <code>{entry.authorId}</code>
-        </span>
-        {entry.createdAt !== undefined && (
-          <span>
-            <span className="cr-label">Fecha y hora</span>
-            <time dateTime={entry.createdAt}>{entry.createdAt}</time>
-          </span>
-        )}
+      <div className="cr-entry__timeline-marker" aria-hidden="true"></div>
+      <div className="cr-entry__content">
+        <div className="cr-entry__header">
+          <div className="cr-entry__header-left">
+            {entry.createdAt !== undefined && (
+              <span>
+                <span className="cr-label">Fecha y hora</span>
+                <time className="cr-entry__time" dateTime={entry.createdAt}>
+                  {formatDate(entry.createdAt)}
+                </time>
+              </span>
+            )}
+            <span className="cr-entry__kind">
+              {clinicalEntryLabel(entry.kind)}
+            </span>
+          </div>
+          <div className="cr-entry__author">
+            <span className="cr-label">Autor</span>
+            <code>{entry.authorId}</code>
+          </div>
+        </div>
+        <p className="cr-entry__text">
+          <span className="cr-label">Texto</span>
+          {entry.text}
+        </p>
       </div>
-      <p className="cr-entry__text">
-        <span className="cr-label">Texto</span>
-        {entry.text}
-      </p>
     </li>
   );
 }
