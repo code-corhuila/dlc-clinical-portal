@@ -14,7 +14,9 @@ export const LINE_LIMIT = 400;
 export const PERMANENT_BRANCHES = ['develop', 'qa', 'main'];
 export const CHILD_PREFIXES = {
   develop: ['feat/', 'fix/', 'chore/'],
-  qa: ['qa/'],
+  // promotion/*: owner-approved exception (2026-10-09); Git cannot create
+  // qa/* refs while the permanent qa branch exists.
+  qa: ['qa/', 'promotion/'],
   main: ['release/', 'hotfix/'],
 };
 export const COMMIT_SUBJECT =
