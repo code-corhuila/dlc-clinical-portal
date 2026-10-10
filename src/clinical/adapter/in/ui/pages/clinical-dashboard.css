@@ -44,6 +44,7 @@
 .db-grid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  align-items: stretch;
   gap: 24px;
 }
 
@@ -87,7 +88,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 12px;
-  height: 200px;
+  height: 240px;
   align-items: end;
   border-radius: 8px;
   background: #f7f9fa;
@@ -197,4 +198,40 @@
   width: 12px;
   height: 12px;
   color: inherit;
+}
+
+.db-grid > .db-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.db-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.db-card-header > span {
+  color: #66737a;
+  font-size: 13px;
+}
+
+.db-upcoming > ul {
+  flex: 1;
+}
+
+.db-link {
+  align-self: center;
+  margin-top: 16px;
+  border: 0;
+  background: none;
+  color: #0f766e;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.db-link:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
 }

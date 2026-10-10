@@ -528,16 +528,11 @@ describe('ClinicalPortalComposition', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('prints the treatment plan', async () => {
-    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+  it('offers no print action: dlc-docs does not define plan printing', async () => {
     renderDemo();
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Imprimir plan' }),
-    );
-
-    expect(print).toHaveBeenCalledOnce();
-    print.mockRestore();
+    await screen.findByRole('cell', { name: /^Limpieza profunda/ });
+    expect(screen.queryByRole('button', { name: /Imprimir/ })).toBeNull();
   });
 
   it('filters the Evolución timeline by entry type', async () => {

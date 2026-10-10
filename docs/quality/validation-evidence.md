@@ -611,3 +611,12 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED: the embedded record still showed Vista/Rol/authorization controls and did not navigate (1 test); the home prompt had no selector (1 test). The `/analytics` no-selector test passed before and after (regression guard).
 - **Browser verification:** a temporary compositor probe page (not committed) mounted the demo `entry.js` at `/`: prompt without extra vertical scroll; choosing patient A requested `/app/clinical/patient-a` and, after `updateRoute`, the record showed only the patient selector.
 - **Validation (Windows):** `npm test` 276 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-DASHBOARD-DOCS-ALIGNMENT-039
+
+- **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); dlc-docs `638e4f2` (wireframe Dashboard 88:1998, HU-CLN-003, composition contract v1 C03/C04). Branch `feat/clinical-dashboard-docs-alignment-39` from `origin/develop`.
+- **Verification before change:** mockup PDF page 4 only shows the title, greeting and three KPI cards; the dlc-docs wireframe defines the weekly chart with textual alternative and "Próximas citas", and defines no range selector or plan printing. HU-CLN-003 requires stale data to be identifiable.
+- **Changes (owner decision 2026-10-10):** removed "Imprimir plan" and its print stylesheet (not defined in dlc-docs; docs-mockup inconsistency). "Actividad semanal" shows a fixed "Esta semana" label instead of a range selector (no contract defines other periods). Inside the compositor, "Ver todas las citas" requests `/app/appointments/calendar` through `context.navigation` (C04). "Actualizado: hh:mm UTC" stays (HU-CLN-003 freshness). Chart and upcoming cards share the row height. `.portal-placeholder` no longer uses `min-height: 100vh`.
+- **TDD:** genuine RED: the plan still offered "Imprimir plan" (1 test, replacing the former print test) and the dashboard had no range label nor Appointments link (1 test).
+- **Browser verification:** compositor probe page (not committed) with the demo `entry.js`: analytics cards both 363 px high, "Esta semana" and "Actualizado" visible, the link requested `/app/appointments/calendar`; the record of patient A has no print button.
+- **Validation (Windows):** `npm test` 277 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
