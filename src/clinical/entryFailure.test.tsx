@@ -41,7 +41,7 @@ describe('Clinical entry failure containment (C07)', () => {
         getSnapshot: () => ({ state: 'anonymous', revision: 0, user: null }),
         subscribe: () => () => {},
       },
-      http: {},
+      http: { request: vi.fn() },
       reportFailure,
     } as PortalContext);
 
