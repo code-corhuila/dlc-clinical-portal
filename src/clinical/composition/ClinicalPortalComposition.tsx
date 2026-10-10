@@ -36,6 +36,8 @@ export interface ClinicalShellContext {
   readonly staffName?: string;
   /** Compositor navigation for the demo patient selector (C04). */
   readonly onSelectPatient?: (patientId: string) => void;
+  /** Compositor navigation to the Appointments portal from the dashboard (C04). */
+  readonly onViewAllAppointments?: () => void;
 }
 
 export function isClinicalDemo(): boolean {
@@ -89,6 +91,7 @@ function ClinicalDashboardDemo(context: ClinicalShellContext) {
       role={context.role ?? 'ADMINISTRATOR'}
       staffId={context.staffId ?? 'demo-admin'}
       staffName={context.staffName ?? 'Laura Gómez'}
+      onViewAllAppointments={context.onViewAllAppointments}
     />
   );
 }
