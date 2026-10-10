@@ -41,6 +41,11 @@
   padding: 8px;
 }
 
+/* Inside the compositor host the shell owns the viewport height. */
+.cl-portal .portal-placeholder {
+  min-height: 0;
+}
+
 .cl-demo > .portal-placeholder {
   flex-basis: 100%;
   max-width: none;
