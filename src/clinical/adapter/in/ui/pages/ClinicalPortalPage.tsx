@@ -147,9 +147,9 @@ export function ClinicalPortalPage({
       : undefined;
   const submitEntry =
     writer && patientId
-      ? async (entry: ClinicalEntryRequest) => {
+      ? async (entry: ClinicalEntryRequest, idempotencyKey: string) => {
           await writer.execute(
-            { patientId, role, clinicalWriteAuthorized },
+            { patientId, role, clinicalWriteAuthorized, idempotencyKey },
             entry,
           );
           setRetry((value) => value + 1);
@@ -308,9 +308,9 @@ export function ClinicalPortalPage({
               authorName={authorName}
               onAmend={
                 canWrite && amender
-                  ? async (entry, correction) => {
+                  ? async (entry, correction, idempotencyKey) => {
                       await amender.execute(
-                        { role, clinicalWriteAuthorized },
+                        { role, clinicalWriteAuthorized, idempotencyKey },
                         entry,
                         correction,
                       );
@@ -338,8 +338,8 @@ export function ClinicalPortalPage({
                 consultations={consultations}
                 onSubmit={
                   submitEntry &&
-                  (async (entry) => {
-                    await submitEntry(entry);
+                  (async (entry, idempotencyKey) => {
+                    await submitEntry(entry, idempotencyKey);
                     closeDialog();
                   })
                 }

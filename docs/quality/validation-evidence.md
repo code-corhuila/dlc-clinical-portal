@@ -480,3 +480,32 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD chronology:** genuine RED: 7 tests failed first (six completion flows now driven by the checkbox, and the filter). Lookups were narrowed where the UI added same-named elements: the kind badge (`.cr-entry__kind`) versus filter options, and `/^Limpieza profunda/` versus the checkbox cell named "Completar Limpieza profunda".
 - **Validation:** focused Clinical suite 20 files / 209 tests PASS; typecheck, lint, format, build and `git diff --check` PASS; production bundle contains no synthetic strings. Windows `npm test` keeps the known `scripts/pr-gates.test.mjs` SyntaxError. Browser (1280 px, DOM + screenshot): checkbox disabled before start, enabled in progress, opens the form, checked and disabled after completion; filter present.
 - **Observation:** the closure notice and follow-up panel render above the table; ordering them below is a pending cosmetic adjustment.
+
+## DEV-CLIN-PORTAL-PLAN-NOTICE-ORDER-021
+
+- **Story:** HU-CLN-001 presentation (code-corhuila/dlc-clinical-portal#3). Branch `fix/clinical-plan-notice-order` from `origin/develop` `cc01175` (20b merged in #41).
+- **Change:** the closure notice, the closure follow-up panel and the extras pending pricing now render below the plan table and total, matching mockup page 29's reading order. No behavior change.
+- **TDD:** genuine RED: a DOM-order test (`compareDocumentPosition`) failed while those blocks rendered above the table; GREEN moved the block.
+- **Validation:** focused Clinical suite 20 files / 210 tests PASS; typecheck, lint, format, build and `git diff --check` PASS. Windows `npm test` keeps the known `scripts/pr-gates.test.mjs` SyntaxError.
+
+## DEV-CLIN-PORTAL-README-STATUS-022
+
+- **Branch / base:** `chore/clinical-readme-status` from `origin/develop` `6d3d3ec`.
+- **Change (documentation only, DoD "Service README updated when the public interface or behavior changes"):** replaces the outdated "Foundation status" and coverage text with the current status (four HUs implemented on synthetic data, not integrated, none Done), the federated exposes (`./ClinicalPortal`, `./ClinicalDashboard`), demo usage and synthetic patients, the hexagonal ports to implement at integration with their owner contracts, enforced rules and known limitations.
+- **Verification of facts stated:** coverage ~95% of statements measured locally on `src/clinical`; sibling repositories checked read-only on GitHub: `dlc-front` `develop` contains only empty scaffolding (no shared client, session or mount), `dlc-clinical-api` `develop` contains no source. No code changed, so no TDD cycle applies.
+
+## DEV-CLIN-PORTAL-WINDOWS-GATE-EOL-023
+
+- **Branch / base:** `fix/windows-gate-line-endings` from `origin/develop` `6d3d3ec`.
+- **Root cause (reproduced):** with `core.autocrlf=true`, Windows checks out `scripts/pr-gates.mjs` with CRLF; its first line is a shebang, and `#!/usr/bin/env node\r` makes the Vitest transform fail with `SyntaxError: Invalid or unexpected token`. Probes on LF copies: converting only `pr-gates.mjs` to LF makes all 28 gate tests pass.
+- **Fix:** `.gitattributes` with `*.mjs text eol=lf`, so every checkout keeps LF for Node ESM scripts. The validator logic and its tests are unchanged (no content diff in `scripts/`; the repository already stored them as LF).
+- **TDD:** RED was the existing failing `npm test`/coverage on Windows (`scripts/pr-gates.test.mjs` SyntaxError). GREEN after the attribute and working-copy normalization.
+- **Validation (Windows):** `npm test` 21 files / 238 tests PASS (210 Clinical + 28 gate); `npm run test:coverage` PASS, ~95% statements on `src/clinical`; typecheck, lint, format and build PASS. The "known Windows failure" noted in earlier evidence records is resolved from this revision on.
+
+## DEV-CLIN-PORTAL-IDEMPOTENCY-ENTRIES-024
+
+- **Story:** HU-CLN-001 (code-corhuila/dlc-clinical-portal#3); integration readiness (technical debt 1). Branch `feat/clinical-idempotency-pagination` from `origin/develop` `8dac081`.
+- **Basis:** every Clinical write in `clinical-service.yaml` declares the `IdempotencyKey` parameter; Annex H requires "`Idempotency-Key` por intención, reutilizada al reintentar".
+- **Change (part A1: entries):** `RecordClinicalEntry` and `AmendClinicalEntry` require an idempotency key in their context and pass it to `ClinicalEntryWritePort.appendEntry` / `ClinicalEntryAmendPort.amendEntry`, where a real adapter maps it to the header. `useIntentKey` keeps one key per user intent in the composer, quick note and amendment form, reuses it when the same submission is retried after a failure and renews it only after success. The demo adapter applies a repeated key once. Remaining writes (treatments, completion, declaration, closure retry) follow in A2; pagination in B.
+- **TDD chronology:** genuine RED: 13 tests failed first (use-case key propagation and missing-key rejection, adapter replay, composer retry-reuse/renew, page propagation). Existing expectations gained the key argument; adapter tests now pass a key on every call because the port requires it.
+- **Validation (Windows):** `npm test` 21 files / 242 tests PASS; typecheck, lint, format, build and `git diff --check` PASS; production bundle contains no synthetic strings. Browser: a quick note is stored once.
