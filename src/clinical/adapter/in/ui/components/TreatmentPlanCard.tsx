@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   TREATMENT_STATUS_LABELS,
   type Treatment,
@@ -16,6 +16,7 @@ import { CareClosureTracker } from './CareClosureTracker';
 import type { PriceEstimate } from '../../../../application/billingEstimate';
 import { formatCop, sumCop } from '../../../../model/copMoney';
 import type { CareClosure } from '../../../../model/procedureCompletion';
+import { useIntentKey } from './useIntentKey';
 import './treatment-plan.css';
 
 interface Option {
@@ -25,12 +26,19 @@ interface Option {
 
 export interface TreatmentPlanCardProps {
   readonly load: () => Promise<readonly Treatment[]>;
-  readonly onPlan?: (draft: TreatmentDraft) => Promise<void>;
-  readonly onStart?: (treatment: Treatment) => Promise<void>;
+  readonly onPlan?: (
+    draft: TreatmentDraft,
+    idempotencyKey: string,
+  ) => Promise<void>;
+  readonly onStart?: (
+    treatment: Treatment,
+    idempotencyKey: string,
+  ) => Promise<void>;
   readonly onComplete?: (
     treatment: Treatment,
     procedureId: string,
     extras: readonly ExtraItemDraft[],
+    idempotencyKey: string,
   ) => Promise<{ closure: CareClosure; extras: readonly ExtraItem[] }>;
   readonly onRefreshClosure?: (closure: CareClosure) => Promise<CareClosure>;
   readonly onRetryClosure?: (
@@ -68,6 +76,15 @@ export function TreatmentPlanCard({
   const [codes, setCodes] = useState<readonly string[]>([]);
   const [message, setMessage] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [planKey, renewPlanKey] = useIntentKey();
+  // One start key per treatment version: a retry of the same start reuses it.
+  const startKeys = useRef(new Map<string, string>());
+  const startKey = ({ id, version }: Treatment) => {
+    const intent = `${id}:${version}`;
+    if (!startKeys.current.has(intent))
+      startKeys.current.set(intent, crypto.randomUUID());
+    return startKeys.current.get(intent)!;
+  };
   const [startError, setStartError] = useState<string>();
   const [completing, setCompleting] = useState<{
     treatment: Treatment;
@@ -120,7 +137,7 @@ export function TreatmentPlanCard({
     setPending(true);
     setStartError(undefined);
     try {
-      await onStart(treatment);
+      await onStart(treatment, startKey(treatment));
     } catch (error) {
       setStartError(
         portFailureMessage(error, 'No fue posible iniciar el tratamiento.'),
@@ -137,13 +154,17 @@ export function TreatmentPlanCard({
     setPending(true);
     setMessage(undefined);
     try {
-      await onPlan({
-        ...(diagnosisId ? { diagnosisId } : { clinicalReason: reason }),
-        procedures: codes.map((procedureCode) => ({
-          procedureCode,
-          appointmentId,
-        })),
-      });
+      await onPlan(
+        {
+          ...(diagnosisId ? { diagnosisId } : { clinicalReason: reason }),
+          procedures: codes.map((procedureCode) => ({
+            procedureCode,
+            appointmentId,
+          })),
+        },
+        planKey,
+      );
+      renewPlanKey();
       setReason('');
       setPlanning(false);
       setCodes([]);
@@ -294,11 +315,12 @@ export function TreatmentPlanCard({
         <CompleteProcedureForm
           key={completing.procedureId}
           onCancel={() => setCompleting(undefined)}
-          onComplete={async (extras) => {
+          onComplete={async (extras, idempotencyKey) => {
             const { closure, extras: recorded } = await onComplete(
               completing.treatment,
               completing.procedureId,
               extras,
+              idempotencyKey,
             );
             const procedure = completing.treatment.procedures.find(
               (item) => item.id === completing.procedureId,

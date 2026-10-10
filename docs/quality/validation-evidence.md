@@ -620,3 +620,10 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED: the plan still offered "Imprimir plan" (1 test, replacing the former print test) and the dashboard had no range label nor Appointments link (1 test).
 - **Browser verification:** compositor probe page (not committed) with the demo `entry.js`: analytics cards both 363 px high, "Esta semana" and "Actualizado" visible, the link requested `/app/appointments/calendar`; the record of patient A has no print button.
 - **Validation (Windows):** `npm test` 277 tests PASS; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate PASS.
+
+## DEV-CLIN-PORTAL-INTENT-KEYS-PLAN-040
+
+- **Stories:** HU-CLN-002 (code-corhuila/dlc-clinical-portal#4); Annex H idempotency (A2, part 2) and composition contract v1 C06 (keys per business intent). Branch `feat/clinical-intent-keys-plan-40` from `origin/develop`.
+- **Change:** `TreatmentPlan.plan`, `TreatmentPlan.start` and `CompleteProcedure.execute` require an `Idempotency-Key` and pass it to their ports, as `clinical-service.yaml` declares for `POST /treatments`, `POST /treatments/{id}/starts` and `POST /procedures/{id}/completions`. The plan form keeps one key until the plan succeeds; starting keeps one key per treatment version; the completion form keeps one key for its intent. The demo adapter replays repeated keys without a second effect. With part 1 (#51) every Clinical write now carries a key.
+- **TDD:** genuine RED: use cases ignored the key (4 tests); the UI sent no key on plan, start and completion retries (3 tests). The adapter replay test passed only after wrapping the writes.
+- **Validation (Windows):** `npm test` 285 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings), `npm run build:demo`, `git diff --check` and size gate PASS. No visual change; no browser verification claimed.
