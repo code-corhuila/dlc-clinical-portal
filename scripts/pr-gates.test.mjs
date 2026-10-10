@@ -93,9 +93,17 @@ describe('branch gate (norm 6.3.1)', () => {
   });
 
   it('rejects prefixes that norm 6.3.3 does not admit', () => {
-    expect(codes(validateBranch('promotion/clinical-portal', 'qa'))).toContain(
+    expect(codes(validateBranch('spike/clinical-portal', 'qa'))).toContain(
       'BRANCH_UNKNOWN_PREFIX',
     );
+  });
+
+  it('admits the owner-approved promotion/* exception only into qa', () => {
+    // Git cannot create qa/* while the permanent qa branch exists.
+    expect(validateBranch('promotion/clinical-front-only', 'qa')).toEqual([]);
+    expect(
+      codes(validateBranch('promotion/clinical-front-only', 'develop')),
+    ).toContain('BRANCH_WRONG_TARGET');
   });
 
   it('reports the qa vs qa/* nomenclature conflict instead of asserting compliance', () => {
