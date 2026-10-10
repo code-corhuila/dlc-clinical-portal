@@ -1,13 +1,4 @@
-:root {
-  font-family: Inter, system-ui, sans-serif;
-  color: #173b4d;
-  background: #f4f8f9;
-}
-
-body {
-  margin: 0;
-}
-
+/* Clinical remote styles: scoped by cl-/cr-/tp-/cc-/db- prefixes, no globals. */
 .portal-placeholder {
   box-sizing: border-box;
   max-width: 1200px;
@@ -326,4 +317,67 @@ body {
   .tp-form {
     display: none;
   }
+}
+
+.cl-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: #20a99a;
+}
+
+.cl-workspace h2,
+.cl-patient p span,
+.dx-card li strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cl-patient__action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #b8e3dd;
+  background: #e6f6f4;
+  color: #0f766e;
+}
+
+.cl-patient__action .cl-icon {
+  color: inherit;
+}
+
+.cl-patient__action:hover {
+  background: #d3efeb;
+}
+
+.tp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tp-status {
+  color: #1f2933;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dx-card li strong .cl-icon {
+  color: #b42318;
+}
+
+.cr-entry:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  background: #e6f6f4;
 }

@@ -95,6 +95,31 @@ Do not call databases or bypass `dlc-api-gateway` and the authorization boundary
 | `./ClinicalPortal` | Patient clinical record (`/app/patients/:patientId`) | Placeholder until the shell supplies client and session |
 | `./ClinicalDashboard` | `/app/dashboard` (Clinical Analytics, ADR-006) | Placeholder: "requires the shared session supplied by dlc-front" |
 
+### Mounting in dlc-front (front-only delivery)
+
+`npm run build:demo` builds the remote with synthetic data (`.env.demo`); `npm run build` stays free of
+synthetic data. The shell consumes it with Module Federation:
+
+| Setting | Value |
+|---|---|
+| Remote name | `dlc_clinical_portal`, entry `<remote origin>/remoteEntry.js` (`type: "module"`) |
+| Exposes | `./ClinicalPortal` (`ClinicalPortal`), `./ClinicalDashboard` (`ClinicalDashboard`) |
+| Shared | `react` and `react-dom` as singletons |
+
+Both exposed components accept the same optional props (`ClinicalShellContext`), supplied by the shell:
+
+| Prop | Source in dlc-front | Demo values |
+|---|---|---|
+| `patientId` | Route `/app/patients/:patientId` (`ClinicalPortal` only) | `patient-a`, `patient-b`, `patient-c` (unassigned), `patient-d` (closed encounter) |
+| `role` | Session role | `DENTIST`, `ADMINISTRATOR`, `SECRETARY_ASSISTANT` |
+| `staffId`, `staffName` | Signed-in staff | Any; the dashboard greets `staffName` and scopes a Dentist by `staffId` |
+
+In the demo build these props set the initial selection and the demo selector stays usable; a change of
+`patientId` or `role` from the shell resets the view so no data from the previous context remains.
+
+The remote is built with a relative `base` and `bundleAllCSS`, so its scoped CSS loads from the remote
+origin with each exposed module; it sets no global `:root`/`body` rules.
+
 ### Synthetic demo
 
 Development only; it is never part of a production build.
