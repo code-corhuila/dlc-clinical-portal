@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { ReadDashboard } from '../../../../application/readDashboard';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
-import { formatCop } from '../../../../model/copMoney';
+import { formatCop, formatCopCompact } from '../../../../model/copMoney';
 import type { DashboardSnapshot } from '../../../../model/dashboard';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { ClinicalIcon } from '../components/ClinicalIcon';
 import './clinical-dashboard.css';
 
 export interface ClinicalDashboardPageProps {
@@ -25,13 +26,14 @@ const initials = (name: string) =>
     .map((part) => part[0])
     .join('');
 
-/** Bar chart; the list below it is the required textual alternative. */
+/** Bar chart; the list below it is the required textual alternative. The busiest day is highlighted as in the mockup. */
 function WeeklyChart({
   activity,
 }: {
   readonly activity: DashboardSnapshot['weeklyActivity'];
 }) {
   const max = Math.max(1, ...activity.map((item) => item.count));
+  const peak = activity.find((item) => item.count === max);
   return (
     <div
       className="db-chart"
@@ -41,8 +43,14 @@ function WeeklyChart({
         .join(', ')}`}
     >
       {activity.map((item) => (
-        <span key={item.day} className="db-bar">
-          <span style={{ height: `${(item.count / max) * 100}%` }} />
+        <span
+          key={item.day}
+          className="db-bar"
+          data-peak={item === peak ? 'true' : undefined}
+        >
+          <span style={{ height: `${(item.count / max) * 100}%` }}>
+            {item === peak && <b aria-hidden="true">{item.count}</b>}
+          </span>
           <small>{item.day}</small>
         </span>
       ))}
@@ -51,22 +59,34 @@ function WeeklyChart({
 }
 
 /** KPI cards; revenue appears only when the use case kept it (Administrator). */
-function kpis(data: DashboardSnapshot): [string, string | number, string][] {
+type Kpi = [string, ReactNode, string, 'calendar' | 'users' | 'money'];
+
+function kpis(data: DashboardSnapshot): Kpi[] {
   const { count, deltaVsYesterday: delta } = data.todayAppointments;
-  const cards: [string, string | number, string][] = [
+  const cards: Kpi[] = [
     [
       'Citas de hoy',
       count,
       `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
+      'calendar',
     ],
-    ['Pacientes pendientes', data.pendingPatients, 'En sala de espera'],
+    [
+      'Pacientes pendientes',
+      data.pendingPatients,
+      'En sala de espera',
+      'users',
+    ],
   ];
   if (data.monthlyRevenue) {
     const { amount, changePercent: change } = data.monthlyRevenue;
     cards.push([
       'Ingresos del mes',
-      formatCop(amount),
-      `${change >= 0 ? '+' : ''}${change} % vs mes anterior`,
+      <>
+        {formatCopCompact(amount)}
+        <span className="db-sr">{formatCop(amount)}</span>
+      </>,
+      `${change >= 0 ? '↑ +' : '↓ '}${change} % vs mes anterior`,
+      'money',
     ]);
   }
   return cards;
@@ -121,9 +141,12 @@ export function ClinicalDashboardPage({
             </p>
           )}
           <div className="db-kpis">
-            {kpis(view.snapshot).map(([label, value, detail]) => (
+            {kpis(view.snapshot).map(([label, value, detail, icon]) => (
               <section key={label} aria-label={label}>
-                <h2>{label}</h2>
+                <h2>
+                  {label}
+                  <ClinicalIcon name={icon} />
+                </h2>
                 <strong>{value}</strong>
                 <span>{detail}</span>
               </section>
@@ -133,7 +156,7 @@ export function ClinicalDashboardPage({
             <section aria-label="Actividad semanal" className="db-card">
               <h2>Actividad semanal</h2>
               <WeeklyChart activity={view.snapshot.weeklyActivity} />
-              <ul className="db-chart-text">
+              <ul className="db-chart-text db-sr">
                 {view.snapshot.weeklyActivity.map((item) => (
                   <li key={item.day}>
                     {item.day}: {item.count}
@@ -147,12 +170,21 @@ export function ClinicalDashboardPage({
             >
               <h2>Próximas citas</h2>
               <ul>
-                {view.snapshot.upcomingAppointments.map((item) => (
+                {view.snapshot.upcomingAppointments.map((item, index) => (
                   <li key={item.id}>
-                    <span aria-hidden="true">{initials(item.patientName)}</span>
+                    <span aria-hidden="true" data-tone={index % 4}>
+                      {initials(item.patientName)}
+                    </span>
                     <div>
                       <strong>{item.patientName}</strong>
-                      <small>{item.urgent ? '⚠ Urgente' : item.reason}</small>
+                      {item.urgent ? (
+                        <small className="db-urgent">
+                          <ClinicalIcon name="alert" />
+                          Urgente
+                        </small>
+                      ) : (
+                        <small>{item.reason}</small>
+                      )}
                     </div>
                     <time>{item.time}</time>
                   </li>
