@@ -375,3 +375,33 @@
   width: 2px;
   background: #e6f6f4;
 }
+
+.cl-back {
+  margin-bottom: 16px;
+}
+
+.cl-back button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #b8e3dd;
+  border-radius: 8px;
+  background: #e6f6f4;
+  color: #0f766e;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-back button::before {
+  content: '←';
+}
+
+.cl-back button:hover {
+  background: #d3efeb;
+}
+
+.cl-back button:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}

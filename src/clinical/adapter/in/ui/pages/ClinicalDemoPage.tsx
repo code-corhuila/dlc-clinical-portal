@@ -29,7 +29,7 @@ const DEMO_PATIENTS = [
 
 export interface ClinicalDemoPageProps {
   /** Inside dlc-front: the route owns the patient and the session owns the role. */
-  readonly onSelectPatient?: (patientId: string) => void;
+  readonly embedded?: boolean;
   readonly initialPatientId?: string;
   readonly initialRole?: ClinicalRole;
   readonly readPort: ClinicalRecordEntriesPort;
@@ -71,9 +71,8 @@ export function ClinicalDemoPage({
   appointments,
   initialPatientId,
   initialRole,
-  onSelectPatient,
+  embedded = false,
 }: ClinicalDemoPageProps) {
-  const embedded = Boolean(onSelectPatient);
   const [patientId, setPatientId] = useState(initialPatientId ?? 'patient-a');
   const [role, setRole] = useState<ClinicalRole>(initialRole ?? 'DENTIST');
   const [readAuthorized, setReadAuthorized] = useState(true);
@@ -97,24 +96,22 @@ export function ClinicalDemoPage({
           </select>
         </label>
       )}
-      <label>
-        Paciente
-        <select
-          aria-label="Paciente"
-          value={patientId}
-          onChange={(event) =>
-            onSelectPatient
-              ? onSelectPatient(event.target.value)
-              : setPatientId(event.target.value)
-          }
-        >
-          {DEMO_PATIENTS.map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {!embedded && (
+        <label>
+          Paciente
+          <select
+            aria-label="Paciente"
+            value={patientId}
+            onChange={(event) => setPatientId(event.target.value)}
+          >
+            {DEMO_PATIENTS.map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {!embedded && (
         <>
           <label>

@@ -170,7 +170,7 @@ describe('Clinical portal entry (composition contract v1)', () => {
   });
 
   describe('demo bar inside the compositor', () => {
-    it('keeps only the patient selector in the record and navigates through the shell', async () => {
+    it('replaces the patient selector with a back button to the clinical home', async () => {
       vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
       const target = host();
       const ctx = context('/patient-b');
@@ -180,20 +180,30 @@ describe('Clinical portal entry (composition contract v1)', () => {
         expect(target.textContent).toContain('Mateo Herrera'),
       );
 
-      const labels = [...target.querySelectorAll('.cl-demo > label')].map(
-        (label) => label.textContent,
-      );
-      expect(
-        labels.some((text) => /Vista|Rol|Autorización/.test(text ?? '')),
-      ).toBe(false);
-      const select = target.querySelector<HTMLSelectElement>(
-        'select[aria-label="Paciente"]',
+      expect(target.querySelector('select[aria-label="Paciente"]')).toBeNull();
+      expect(target.textContent).not.toMatch(/Vista|Autorización clínica/);
+      const back = [...target.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Volver a Historia clínica',
       )!;
-      expect(select.value).toBe('patient-b');
-      fireEvent.change(select, { target: { value: 'patient-c' } });
+      fireEvent.click(back);
       expect(ctx.value.navigation.request).toHaveBeenCalledWith({
-        path: '/app/clinical/patient-c',
+        path: '/app/clinical',
       });
+      await handle.unmount();
+    });
+
+    it('offers the same back button in the real build', async () => {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+      const target = host();
+      const ctx = context('/patient-b');
+
+      const handle = await mount(target, ctx.value);
+
+      expect(
+        [...target.querySelectorAll('button')].some(
+          (button) => button.textContent === 'Volver a Historia clínica',
+        ),
+      ).toBe(true);
       await handle.unmount();
     });
 

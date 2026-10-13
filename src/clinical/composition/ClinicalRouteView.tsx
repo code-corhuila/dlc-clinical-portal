@@ -64,12 +64,22 @@ export function ClinicalRouteView({
     );
   if (segments.length === 1)
     return (
-      <ClinicalPortalComposition
-        {...viewer(session)}
-        patientId={segments[0]}
-        onSelectPatient={onSelectPatient}
-        http={http}
-      />
+      <>
+        <nav className="cl-back" aria-label="Navegación clínica">
+          <button
+            type="button"
+            onClick={() => void navigation.request({ path: '/app/clinical' })}
+          >
+            Volver a Historia clínica
+          </button>
+        </nav>
+        <ClinicalPortalComposition
+          {...viewer(session)}
+          patientId={segments[0]}
+          onSelectPatient={onSelectPatient}
+          http={http}
+        />
+      </>
     );
   return (
     <main className="portal-placeholder">
