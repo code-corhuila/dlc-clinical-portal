@@ -197,20 +197,41 @@ describe('Clinical portal entry (composition contract v1)', () => {
       await handle.unmount();
     });
 
-    it('offers the patient selector on the clinical home prompt', async () => {
+    it('shows patient cards on the clinical home and opens the record through the shell', async () => {
       vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
       const target = host();
       const ctx = context('/');
 
       const handle = await mount(target, ctx.value);
+      await vi.waitFor(() =>
+        expect(target.querySelectorAll('article').length).toBeGreaterThan(1),
+      );
+      expect(target.querySelector('select')).toBeNull();
+      const card = [...target.querySelectorAll('article')].find((item) =>
+        item.textContent?.includes('Ana García Rodríguez'),
+      )!;
+      fireEvent.click(card.querySelector('button')!);
 
-      expect(target.textContent).toContain('Seleccione un paciente');
-      fireEvent.change(target.querySelector('select[aria-label="Paciente"]')!, {
-        target: { value: 'patient-a' },
-      });
       expect(ctx.value.navigation.request).toHaveBeenCalledWith({
         path: '/app/clinical/patient-a',
       });
+      await handle.unmount();
+    });
+
+    it('filters the clinical home from the route query q', async () => {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+      const target = host();
+      const ctx = context('/');
+      const value = {
+        ...ctx.value,
+        route: { ...ctx.value.route, query: { q: ['mateo'] } },
+      };
+
+      const handle = await mount(target, value);
+      await vi.waitFor(() =>
+        expect(target.querySelectorAll('article')).toHaveLength(1),
+      );
+      expect(target.textContent).toContain('Mateo Herrera');
       await handle.unmount();
     });
 

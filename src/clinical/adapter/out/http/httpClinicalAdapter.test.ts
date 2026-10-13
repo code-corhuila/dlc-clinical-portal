@@ -177,4 +177,19 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
     expect(request).not.toHaveBeenCalled();
   });
+
+  it('lists care patients from clinical records and the Patients projection', async () => {
+    const { http, request } = fakeHttp(
+      ok({ data: [{ id: 'r-1', patientId: 'p-1', version: 1 }], meta }),
+      ok({ id: 'p-1', name: 'Ana García', status: 'ACTIVE', version: 3 }),
+    );
+
+    expect(await createHttpClinicalAdapter(http).listCarePatients()).toEqual([
+      { id: 'p-1', name: 'Ana García', status: 'ACTIVE', version: 3 },
+    ]);
+    expect(request.mock.calls.map(([call]) => call.path)).toEqual([
+      '/api/v1/clinical-records',
+      '/api/v1/patients/p-1',
+    ]);
+  });
 });
