@@ -163,7 +163,7 @@ function ClinicalDemoComposition(context: ClinicalShellContext) {
     <ClinicalDemoPage
       initialPatientId={context.patientId}
       initialRole={context.role}
-      onSelectPatient={context.onSelectPatient}
+      embedded={Boolean(context.onSelectPatient)}
       readPort={adapter}
       writer={writer}
       authorName={adapter.authorName}
