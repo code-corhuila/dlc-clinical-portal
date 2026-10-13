@@ -1,11 +1,10 @@
 import type { ClinicalRole } from '../model/clinicalAccess';
 import type { PortalNavigation, PortalRoute, SessionSnapshot } from '../entry';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
-import { DEMO_PATIENTS } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import {
   ClinicalDashboardComposition,
+  ClinicalHomeComposition,
   ClinicalPortalComposition,
-  isClinicalDemo,
   type ClinicalShellContext,
 } from './ClinicalPortalComposition';
 
@@ -54,6 +53,15 @@ export function ClinicalRouteView({
         }
       />
     );
+  if (segments.length === 0)
+    return (
+      <ClinicalHomeComposition
+        {...viewer(session)}
+        http={http}
+        query={route.query.q?.[0]}
+        onSelectPatient={onSelectPatient}
+      />
+    );
   if (segments.length === 1)
     return (
       <ClinicalPortalComposition
@@ -65,27 +73,7 @@ export function ClinicalRouteView({
     );
   return (
     <main className="portal-placeholder">
-      <h1>
-        {segments.length === 0
-          ? 'Seleccione un paciente'
-          : 'Página clínica no encontrada'}
-      </h1>
-      {segments.length === 0 && isClinicalDemo() && (
-        <select
-          aria-label="Paciente"
-          defaultValue=""
-          onChange={(event) => onSelectPatient(event.target.value)}
-        >
-          <option value="" disabled>
-            Paciente sintético…
-          </option>
-          {DEMO_PATIENTS.map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
-      )}
+      <h1>Página clínica no encontrada</h1>
     </main>
   );
 }
