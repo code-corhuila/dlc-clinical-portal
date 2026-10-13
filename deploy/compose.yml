@@ -1,0 +1,24 @@
+name: dlc-clinical-portal
+
+services:
+  # Real remote mounted by dlc-front: no synthetic data; workflows wait for the shell session and client.
+  clinical-portal-dlc-front:
+    container_name: clinical-portal-dlc-front
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        BUILD_SCRIPT: build
+    ports:
+      - "${PORTAL_PORT:-4173}:80"
+
+  # Demo remote: synthetic data and the role/patient selector for the front-only delivery.
+  clinical-portal-demo:
+    container_name: clinical-portal-demo
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        BUILD_SCRIPT: build:demo
+    ports:
+      - "${PORTAL_DEMO_PORT:-4175}:80"

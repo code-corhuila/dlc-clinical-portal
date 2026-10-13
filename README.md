@@ -1,9 +1,205 @@
 # dlc-clinical-portal
 
-> clinical bounded context: web UI (remote)
+> Clinical bounded context: remote web UI.
 
-Part of the **LMS Library** distributed system — team `lms-library`, Grupo 2.
-Governance and documentation live in [`library-docs`](https://github.com/code-corhuila/library-docs).
+This repository contains the **Di Lucca Clinical** frontend. It gives authorized clinical users a
+safe interface for clinical histories, consultations, diagnoses, treatments, procedures and their
+evolution through the Clinical API.
+
+## Scope
+
+The portal is a presentation client. It does not own user identity, tokens, sessions, patient
+administrative records, appointment scheduling, billing/money or Clinical persistence. The
+shared HTTP client, token and session handling belong to `dlc-front`; Clinical consumes that
+platform capability instead of duplicating it.
+
+## Technical baseline
+
+- React 19 with the established workspace tooling.
+- Node.js 22 for local development and CI.
+- API use follows the versioned Clinical OpenAPI contract.
+- UI state is display state only; clinical writes remain idempotent at the API boundary.
+
+## Local setup
+
+```powershell
+Copy-Item .env.example .env
+npm ci
+npm run dev
+```
+
+The standalone development server publishes this remote at `http://localhost:4173`.
+It is useful for compilation and UI work only. Production-like integration requires the
+`dlc-front` container to load `remoteEntry.js`, provide `shell/apiClient`, and own the
+Gateway URL, authentication session, token lifecycle, correlation header, timeout and
+error mapping. This repository must not recreate those capabilities.
+
+```powershell
+npm run typecheck
+npm run build
+docker compose -f deploy/compose.yml up --build
+```
+
+The compose file builds two containers from the same image recipe:
+
+| Service | Build | URL | Content |
+| --- | --- | --- | --- |
+| `clinical-portal-dlc-front` | `npm run build` | `http://localhost:4173` | Real remote: no synthetic data; workflows wait for the `dlc-front` session and client. |
+| `clinical-portal-demo` | `npm run build:demo` | `http://localhost:4175` | Front-only delivery: synthetic data with the role/patient selector. |
+
+Both publish `remoteEntry.js` for `dlc-front`. Ports can be changed with `PORTAL_PORT` and `PORTAL_DEMO_PORT`.
+
+`remoteEntry.js` is deliberately sent with `Cache-Control: no-store` because it selects
+the version of the remote that the browser loads.
+
+## Quality workflow
+
+Node.js 22 is the supported runtime for local development and CI. Vitest together with React
+Testing Library provides the current test harness.
+
+| Command | Validates |
+| --- | --- |
+| `npm run typecheck` | TypeScript project references and types. |
+| `npm run lint` | TypeScript/React static checks through ESLint. |
+| `npm run format:check` | Prettier formatting for Clinical portal source files and supported project configuration files. |
+| `npm test` | The Vitest regression suite. |
+| `npm run test:coverage` | The Vitest regression suite with V8 coverage reporting. |
+| `npm run build` | Type checking followed by the Vite production build. |
+| `npm run quality` | Typecheck, lint, formatting, tests, coverage and build in that order. |
+
+Coverage measures all of `src/clinical` (model, application use cases, UI and demo adapters)
+and excludes test harness files; at `develop` `6d3d3ec` it reports about 95% of statements. No
+threshold is configured yet: the figure comes from synthetic-demo behavior, and the baseline
+should be fixed once real owner integration exists.
+
+The format check covers `src/**/*.{ts,tsx,css}`, root `*.{js,ts,json,html}` project files,
+`.prettierrc.json` and `.github/workflows/*.{yml,yaml}`. `package-lock.json` remains excluded
+because it is generated dependency metadata. This is a controlled Quality scope, not a claim
+that every repository file is governed by Prettier.
+
+Functional user stories must follow real chronological test-first development:
+
+```
+RED → GREEN → REFACTOR → REGRESSION
+```
+
+Do not add fictitious tests solely to increase coverage. The first Clinical behaviors will
+establish their own test-first evidence and coverage baseline.
+
+## Current status
+
+The frontend of HU-CLN-001, HU-CLN-002, HU-XCT-001 and HU-CLN-003 is implemented against
+**synthetic in-memory data** (issues #3–#6 hold the DoD evidence matrices). It is **not integrated**
+with the Clinical API, Patients, Billing or `dlc-front`, and **no user story is Done**: each still
+needs the real owner contracts, removal of the mock from the integrated path and a reviewed DoD.
+
+The `shell/apiClient` operations and the session/role contract remain unpublished by `dlc-front`;
+its TypeScript type stays an intentionally empty boundary that this repository must not extend.
+Do not call databases or bypass `dlc-api-gateway` and the authorization boundary from the browser.
+
+### Composition contract v1 entry (ADR-011)
+
+The current integration interface with `dlc-front` is the framework-neutral entry defined in
+dlc-docs `05-architecture/frontend-composition.md` (C01-C04). Both builds emit it next to the
+remote:
+
+| Build | Entry | Content |
+| --- | --- | --- |
+| `npm run build` | `/portals/clinical/0.1.0/entry.js` + `entry.css` | Real portal, no synthetic data |
+| `npm run build:demo` | `/portals/clinical/0.1.0-demo/entry.js` + `entry.css` | Synthetic demo |
+
+The ES module exports `portalId: 'clinical'`, `contractVersion: 1` and `mount(host, context)`.
+React is bundled (no bare imports or shared globals); importing it has no side effects. `mount`
+renders inside the supplied host, attaches `entry.css` inside that host and returns
+`updateRoute`, `canLeave` and an idempotent `unmount` (also on `context.signal` abort). Local
+paths: `/analytics` (Clinical Analytics in `/app/dashboard`), `/{patientId}` (clinical record in
+`/app/clinical`), `/` (patient prompt), anything else (portal 404). The release defaults to the
+package version (`-demo` suffix in demo mode) and can be set with `CLINICAL_RELEASE`. nginx
+serves `/portals/` with `Cache-Control: no-store`.
+
+### Federated modules (legacy interface, retired once dlc-front consumes v1)
+
+| Expose | Intended mount in `dlc-front` | Outside the dev demo |
+|---|---|---|
+| `./ClinicalPortal` | Patient clinical record (`/app/patients/:patientId`) | Placeholder until the shell supplies client and session |
+| `./ClinicalDashboard` | `/app/dashboard` (Clinical Analytics, ADR-006) | Placeholder: "requires the shared session supplied by dlc-front" |
+
+### Mounting in dlc-front (front-only delivery)
+
+`npm run build:demo` builds the remote with synthetic data (`.env.demo`); `npm run build` stays free of
+synthetic data. The shell consumes it with Module Federation:
+
+| Setting | Value |
+|---|---|
+| Remote name | `dlc_clinical_portal`, entry `<remote origin>/remoteEntry.js` (`type: "module"`) |
+| Exposes | `./ClinicalPortal` (`ClinicalPortal`), `./ClinicalDashboard` (`ClinicalDashboard`) |
+| Shared | `react` and `react-dom` as singletons |
+
+Both exposed components accept the same optional props (`ClinicalShellContext`), supplied by the shell:
+
+| Prop | Source in dlc-front | Demo values |
+|---|---|---|
+| `patientId` | Route `/app/patients/:patientId` (`ClinicalPortal` only) | `patient-a`, `patient-b`, `patient-c` (unassigned), `patient-d` (closed encounter) |
+| `role` | Session role | `DENTIST`, `ADMINISTRATOR`, `SECRETARY_ASSISTANT` |
+| `staffId`, `staffName` | Signed-in staff | Any; the dashboard greets `staffName` and scopes a Dentist by `staffId` |
+
+In the demo build these props set the initial selection and the demo selector stays usable; a change of
+`patientId` or `role` from the shell resets the view so no data from the previous context remains.
+
+The remote is built with a relative `base` and `bundleAllCSS`, so its scoped CSS loads from the remote
+origin with each exposed module; it sets no global `:root`/`body` rules.
+
+### Synthetic demo
+
+Development only; it is never part of a production build.
+
+```powershell
+$env:VITE_CLINICAL_DEMO = 'true'; npm run dev
+```
+
+In CMD: `set "VITE_CLINICAL_DEMO=true" && npm run dev`. The demo bar selects the view (clinical
+record or dashboard), patient, role and independent read/write clinical authorization:
+
+| Synthetic patient | Purpose |
+|---|---|
+| A, B | Independent histories with treatment plan and evolution |
+| C | Unassigned: every clinical read and write is denied |
+| D | Clinically closed encounter: new entries and amendments are rejected |
+
+### Architecture
+
+Hexagonal: `adapter/in/ui` (React) → `application` use cases → typed ports in `application`,
+implemented by `adapter/out/demo`; `model` holds pure rules; `composition` wires concrete adapters.
+Integration replaces the demo adapter with real adapters for these ports, through the shell client:
+
+| Port | Owner contract |
+|---|---|
+| `ClinicalRecordEntriesPort`, `ClinicalEntryWritePort`, `ClinicalEntryAmendPort` | Clinical: `/clinical-records`, `/entries`, `/clinical-entries/{id}/amendments` |
+| `TreatmentPort`, `ProcedureCompletionPort` | Clinical: `/treatments`, `/treatments/{id}/starts`, `/procedures/{id}/completions` |
+| `CareCompletionPort`, `CareClosurePort` | Clinical: `/clinical-records/{id}/care-completions`, `/care-closures/{id}` (+ `/retries`) |
+| `PatientForCarePort` | Patients: `GET /patients/{id}` (`PatientForCare` projection) |
+| `ProcedurePricePort` | Billing: `GET /procedure-prices` (read-only COP estimate) |
+| `DashboardSnapshotPort` | Clinical analytics read contract (pending in `dlc-docs`) |
+
+Rules enforced in the application layer: clinical read and write authorization are independent;
+the Secretary Assistant gets no clinical data; only the Dentist declares care completion; Clinical
+never stores, edits or sends money (CLN-006) — COP amounts are exact decimal strings shown read-only.
+
+### Known limitations
+
+- Documentation gaps: no Billing manual-charge route/handoff contract, no query contract for earlier
+  care-completion declarations or closures, and HU-CLN-003 indicators pending refinement.
+
+## Documentation
+
+The authoritative specifications and governance live in
+[`dlc-docs`](https://github.com/code-corhuila/dlc-docs). Read the Clinical scope, frontend and
+integration rules, and repository/PR regulations before implementing a flow.
+
+## Quality and validation documentation
+
+- `docs/quality/testing-strategy.md` — testing and validation strategy.
+- `docs/quality/validation-evidence.md` — persistent validation evidence registry.
 
 ## Branching
 
@@ -13,13 +209,14 @@ branch and leave through a Pull Request.
 ```
 develop  <--PR--  feat/... fix/... chore/...
 qa       <--PR--  qa/...
-main     <--PR--  release/...  hotfix/...
+main     <--PR--  release/... hotfix/...
 ```
 
 Promotion happens **by re-application** (`git cherry-pick -x`), never by merging one permanent
 branch into another: `merge develop -> qa` and `merge qa -> main` do not exist in this model.
 
-`main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
-rule.
+`main` approval is enforced through the repository's `CODEOWNERS`. Review rules for `develop`
+and `qa` are defined by the team according to the course regulation.
 
-Full policy: `00-governance/branching-policy.md` in `library-docs`.
+Every Pull Request declares the affected user story (or why it is not applicable), stays within
+the permitted diff size and targets the correct permanent branch.

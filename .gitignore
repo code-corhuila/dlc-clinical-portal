@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.env.local
+*.pem
+*.log
+coverage/
+.__mf__temp/
+.DS_Store

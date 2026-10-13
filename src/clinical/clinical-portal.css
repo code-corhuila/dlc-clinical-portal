@@ -1,0 +1,407 @@
+/* Clinical remote styles: scoped by cl-/cr-/tp-/cc-/db- prefixes, no globals. */
+.portal-placeholder {
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+  background: #f7f9fa;
+  color: #1f2933;
+}
+
+.cl-demo {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  font-size: 14px;
+}
+
+.cl-demo > p {
+  flex-basis: 100%;
+  margin: 0;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.cl-demo > label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+
+.cl-demo select {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Inside the compositor host the shell owns the viewport height. */
+.cl-portal .portal-placeholder {
+  min-height: 0;
+}
+
+.cl-demo > .portal-placeholder {
+  flex-basis: 100%;
+  max-width: none;
+  min-height: 0;
+  padding: 0;
+}
+
+.cl-demo .portal-placeholder > h1 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.cl-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.cl-workspace > .cr-card,
+.cl-workspace > .cec-card {
+  margin: 0;
+}
+
+/* Page 29: plan and composer in the main column; diagnoses, Evolución and closure beside them. */
+.cl-main,
+.cl-aside {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+  min-width: 0;
+}
+
+.cl-main > *,
+.cl-aside > * {
+  margin: 0;
+}
+
+.cl-workspace .cr-title,
+.cl-workspace .cec-card h2,
+.cl-workspace .tp-card h2,
+.cl-workspace .cc-card h2,
+.dx-card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.dx-card {
+  padding: 24px;
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.dx-card p {
+  margin: 0;
+  color: #66737a;
+}
+
+.dx-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dx-card li {
+  display: grid;
+  gap: 2px;
+  border-left: 3px solid #b42318;
+  border-radius: 4px;
+  background: #fef3f2;
+  padding: 8px 12px;
+}
+
+.dx-card li span {
+  color: #66737a;
+  font-size: 12px;
+}
+
+.cc-card {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.cc-card h2,
+.cc-card p {
+  margin: 0;
+}
+
+.cc-card select {
+  border: 1px solid #d6dee2;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.cc-card button {
+  justify-self: end;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 20px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cc-card :focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+.cc-error {
+  color: #b42318;
+}
+
+.cl-patient {
+  order: -2;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid #d6dee2;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.cl-patient__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #e6f6f4;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.cl-patient__identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.cl-patient h2 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.cl-patient p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  color: #66737a;
+  font-size: 13px;
+}
+
+.cl-patient__status {
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.cl-patient__action {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-patient__action:hover {
+  background: #115e59;
+}
+
+.cl-patient__action:focus-visible {
+  outline: 2px solid #1554a3;
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .cl-workspace {
+    grid-template-columns: 1fr;
+  }
+  .cl-patient {
+    flex-wrap: wrap;
+  }
+  .cl-patient__identity {
+    flex-basis: calc(100% - 72px);
+  }
+}
+
+@media (max-width: 768px) {
+  .portal-placeholder,
+  .cl-demo {
+    padding: 16px;
+  }
+}
+
+.cl-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgba(31, 41, 51, 0.45);
+  padding: 16px;
+}
+
+.cl-dialog {
+  position: relative;
+  width: min(640px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.cl-dialog__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  background: none;
+  color: #0f766e;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-dialog > .cec-card,
+.cl-dialog > .cc-card {
+  margin: 0;
+  border: 0;
+}
+
+.tp-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tp-primary {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: #20a99a;
+}
+
+.cl-workspace h2,
+.cl-patient p span,
+.dx-card li strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cl-patient__action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #b8e3dd;
+  background: #e6f6f4;
+  color: #0f766e;
+}
+
+.cl-patient__action .cl-icon {
+  color: inherit;
+}
+
+.cl-patient__action:hover {
+  background: #d3efeb;
+}
+
+.tp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tp-status {
+  color: #1f2933;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dx-card li strong .cl-icon {
+  color: #b42318;
+}
+
+.cr-entry:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  background: #e6f6f4;
+}
+
+.cl-back {
+  margin-bottom: 16px;
+}
+
+.cl-back button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #b8e3dd;
+  border-radius: 8px;
+  background: #e6f6f4;
+  color: #0f766e;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cl-back button::before {
+  content: '←';
+}
+
+.cl-back button:hover {
+  background: #d3efeb;
+}
+
+.cl-back button:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}

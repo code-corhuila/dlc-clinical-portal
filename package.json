@@ -1,0 +1,50 @@
+{
+  "name": "dlc-clinical-portal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10 <11"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && vite build --config vite.entry.config.ts",
+    "build:demo": "tsc -b && vite build --mode demo && vite build --config vite.entry.config.ts --mode demo",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:build": "vitest run --config vitest.build.config.ts",
+    "gates": "node scripts/pr-gates.mjs",
+    "quality": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:build && npm run test:coverage && npm run build"
+  },
+  "dependencies": {
+    "@module-federation/vite": "1.9.1",
+    "@vitejs/plugin-react": "5.0.2",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "vite": "7.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "19.1.13",
+    "@types/react-dom": "19.1.9",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@eslint/js": "10.0.1",
+    "@vitest/coverage-v8": "5.0.3",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "globals": "17.13.0",
+    "jsdom": "30.1.1",
+    "prettier": "3.9.9",
+    "typescript-eslint": "8.71.1",
+    "typescript": "5.9.2",
+    "vitest": "5.0.3"
+  }
+}
