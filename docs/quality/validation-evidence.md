@@ -665,3 +665,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED for the extended dataset (2 tests) and for the real-entry guard (1 test, which caught the leak).
 - **Browser verification:** demo container rebuilt; the demo `entry.js` mounted at `/` showed nine patient cards with Daniel Vargas Pineda marked inactive; Valentina Castro Ríos opened with "Estado: En curso", "Bruxismo" and a $ 330.000,00 estimate; Santiago Ruiz Morales showed the penicillin allergy and "Pulpitis irreversible - Pieza 36". The real container has no synthetic strings.
 - **Validation (Windows):** `npm test` 319 tests PASS; coverage 95.86 % statements; typecheck, lint, format, `npm run build`, `npm run build:demo`, `git diff --check` and size gate (232/400) PASS.
+
+## DEV-CLIN-PORTAL-RECORD-BACK-BUTTON-045
+
+- **Request (2026-10-13, project owner):** remove the patient drop-down from the clinical record inside dlc-front and add a back button to the clinical home. Branch `feat/clinical-record-back-button-45` from `origin/develop` `92a6cf4`.
+- **Change:** on `/app/clinical/{patientId}` the route view renders "Volver a Historia clínica", which requests `/app/clinical` through `context.navigation` (C04), in both the demo and the real build. The embedded demo bar no longer shows the patient selector (`ClinicalDemoPage` takes an `embedded` flag instead of a navigation callback it no longer uses). The standalone demo page keeps its full bar.
+- **TDD:** genuine RED: the embedded record still showed the patient selector and had no back button (1 test), and the real build had no back button (1 test). The first assertion was narrowed to the patient selector because the Evolución filter is also a `select`.
+- **Browser verification:** rebuilt demo container; the demo `entry.js` mounted at `/patient-a` showed the back button above the record and no patient selector; clicking it requested `/app/clinical` and, after `updateRoute`, the nine patient cards were shown.
+- **Validation (Windows):** `npm test` 320 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate (93/400) PASS.
