@@ -18,8 +18,9 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,ts,json,html}\" .prettierrc.json \".github/workflows/*.{yml,yaml}\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:build": "vitest run --config vitest.build.config.ts",
     "gates": "node scripts/pr-gates.mjs",
-    "quality": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:coverage && npm run build"
+    "quality": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:build && npm run test:coverage && npm run build"
   },
   "dependencies": {
     "@module-federation/vite": "1.9.1",
