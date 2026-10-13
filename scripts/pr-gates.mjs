@@ -98,6 +98,24 @@ export function evaluateLineLimit(entries, limit = LINE_LIMIT) {
   return { limit, total, ok: total <= limit, counted, excluded, binary };
 }
 
+const CHERRY_PICK_TRAILER = /\(cherry picked from commit [0-9a-f]{40}\)/;
+
+/**
+ * Owner decision 2026-10-13 (option A): a release/x.y.z branch into main only
+ * re-applies commits already reviewed in develop and qa, so the 400-line limit
+ * is waived when every commit carries its cherry-pick -x trailer.
+ */
+export function releaseLineExemption(base, head, messages) {
+  const release =
+    /(^|\/)main$/.test(base) && /(^|\/)release\/\d+\.\d+\.\d+$/.test(head);
+  const traced =
+    messages.length > 0 &&
+    messages.every((message) => CHERRY_PICK_TRAILER.test(message));
+  return release && traced
+    ? { exempt: true, commits: messages.length }
+    : { exempt: false };
+}
+
 /** Norm 6.3.1/6.3.3 plus the unresolved qa vs qa/* ref namespace conflict. */
 export function validateBranch(head, base, refs = []) {
   const findings = [];
@@ -226,6 +244,24 @@ function arg(args, flag) {
 
 const commands = {
   lines: (o) => {
+    if (o.head !== 'WORKTREE') {
+      const messages = git([
+        'log',
+        '--no-merges',
+        '--format=%B%x00',
+        `${o.base}..${o.head}`,
+      ])
+        .split('\0')
+        .map((message) => message.trim())
+        .filter(Boolean);
+      const release = releaseLineExemption(o.base, o.head, messages);
+      if (release.exempt) {
+        console.log(
+          `lines: EXEMPT — release re-applies ${release.commits} cherry-picked commits (owner decision 2026-10-13)`,
+        );
+        return 0;
+      }
+    }
     const range = o.head === 'WORKTREE' ? o.base : `${o.base}...${o.head}`;
     const result = evaluateLineLimit(
       parseNumstat(git(['diff', '--numstat', range])),
