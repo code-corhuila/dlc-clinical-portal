@@ -680,3 +680,10 @@ No terminal logs or timestamps are invented for this historical note.
 - **Change:** the build tests (entry contract and real-build synthetic-data guard) are renamed to `entryBuild.build.test.ts`, excluded from `npm test` and coverage, and run by `npm run test:build` with `vitest.build.config.ts` (node environment, one file at a time, 120 s timeout). CI runs `npm run test:build` as its own step right after `npm test`, so the guard still blocks every PR; `npm run quality` includes it. `vite.entry.config.ts` and both Vitest configs are now typechecked through `tsconfig.node.json`. No timeout was raised for the jsdom suite.
 - **TDD:** configuration only; no unit RED. Verification below.
 - **Validation (Windows):** `npm test` 318 tests PASS in three runs (36–56 s, no timeouts); `npm run test:build` 2 tests PASS (8 s); 320 tests in total, unchanged; coverage 96.07 % statements; typecheck, lint, format, `git diff --check` and size gate (31/400) PASS.
+
+## DEV-CLIN-PORTAL-RELEASE-LINE-EXEMPTION-047
+
+- **Decision (2026-10-13, project owner, option A):** promote to `main` as one `release/2.0.0` PR, as `branching-policy.md` describes ("one release per MVP"). The release re-applies about 18,100 lines already reviewed in `develop` and `qa`, so the 400-line gate cannot apply as-is. Branch `chore/clinical-release-line-exemption` from `origin/develop`.
+- **Change:** `releaseLineExemption(base, head, messages)` waives the line limit only when the base is `main`, the head is `release/<x.y.z>` and every non-merge commit carries a `(cherry picked from commit <40-hex>)` trailer; any fresh commit, a non-semantic name or another base keeps the limit. The `lines` command prints `lines: EXEMPT — release re-applies N cherry-picked commits (owner decision 2026-10-13)`. Branch, commit, PR-body and architecture gates are unchanged, and merging into `main` still requires the teacher's approval.
+- **TDD:** genuine RED: the function did not exist (6 tests).
+- **Validation (Windows):** `npm test` 324 tests PASS; lint and format PASS; `lines --base origin/main --head origin/qa` still FAILS (not a release branch); size gate for this change PASS.
