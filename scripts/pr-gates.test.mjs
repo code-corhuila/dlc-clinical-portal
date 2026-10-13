@@ -8,6 +8,7 @@ import {
   validateBranch,
   validateCommits,
   validatePrBody,
+  releaseLineExemption,
 } from './pr-gates.mjs';
 
 const entry = (path, added, deleted = 0) => ({ path, added, deleted });
@@ -273,5 +274,47 @@ describe('architecture gate (Anexo H)', () => {
         { path: 'src/clinical/x.test.ts', content: 'fetch("/api/v1/x")' },
       ]),
     ).toEqual([]);
+  });
+
+  describe('release line exemption (owner decision 2026-10-13, option A)', () => {
+    const picked = [
+      'feat(x): y',
+      '',
+      '(cherry picked from commit 0123456789abcdef0123456789abcdef01234567)',
+    ].join('\n');
+
+    it('exempts release/x.y.z into main when every commit is a cherry-pick -x', () => {
+      expect(
+        releaseLineExemption('origin/main', 'origin/release/2.0.0', [
+          picked,
+          picked,
+        ]),
+      ).toEqual({ exempt: true, commits: 2 });
+    });
+
+    it.each([
+      [
+        'a release into develop',
+        'origin/develop',
+        'origin/release/2.0.0',
+        [picked],
+      ],
+      ['a feature into main', 'origin/main', 'origin/feat/x', [picked]],
+      [
+        'a release without semantic version',
+        'origin/main',
+        'origin/release/next',
+        [picked],
+      ],
+      [
+        'a commit without the -x trailer',
+        'origin/main',
+        'origin/release/2.0.0',
+        [picked, 'feat(x): fresh work'],
+      ],
+      ['an empty range', 'origin/main', 'origin/release/2.0.0', []],
+    ])('does not exempt %s', (_, base, head, messages) => {
+      expect(releaseLineExemption(base, head, messages).exempt).toBe(false);
+    });
   });
 });
