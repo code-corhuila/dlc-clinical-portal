@@ -10,6 +10,7 @@ import type { CareCompletionPort } from '../../../application/declareCareComplet
 import type { CareClosurePort } from '../../../application/careClosureTracking';
 import type { ProcedurePricePort } from '../../../application/billingEstimate';
 import type { DashboardSnapshotPort } from '../../../application/readDashboard';
+import type { CarePatientsPort } from '../../../application/listCarePatients';
 import type { Treatment } from '../../../model/treatment';
 import type {
   ClinicalEntry,
@@ -32,7 +33,8 @@ export interface DemoClinicalAdapter
     CareCompletionPort,
     CareClosurePort,
     ProcedurePricePort,
-    DashboardSnapshotPort {
+    DashboardSnapshotPort,
+    CarePatientsPort {
   authorName(authorId: string): string;
 }
 
@@ -142,6 +144,9 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
   const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
   return {
     /** Synthetic dashboard facts; a professional scope sees only own work. */
+    async listCarePatients() {
+      return Object.values(patients);
+    },
     async readDashboard(scope) {
       const own = scope.scope === 'PROFESSIONAL';
       const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];

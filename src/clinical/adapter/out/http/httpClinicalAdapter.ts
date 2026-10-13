@@ -5,6 +5,7 @@ import type {
   ProcedurePricePort,
 } from '../../../application/billingEstimate';
 import type { DashboardSnapshotPort } from '../../../application/readDashboard';
+import type { CarePatientsPort } from '../../../application/listCarePatients';
 import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
 import type { TreatmentPort } from '../../../application/treatmentPlan';
@@ -30,7 +31,8 @@ export interface HttpClinicalReads
     PatientForCarePort,
     ClinicalRecordEntriesPort,
     ProcedurePricePort,
-    DashboardSnapshotPort {
+    DashboardSnapshotPort,
+    CarePatientsPort {
   readRecordVersion(recordId: string): Promise<number>;
   listTreatments(patientId: string): Promise<readonly Treatment[]>;
   readCareClosure(closureId: string): Promise<CareClosure>;
@@ -60,7 +62,15 @@ export function createHttpClinicalAdapter(
       headers: { 'Idempotency-Key': idempotencyKey },
     });
 
-  return {
+  const adapter: HttpClinicalAdapter = {
+    async listCarePatients() {
+      // Records the owner already filtered by assignment; names from Patients.
+      const records =
+        await get<Page<{ patientId: string }>>('/clinical-records');
+      return Promise.all(
+        records.data.map((record) => adapter.readPatient(record.patientId)),
+      );
+    },
     async readPatient(patientId) {
       // PatientView: Patient or PatientForCare; keep only the care projection.
       const patient = await get<PatientForCare>(`/patients/${patientId}`);
@@ -161,4 +171,5 @@ export function createHttpClinicalAdapter(
       };
     },
   };
+  return adapter;
 }

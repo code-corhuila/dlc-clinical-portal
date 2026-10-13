@@ -2,6 +2,9 @@ import { useState } from 'react';
 import type { ClinicalRole } from '../model/clinicalAccess';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import { ClinicalRealComposition } from './realComposition';
+import { ClinicalPatientCards } from '../adapter/in/ui/components/ClinicalPatientCards';
+import { createHttpClinicalAdapter } from '../adapter/out/http/httpClinicalAdapter';
+import { ListCarePatients } from '../application/listCarePatients';
 import '../clinical-portal.css';
 import { ClinicalDemoPage } from '../adapter/in/ui/pages/ClinicalDemoPage';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
@@ -44,7 +47,7 @@ export interface ClinicalShellContext {
   readonly http?: PortalHttp;
 }
 
-export function isClinicalDemo(): boolean {
+function isClinicalDemo(): boolean {
   return (
     import.meta.env.VITE_CLINICAL_DEMO === 'true' &&
     (import.meta.env.DEV || import.meta.env.MODE === 'demo')
@@ -79,6 +82,39 @@ export function ClinicalPortalComposition(context: ClinicalShellContext) {
  * for the dlc-front session (role, staff) and an analytics adapter; only the
  * dev-flagged demo wires synthetic snapshots for an administrator.
  */
+/**
+ * Clinical home (`/app/clinical`): patient cards in care. The demo lists the
+ * synthetic patients; the real build reads through the compositor http.
+ */
+export function ClinicalHomeComposition(
+  context: ClinicalShellContext & { readonly query?: string },
+) {
+  const [lister] = useState(() => {
+    if (isClinicalDemo())
+      return new ListCarePatients(createDemoClinicalAdapter());
+    return context.http
+      ? new ListCarePatients(createHttpClinicalAdapter(context.http))
+      : undefined;
+  });
+  const [load] = useState(
+    () => () =>
+      lister
+        ? lister.execute(context.role ?? null, true)
+        : Promise.reject({
+            code: 'UNAVAILABLE',
+            message:
+              'La lista clínica requiere la sesión y el cliente de dlc-front.',
+          }),
+  );
+  return (
+    <ClinicalPatientCards
+      load={load}
+      initialQuery={context.query}
+      onOpen={(patientId) => context.onSelectPatient?.(patientId)}
+    />
+  );
+}
+
 export function ClinicalDashboardComposition(context: ClinicalShellContext) {
   return isClinicalDemo() ? (
     <ClinicalDashboardDemo {...context} />

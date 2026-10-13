@@ -14,7 +14,7 @@ import { ClinicalDashboardPage } from './ClinicalDashboardPage';
 import type { ReadDashboard } from '../../../../application/readDashboard';
 
 /** Synthetic patients offered by the demo patient selector. */
-export const DEMO_PATIENTS = [
+const DEMO_PATIENTS = [
   ['patient-a', 'Paciente sintético A'],
   ['patient-b', 'Paciente sintético B'],
   ['patient-c', 'Paciente sintético C'],
