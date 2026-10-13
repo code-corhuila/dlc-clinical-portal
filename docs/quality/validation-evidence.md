@@ -673,3 +673,10 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED: the embedded record still showed the patient selector and had no back button (1 test), and the real build had no back button (1 test). The first assertion was narrowed to the patient selector because the Evolución filter is also a `select`.
 - **Browser verification:** rebuilt demo container; the demo `entry.js` mounted at `/patient-a` showed the back button above the record and no patient selector; clicking it requested `/app/clinical` and, after `updateRoute`, the nine patient cards were shown.
 - **Validation (Windows):** `npm test` 320 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings), `git diff --check` and size gate (93/400) PASS.
+
+## DEV-CLIN-PORTAL-BUILD-TESTS-STEP-046
+
+- **Request (2026-10-13, project owner):** separate the build tests after a local promotion run where three jsdom tests exceeded the 5 s timeout while Vite builds ran in parallel. Branch `chore/clinical-build-tests-step-46` from `origin/develop` `57fe534`.
+- **Change:** the build tests (entry contract and real-build synthetic-data guard) are renamed to `entryBuild.build.test.ts`, excluded from `npm test` and coverage, and run by `npm run test:build` with `vitest.build.config.ts` (node environment, one file at a time, 120 s timeout). CI runs `npm run test:build` as its own step right after `npm test`, so the guard still blocks every PR; `npm run quality` includes it. `vite.entry.config.ts` and both Vitest configs are now typechecked through `tsconfig.node.json`. No timeout was raised for the jsdom suite.
+- **TDD:** configuration only; no unit RED. Verification below.
+- **Validation (Windows):** `npm test` 318 tests PASS in three runs (36–56 s, no timeouts); `npm run test:build` 2 tests PASS (8 s); 320 tests in total, unchanged; coverage 96.07 % statements; typecheck, lint, format, `git diff --check` and size gate (31/400) PASS.

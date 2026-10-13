@@ -24,6 +24,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      - run: npm run test:build
       - run: npm run test:coverage
       - run: npm run build
       - name: PR gates (size, branch, commits, traceability, architecture)
