@@ -577,4 +577,15 @@ describe('demoClinicalAdapter', () => {
     );
     expect(again).toEqual(first);
   });
+
+  it('lists the synthetic patients in clinical care', async () => {
+    const patients = await createDemoClinicalAdapter().listCarePatients();
+
+    expect(patients.map((patient) => patient.name)).toContain(
+      'Ana García Rodríguez',
+    );
+    expect(patients.every((patient) => patient.id.startsWith('patient-'))).toBe(
+      true,
+    );
+  });
 });
