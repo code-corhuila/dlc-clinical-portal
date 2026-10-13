@@ -588,4 +588,42 @@ describe('demoClinicalAdapter', () => {
       true,
     );
   });
+
+  describe('extended synthetic dataset', () => {
+    it('lists nine patients in care, including an inactive one', async () => {
+      const patients = await createDemoClinicalAdapter().listCarePatients();
+
+      expect(patients).toHaveLength(9);
+      expect(patients.map((patient) => patient.name)).toContain(
+        'Valentina Castro Ríos',
+      );
+      expect(
+        patients.find((patient) => patient.id === 'patient-h')?.status,
+      ).toBe('INACTIVE');
+    });
+
+    it('seeds varied clinical records and treatment states', async () => {
+      const adapter = createDemoClinicalAdapter();
+      const kinds = async (patientId: string) =>
+        (
+          await adapter.readEntries(await adapter.findRecordId(patientId))
+        ).data.map((entry) => entry.kind);
+
+      expect(await kinds('patient-f')).toEqual(
+        expect.arrayContaining(['ALLERGY', 'ANTECEDENT', 'DIAGNOSIS']),
+      );
+      expect(await kinds('patient-i')).toEqual([]);
+      const states = await Promise.all(
+        ['patient-e', 'patient-g', 'patient-j'].map(
+          async (id) => (await adapter.listTreatments(id))[0]?.status,
+        ),
+      );
+      expect(states).toEqual(['IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
+      expect(
+        (await adapter.listTreatments('patient-e'))[0].procedures.map(
+          (procedure) => procedure.status,
+        ),
+      ).toEqual(['COMPLETED', 'PLANNED']);
+    });
+  });
 });
