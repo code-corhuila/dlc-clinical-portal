@@ -33,4 +33,24 @@ describe('Clinical entry.js build (composition contract v1)', () => {
     expect(entry.contractVersion).toBe(1);
     expect(typeof entry.mount).toBe('function');
   }, 60_000);
+
+  it('keeps every synthetic patient out of the real entry', async () => {
+    const outRoot = mkdtempSync(join(tmpdir(), 'clinical-real-'));
+    process.env.CLINICAL_RELEASE = 'real-test';
+    process.env.CLINICAL_ENTRY_OUT = outRoot;
+
+    await build({ configFile: 'vite.entry.config.ts', logLevel: 'silent' });
+
+    const code = readFileSync(
+      join(outRoot, 'portals', 'clinical', 'real-test', 'entry.js'),
+      'utf8',
+    );
+    for (const synthetic of [
+      'Ana García',
+      'Valentina Castro',
+      'patient-a',
+      'Paciente sintético',
+    ])
+      expect(code).not.toContain(synthetic);
+  }, 60_000);
 });

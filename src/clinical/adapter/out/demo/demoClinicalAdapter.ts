@@ -20,6 +20,7 @@ import {
   consultationEntry,
   evolutionEntry,
 } from '../../../fixtures/clinicalFixtures';
+import { demoSeedPatients } from './demoSeed';
 
 /** In-memory synthetic adapter, wired only by the dev demo composition. */
 export interface DemoClinicalAdapter
@@ -46,10 +47,18 @@ export const demoProcedureCatalog = [
 ] as const;
 
 /** Synthetic EN_ATENCION appointment per assigned patient. */
-export const demoAppointments: Record<string, string> = {
-  'patient-a': 'appointment-a',
-  'patient-b': 'appointment-b',
-};
+function buildDemoAppointments(): Record<string, string> {
+  const appointments: Record<string, string> = {
+    'patient-a': 'appointment-a',
+    'patient-b': 'appointment-b',
+  };
+  for (const { patient, appointmentId } of demoSeedPatients)
+    if (appointmentId) appointments[patient.id] = appointmentId;
+  return appointments;
+}
+
+// Pure, so the real build drops the synthetic data when nothing imports it.
+export const demoAppointments = /* @__PURE__ */ buildDemoAppointments();
 
 const records: Record<string, string> = {
   'patient-a': 'record-a',
@@ -140,6 +149,12 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'patient-b': [],
     'patient-d': [],
   };
+  for (const seed of demoSeedPatients) {
+    patients[seed.patient.id] = seed.patient;
+    records[seed.patient.id] = seed.patient.id.replace('patient-', 'record-');
+    entries[records[seed.patient.id]] = [...seed.entries];
+    treatments[seed.patient.id] = [...seed.treatments];
+  }
   /** Demo convergence: unpriced additional needs fail Billing until a retry. */
   const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
   return {

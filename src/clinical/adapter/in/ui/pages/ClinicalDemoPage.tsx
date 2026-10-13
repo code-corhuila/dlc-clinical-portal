@@ -19,6 +19,12 @@ const DEMO_PATIENTS = [
   ['patient-b', 'Paciente sintético B'],
   ['patient-c', 'Paciente sintético C'],
   ['patient-d', 'Paciente sintético D (atención cerrada)'],
+  ['patient-e', 'Valentina Castro Ríos (tratamiento en curso)'],
+  ['patient-f', 'Santiago Ruiz Morales (alergia y antecedente)'],
+  ['patient-g', 'Isabella Moreno Díaz (tratamiento completado)'],
+  ['patient-h', 'Daniel Vargas Pineda (inactivo)'],
+  ['patient-i', 'Camila Ortiz Restrepo (sin registros)'],
+  ['patient-j', 'Andrés Mejía Cárdenas (tratamiento cancelado)'],
 ] as const;
 
 export interface ClinicalDemoPageProps {
