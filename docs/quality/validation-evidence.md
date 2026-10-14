@@ -687,3 +687,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Change:** `releaseLineExemption(base, head, messages)` waives the line limit only when the base is `main`, the head is `release/<x.y.z>` and every non-merge commit carries a `(cherry picked from commit <40-hex>)` trailer; any fresh commit, a non-semantic name or another base keeps the limit. The `lines` command prints `lines: EXEMPT — release re-applies N cherry-picked commits (owner decision 2026-10-13)`. Branch, commit, PR-body and architecture gates are unchanged, and merging into `main` still requires the teacher's approval.
 - **TDD:** genuine RED: the function did not exist (6 tests).
 - **Validation (Windows):** `npm test` 324 tests PASS; lint and format PASS; `lines --base origin/main --head origin/qa` still FAILS (not a release branch); size gate for this change PASS.
+
+## DEV-CLIN-PORTAL-CHANGELOG-048
+
+- **Request (2026-10-13, project owner):** add the changelog required by the MVP 2 delivery ("tag v2.0.0 on main, CHANGELOG and ADRs updated") and follow the release flow. Branch `chore/clinical-changelog` from `origin/develop`.
+- **Change:** `CHANGELOG.md` in Keep a Changelog format with Semantic Versioning: the branch and release flow, `[Unreleased]`, `[2.0.1]` (this documentation release) and `[2.0.0] - 2026-10-13` (release PR #107, tag `v2.0.0` on `ea37827`) with Added, Changed, Fixed, Security and Known limits linked to their PRs and the HU issues #3–#6.
+- **Flow:** `develop` → `promotion/*` → `qa` with `cherry-pick -x` → `release/2.0.1` cut from `main` → `main` with the teacher's approval; tag `v2.0.1` after that merge if the team decides so.
+- **TDD:** documentation only; no RED.
+- **Validation (Windows):** `git diff --check`, size and commit gates PASS; no code changed.
