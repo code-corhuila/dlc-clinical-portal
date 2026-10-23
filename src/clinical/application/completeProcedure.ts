@@ -4,9 +4,9 @@ import {
 } from '../model/clinicalAccess';
 import {
   validateExtraItem,
-  type CareClosure,
   type ExtraItem,
   type ExtraItemDraft,
+  type ProcedureCompletion,
   type ProcedureCompletionRequest,
 } from '../model/procedureCompletion';
 
@@ -16,7 +16,7 @@ export interface ProcedureCompletionPort {
     procedureId: string,
     request: ProcedureCompletionRequest,
     idempotencyKey: string,
-  ): Promise<CareClosure>;
+  ): Promise<ProcedureCompletion>;
 }
 
 export interface CompletionAccess {
@@ -40,7 +40,10 @@ export class CompleteProcedure {
     access: CompletionAccess,
     target: { readonly procedureId: string; readonly treatmentVersion: number },
     extras: readonly ExtraItemDraft[],
-  ): Promise<{ closure: CareClosure; extras: readonly ExtraItem[] }> {
+  ): Promise<{
+    completion: ProcedureCompletion;
+    extras: readonly ExtraItem[];
+  }> {
     const granted = resolveClinicalWriteAccess(
       access.role,
       access.clinicalWriteAuthorized,
@@ -64,7 +67,7 @@ export class CompleteProcedure {
     }));
     const pick = (category: ExtraItemDraft['category']) =>
       items.filter((entry) => entry.category === category).map((e) => e.item);
-    const closure = await this.port.completeProcedure(
+    const completion = await this.port.completeProcedure(
       target.procedureId,
       {
         expectedVersion: target.treatmentVersion,
@@ -74,6 +77,6 @@ export class CompleteProcedure {
       access.idempotencyKey,
     );
     // Extras still need a manual price entered through Billing (BIL-008).
-    return { closure, extras: items.map((entry) => entry.item) };
+    return { completion, extras: items.map((entry) => entry.item) };
   }
 }

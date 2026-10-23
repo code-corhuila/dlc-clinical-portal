@@ -32,14 +32,12 @@ export interface ProcedureCompletionRequest {
   readonly additionalRequirements: readonly ExtraItem[];
 }
 
-export interface CareClosure {
-  readonly id: string;
+/** `ProcedureCompletion`: the progress of one procedure; it opens no closure (ADR-014). */
+export interface ProcedureCompletion {
   readonly procedureId: string;
+  readonly treatmentId: string;
   readonly appointmentId: string;
-  readonly status: 'CLOSURE_PENDING' | 'CLOSURE_COMPLETED' | 'CLOSURE_FAILED';
-  readonly appointmentOutcome?: 'PENDING' | 'COMPLETED';
-  readonly billingOutcome?: 'PENDING' | 'COMPLETED';
-  readonly failureReason?: string;
+  readonly completedAt: string;
   readonly version: number;
 }
 

@@ -12,10 +12,8 @@ import {
 } from '../../../../model/procedureCompletion';
 import { CompleteProcedureForm } from './CompleteProcedureForm';
 import { ClinicalIcon } from './ClinicalIcon';
-import { CareClosureTracker } from './CareClosureTracker';
 import type { PriceEstimate } from '../../../../application/billingEstimate';
 import { formatCop, sumCop } from '../../../../model/copMoney';
-import type { CareClosure } from '../../../../model/procedureCompletion';
 import { useIntentKey } from './useIntentKey';
 import './treatment-plan.css';
 
@@ -39,13 +37,7 @@ export interface TreatmentPlanCardProps {
     procedureId: string,
     extras: readonly ExtraItemDraft[],
     idempotencyKey: string,
-  ) => Promise<{ closure: CareClosure; extras: readonly ExtraItem[] }>;
-  readonly onRefreshClosure?: (closure: CareClosure) => Promise<CareClosure>;
-  readonly onRetryClosure?: (
-    closure: CareClosure,
-    reason: string,
-    idempotencyKey: string,
-  ) => Promise<CareClosure>;
+  ) => Promise<{ extras: readonly ExtraItem[] }>;
   readonly catalog: readonly { code: string; label: string }[];
   readonly loadPrices?: () => Promise<PriceEstimate>;
   readonly onDeclareOpen?: () => void;
@@ -59,8 +51,6 @@ export function TreatmentPlanCard({
   onPlan,
   onStart,
   onComplete,
-  onRefreshClosure,
-  onRetryClosure,
   catalog,
   loadPrices,
   onDeclareOpen,
@@ -92,7 +82,6 @@ export function TreatmentPlanCard({
   }>();
   const [notice, setNotice] = useState<string>();
   const [planning, setPlanning] = useState(false);
-  const [tracked, setTracked] = useState<readonly CareClosure[]>([]);
   const [unpriced, setUnpriced] = useState<
     readonly (ExtraItem & { procedure: string; appointmentId: string })[]
   >([]);
@@ -270,26 +259,6 @@ export function TreatmentPlanCard({
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      {onRefreshClosure && tracked.length > 0 && (
-        <CareClosureTracker
-          closures={tracked}
-          procedureLabel={(procedureId) =>
-            label(
-              treatments
-                ?.flatMap((item) => item.procedures)
-                .find((item) => item.id === procedureId)?.procedureCode ??
-                procedureId,
-            )
-          }
-          onRefresh={onRefreshClosure}
-          onRetry={onRetryClosure}
-          onChange={(updated) =>
-            setTracked(
-              tracked.map((item) => (item.id === updated.id ? updated : item)),
-            )
-          }
-        />
-      )}
       {unpriced.length > 0 && (
         <section
           className="tp-unpriced"
@@ -316,7 +285,7 @@ export function TreatmentPlanCard({
           key={completing.procedureId}
           onCancel={() => setCompleting(undefined)}
           onComplete={async (extras, idempotencyKey) => {
-            const { closure, extras: recorded } = await onComplete(
+            const { extras: recorded } = await onComplete(
               completing.treatment,
               completing.procedureId,
               extras,
@@ -333,10 +302,9 @@ export function TreatmentPlanCard({
                 appointmentId: procedure.appointmentId,
               })),
             ]);
-            setTracked([...tracked, closure]);
             setCompleting(undefined);
             setNotice(
-              'Cierre pendiente: Citas y Facturación confirmarán el procedimiento. Los extras se valorizan en Facturación.',
+              'Procedimiento completado. El cierre se abre al declarar la atención completada; los extras se valorizan en Facturación.',
             );
             setVersion((value) => value + 1);
           }}

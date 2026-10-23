@@ -5,7 +5,8 @@ import type { PatientForCare } from '../../../model/patientForCare';
 import type { TreatmentPort } from '../../../application/treatmentPlan';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
 import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
-import type { CareClosure } from '../../../model/procedureCompletion';
+import type { ProcedureCompletion } from '../../../model/procedureCompletion';
+import type { CareClosure } from '../../../model/careCompletion';
 import type { CareCompletionPort } from '../../../application/declareCareCompletion';
 import type { CareClosurePort } from '../../../application/careClosureTracking';
 import type { ProcedurePricePort } from '../../../application/billingEstimate';
@@ -156,7 +157,13 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     treatments[seed.patient.id] = [...seed.treatments];
   }
   /** Demo convergence: unpriced additional needs fail Billing until a retry. */
-  const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
+  // observed: the declared state was already shown once; reads then progress.
+  const closures: Record<
+    string,
+    CareClosure & { needsPrice: boolean; observed?: boolean }
+  > = {};
+  // Procedures whose extras still need a manual price in Billing.
+  const unpriced = new Set<string>();
   return {
     /** Synthetic dashboard facts; a professional scope sees only own work. */
     async listCarePatients() {
@@ -211,7 +218,22 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     async readCareClosure(closureId) {
       const closure = closures[closureId];
       if (!closure) throw { code: 'NOT_FOUND' };
-      const { needsPrice, ...current } = closure;
+      const { needsPrice, observed, ...current } = closure;
+      // ADR-015: Citas finalizes first; the awaiting state never fails.
+      if (current.status === 'AWAITING_ADMINISTRATIVE_FINALIZATION') {
+        if (!observed) {
+          closures[closureId] = { ...closure, observed: true };
+          return current;
+        }
+        const finalized: CareClosure = {
+          ...current,
+          status: 'CLOSURE_PENDING',
+          appointmentOutcome: 'COMPLETED',
+          version: current.version + 1,
+        };
+        closures[closureId] = { ...finalized, needsPrice };
+        return finalized;
+      }
       if (current.status !== 'CLOSURE_PENDING') return current;
       const next: CareClosure = needsPrice
         ? {
@@ -248,10 +270,13 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
           };
         const retried: CareClosure = {
           id: closure.id,
-          procedureId: closure.procedureId,
+          clinicalRecordId: closure.clinicalRecordId,
+          consultationId: closure.consultationId,
           appointmentId: closure.appointmentId,
-          status: 'CLOSURE_PENDING',
+          procedureIds: closure.procedureIds,
+          manualChargeIds: closure.manualChargeIds,
           appointmentOutcome: closure.appointmentOutcome,
+          status: 'CLOSURE_PENDING',
           billingOutcome: 'PENDING',
           version: closure.version + 1,
         };
@@ -287,20 +312,16 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
           ),
           version: current.version + 1,
         });
-        const closure: CareClosure = {
-          id: `closure-${procedureId}`,
+        if (request.additionalRequirements.length > 0)
+          unpriced.add(procedureId);
+        const completion: ProcedureCompletion = {
           procedureId,
+          treatmentId: current.id,
           appointmentId: procedure.appointmentId,
-          status: 'CLOSURE_PENDING',
-          appointmentOutcome: 'PENDING',
-          billingOutcome: 'PENDING',
-          version: 1,
+          completedAt: new Date().toISOString(),
+          version: 2,
         };
-        closures[closure.id] = {
-          ...closure,
-          needsPrice: request.additionalRequirements.length > 0,
-        };
-        return closure;
+        return completion;
       }),
     async listTreatments(patientId) {
       if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
@@ -456,18 +477,37 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         )!;
         closedRecords.add(recordId);
         versions[recordId] = version(recordId) + 1;
+        const procedureIds = treatments[patientId].flatMap((treatment) =>
+          treatment.procedures
+            .filter((procedure) => procedure.status === 'COMPLETED')
+            .map((procedure) => procedure.id),
+        );
+        // ADR-014: the declaration opens the one closure of the encounter.
+        const closure: CareClosure = {
+          id: `closure-${recordId}`,
+          clinicalRecordId: recordId,
+          consultationId: request.consultationId,
+          appointmentId: request.appointmentId,
+          procedureIds,
+          manualChargeIds: [],
+          status: 'AWAITING_ADMINISTRATIVE_FINALIZATION',
+          appointmentOutcome: 'PENDING',
+          billingOutcome: 'PENDING',
+          version: 1,
+        };
+        closures[closure.id] = {
+          ...closure,
+          needsPrice: procedureIds.some((id) => unpriced.has(id)),
+        };
         return {
           id: `completion-${recordId}`,
+          careClosureId: closure.id,
           clinicalRecordId: recordId,
           consultationId: request.consultationId,
           appointmentId: request.appointmentId,
           patientId,
           dentistId: 'demo-dentist',
-          procedureIds: treatments[patientId].flatMap((treatment) =>
-            treatment.procedures
-              .filter((procedure) => procedure.status === 'COMPLETED')
-              .map((procedure) => procedure.id),
-          ),
+          procedureIds,
           manualChargeIds: [],
           completedAt: '2026-10-09T10:00:00.000Z',
         };

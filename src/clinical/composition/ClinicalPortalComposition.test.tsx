@@ -292,7 +292,7 @@ describe('ClinicalPortalComposition', () => {
     );
 
     expect(
-      await screen.findByText(/Cierre pendiente: Citas y Facturación/),
+      await screen.findByText(/Procedimiento completado/),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('cell', { name: /Limpieza profunda · Completado/ }),
@@ -366,7 +366,7 @@ describe('ClinicalPortalComposition', () => {
     );
 
     expect(
-      await screen.findByText(/Cierre pendiente: Citas y Facturación/),
+      await screen.findByText(/Procedimiento completado/),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('region', {
@@ -408,23 +408,46 @@ describe('ClinicalPortalComposition', () => {
         name: 'Registrar procedimiento completado',
       }),
     );
+    await screen.findByText(/Procedimiento completado/);
+    // ADR-014: completing a procedure opens no closure; the declaration does.
+    expect(
+      screen.queryByRole('region', { name: 'Seguimiento del cierre' }),
+    ).toBeNull();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Declarar atención completada' }),
+    );
+    const consultation = (await screen.findByLabelText(
+      'Consulta de la atención',
+    )) as HTMLSelectElement;
+    fireEvent.change(consultation, {
+      target: { value: consultation.options[1].value },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Declarar atención clínica completada',
+      }),
+    );
     return screen.findByRole('region', { name: 'Seguimiento del cierre' });
   }
 
-  it('shows the closure notice and follow-up below the plan table', async () => {
-    const panel = await completeProcedure(false);
+  it('shows the completion notice below the plan table', async () => {
+    await completeProcedure(false);
 
     const table = screen.getByRole('table');
-    const notice = screen.getByText(/Cierre pendiente: Citas y Facturación/);
+    const notice = screen.getByText(/Procedimiento completado/);
     const follows = Node.DOCUMENT_POSITION_FOLLOWING;
     expect(table.compareDocumentPosition(notice) & follows).toBeTruthy();
-    expect(table.compareDocumentPosition(panel) & follows).toBeTruthy();
   });
 
-  it('follows a care closure until both outcomes complete', async () => {
+  it('follows the encounter closure from the declaration until both outcomes complete', async () => {
     const panel = await completeProcedure(false);
 
-    expect(panel).toHaveTextContent('Cierre pendiente');
+    expect(panel).toHaveTextContent('Esperando finalización administrativa');
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
+    expect(await screen.findByText(/Cierre pendiente/)).toBeInTheDocument();
+    expect(panel).toHaveTextContent(
+      'Citas: completado · Facturación: pendiente',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
 
     expect(await screen.findByText(/Cierre completado/)).toBeInTheDocument();
@@ -436,6 +459,8 @@ describe('ClinicalPortalComposition', () => {
   it('shows a failed closure and retries it with a reason', async () => {
     await completeProcedure(true);
     fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
+    await screen.findByText(/Cierre pendiente/);
+    fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
 
     expect(await screen.findByText(/Cierre fallido/)).toBeInTheDocument();
     expect(
@@ -446,7 +471,7 @@ describe('ClinicalPortalComposition', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar cierre' }));
     expect(
-      await screen.findByText(/Limpieza profunda: Cierre pendiente/),
+      await screen.findByText(/Atención clínica: Cierre pendiente/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Actualizar estado' }));
     expect(await screen.findByText(/Cierre completado/)).toBeInTheDocument();

@@ -276,7 +276,7 @@ describe('demoClinicalAdapter', () => {
       planned.version,
       'k-intent-5',
     );
-    const closure = await adapter.completeProcedure(
+    const completion = await adapter.completeProcedure(
       procedureId,
       {
         expectedVersion: started.version,
@@ -294,17 +294,19 @@ describe('demoClinicalAdapter', () => {
       'k-intent-4',
     );
 
-    expect(closure).toMatchObject({
+    // ADR-014: progress only, never a closure.
+    expect(completion).toEqual({
       procedureId,
+      treatmentId: planned.id,
       appointmentId: 'appointment-a',
-      status: 'CLOSURE_PENDING',
-      appointmentOutcome: 'PENDING',
-      billingOutcome: 'PENDING',
+      completedAt: expect.any(String),
+      version: 2,
     });
+    expect(completion).not.toHaveProperty('status');
     const [after] = await adapter.listTreatments('patient-a');
     expect(after.procedures[0].status).toBe('COMPLETED');
     expect(after.version).toBe(started.version + 1);
-    expect(JSON.stringify(closure)).not.toMatch(/price|amount|cost/i);
+    expect(JSON.stringify(completion)).not.toMatch(/price|amount|cost/i);
     await expect(
       adapter.completeProcedure(
         procedureId,
@@ -350,6 +352,7 @@ describe('demoClinicalAdapter', () => {
       consultationId: consultation.id,
       patientId: 'patient-a',
       manualChargeIds: [],
+      careClosureId: expect.any(String),
     });
     await expect(
       adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }, 'k-11'),
@@ -400,7 +403,7 @@ describe('demoClinicalAdapter', () => {
       description: 'Anestesia',
       clinicalReason: 'Sensibilidad',
     };
-    const closure = await adapter.completeProcedure(
+    await adapter.completeProcedure(
       started.procedures[0].id,
       {
         expectedVersion: started.version,
@@ -409,12 +412,39 @@ describe('demoClinicalAdapter', () => {
       },
       'k-intent-1',
     );
-    return { adapter, closure };
+    // The closure exists only after the Dentist declares the encounter.
+    const record = await adapter.findRecordId('patient-a');
+    const [consultation] = (await adapter.readEntries(record)).data;
+    const declared = await adapter.declareCareCompleted(
+      record,
+      {
+        consultationId: consultation.id,
+        appointmentId: 'appointment-a',
+        expectedVersion: await adapter.readRecordVersion(record),
+      },
+      'k-declare-closure',
+    );
+    return { adapter, closure: { id: declared.careClosureId } };
   }
+
+  it('waits for administrative finalization before any downstream outcome', async () => {
+    const { adapter, closure } = await completeFirstProcedure(true);
+
+    expect(await adapter.readCareClosure(closure.id)).toMatchObject({
+      status: 'AWAITING_ADMINISTRATIVE_FINALIZATION',
+      appointmentOutcome: 'PENDING',
+      billingOutcome: 'PENDING',
+    });
+  });
 
   it('converges a closure without manual extras to completed', async () => {
     const { adapter, closure } = await completeFirstProcedure(false);
 
+    await adapter.readCareClosure(closure.id);
+    expect(await adapter.readCareClosure(closure.id)).toMatchObject({
+      status: 'CLOSURE_PENDING',
+      appointmentOutcome: 'COMPLETED',
+    });
     expect(await adapter.readCareClosure(closure.id)).toMatchObject({
       status: 'CLOSURE_COMPLETED',
       appointmentOutcome: 'COMPLETED',
@@ -425,6 +455,8 @@ describe('demoClinicalAdapter', () => {
   it('fails a closure with unpriced needs until an authorized retry', async () => {
     const { adapter, closure } = await completeFirstProcedure(true);
 
+    await adapter.readCareClosure(closure.id);
+    await adapter.readCareClosure(closure.id);
     const failed = await adapter.readCareClosure(closure.id);
     expect(failed).toMatchObject({
       status: 'CLOSURE_FAILED',

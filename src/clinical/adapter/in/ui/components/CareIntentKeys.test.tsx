@@ -1,13 +1,16 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { CareClosure } from '../../../../model/procedureCompletion';
+import type { CareClosure } from '../../../../model/careCompletion';
 import { CareClosureTracker } from './CareClosureTracker';
 import { CareCompletionCard } from './CareCompletionCard';
 
 const failed: CareClosure = {
   id: 'closure-1',
-  procedureId: 'procedure-1',
+  clinicalRecordId: 'record-1',
+  consultationId: 'consultation-1',
   appointmentId: 'appointment-1',
+  procedureIds: ['procedure-1'],
+  manualChargeIds: [],
   status: 'CLOSURE_FAILED',
   appointmentOutcome: 'COMPLETED',
   billingOutcome: 'PENDING',
@@ -45,7 +48,6 @@ describe('care write intents', () => {
     render(
       <CareClosureTracker
         closures={[failed]}
-        procedureLabel={() => 'Limpieza'}
         onRefresh={vi.fn()}
         onRetry={onRetry}
         onChange={vi.fn()}
