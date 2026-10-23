@@ -6,16 +6,17 @@ import {
   type ProcedureCompletionPort,
 } from './completeProcedure';
 
-const closure = {
-  id: 'closure-1',
+// ADR-014: completing a procedure records progress only; no closure exists yet.
+const completion = {
   procedureId: 'procedure-1',
+  treatmentId: 'treatment-1',
   appointmentId: 'appointment-1',
-  status: 'CLOSURE_PENDING',
-  version: 1,
+  completedAt: '2026-10-23T10:00:00Z',
+  version: 2,
 } as const;
 
 function port(): ProcedureCompletionPort {
-  return { completeProcedure: vi.fn().mockResolvedValue(closure) };
+  return { completeProcedure: vi.fn().mockResolvedValue(completion) };
 }
 
 const access = (role: ClinicalRole | null, authorized: boolean) => ({
@@ -52,7 +53,7 @@ describe('CompleteProcedure', () => {
     await expect(
       useCase.execute(access('DENTIST', true), target, [material, need]),
     ).resolves.toEqual({
-      closure,
+      completion,
       extras: [
         expect.objectContaining({
           sourceRecordId: 'source-1',

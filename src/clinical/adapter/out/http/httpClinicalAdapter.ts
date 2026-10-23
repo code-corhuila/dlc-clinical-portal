@@ -14,8 +14,11 @@ import type { CareCompletionPort } from '../../../application/declareCareComplet
 import type { CareClosurePort } from '../../../application/careClosureTracking';
 import type { ClinicalEntryPage } from '../../../model/clinicalEntry';
 import type { PatientForCare } from '../../../model/patientForCare';
-import type { CareClosure } from '../../../model/procedureCompletion';
-import type { ClinicalCareCompletion } from '../../../model/careCompletion';
+import type { ProcedureCompletion } from '../../../model/procedureCompletion';
+import type {
+  CareClosure,
+  ClinicalCareCompletion,
+} from '../../../model/careCompletion';
 import type { Treatment } from '../../../model/treatment';
 import { send, type PortalHttp } from './portalHttp';
 
@@ -143,7 +146,7 @@ export function createHttpClinicalAdapter(
       );
     },
     completeProcedure(procedureId, request, idempotencyKey) {
-      return post<CareClosure>(
+      return post<ProcedureCompletion>(
         `/procedures/${procedureId}/completions`,
         request,
         idempotencyKey,
