@@ -242,31 +242,6 @@ export function ClinicalPortalPage({
                         )
                     : undefined
                 }
-                onRefreshClosure={
-                  treatments.tracking &&
-                  ((closure) =>
-                    treatments.tracking!.read(
-                      { role, clinicalReadAuthorized, clinicalWriteAuthorized },
-                      closure.id,
-                    ))
-                }
-                onRetryClosure={
-                  treatments.tracking &&
-                  resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
-                    'granted'
-                    ? (closure, reason, idempotencyKey) =>
-                        treatments.tracking!.retry(
-                          {
-                            role,
-                            clinicalReadAuthorized,
-                            clinicalWriteAuthorized,
-                            idempotencyKey,
-                          },
-                          closure,
-                          reason,
-                        )
-                    : undefined
-                }
                 onStart={
                   resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
                   'granted'
@@ -369,6 +344,28 @@ export function ClinicalPortalPage({
                       appointmentId: treatments?.appointmentId ?? '',
                     },
                   )
+                }
+                onReadClosure={
+                  treatments?.tracking &&
+                  ((closureId) =>
+                    treatments.tracking!.read(
+                      { role, clinicalReadAuthorized, clinicalWriteAuthorized },
+                      closureId,
+                    ))
+                }
+                onRetryClosure={
+                  treatments?.tracking &&
+                  ((closure, reason, idempotencyKey) =>
+                    treatments.tracking!.retry(
+                      {
+                        role,
+                        clinicalReadAuthorized,
+                        clinicalWriteAuthorized,
+                        idempotencyKey,
+                      },
+                      closure,
+                      reason,
+                    ))
                 }
               />
             </ClinicalDialog>
