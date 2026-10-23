@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ClinicalRole } from '../model/clinicalAccess';
-import type { CareClosure } from '../model/procedureCompletion';
+import type { CareClosure } from '../model/careCompletion';
 import {
   CareClosureTracking,
   type CareClosurePort,
@@ -8,8 +8,11 @@ import {
 
 const failed: CareClosure = {
   id: 'closure-1',
-  procedureId: 'procedure-1',
+  clinicalRecordId: 'record-1',
+  consultationId: 'consultation-1',
   appointmentId: 'appointment-1',
+  procedureIds: ['procedure-1'],
+  manualChargeIds: [],
   status: 'CLOSURE_FAILED',
   appointmentOutcome: 'COMPLETED',
   billingOutcome: 'PENDING',
