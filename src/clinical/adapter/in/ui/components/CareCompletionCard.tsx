@@ -4,6 +4,7 @@ import type {
   ClinicalCareCompletion,
 } from '../../../../model/careCompletion';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { clinicDateTime } from '../clinicTime';
 import { CareClosureTracker } from './CareClosureTracker';
 import { useIntentKey } from './useIntentKey';
 
@@ -62,9 +63,9 @@ export function CareCompletionCard({
         <>
           <p role="status">
             Atención clínica declarada completada el{' '}
-            {new Date(completion.completedAt).toLocaleString('es-CO')} ·
-            Procedimientos: {completion.procedureIds.length}. Finalización
-            administrativa pendiente en Citas (personal autorizado).
+            {clinicDateTime(completion.completedAt)} · Procedimientos:{' '}
+            {completion.procedureIds.length}. Finalización administrativa
+            pendiente en Citas (personal autorizado).
           </p>
           {closure && onReadClosure && (
             <CareClosureTracker
