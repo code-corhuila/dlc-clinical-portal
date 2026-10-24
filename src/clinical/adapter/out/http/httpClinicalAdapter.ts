@@ -40,6 +40,8 @@ export interface HttpClinicalReads
   readRecordVersion(recordId: string): Promise<number>;
   listTreatments(patientId: string): Promise<readonly Treatment[]>;
   readCareClosure(closureId: string): Promise<CareClosure>;
+  /** Appointment of the patient now EN_ATENCION (Appointments), if any. */
+  readInCareAppointment(patientId: string): Promise<string | undefined>;
 }
 
 /** Real Clinical adapter: every port over the compositor capability. */
@@ -109,6 +111,13 @@ export function createHttpClinicalAdapter(
     },
     readCareClosure(closureId) {
       return get<CareClosure>(`/care-closures/${closureId}`);
+    },
+    async readInCareAppointment(patientId) {
+      const page = await get<Page<{ id: string; status: string }>>(
+        '/appointments',
+        { patientId: [patientId], limit: ['100'] },
+      );
+      return page.data.find((item) => item.status === 'EN_ATENCION')?.id;
     },
     async listProcedurePrices() {
       const page = await get<Page<ProcedurePrice>>('/procedure-prices');
