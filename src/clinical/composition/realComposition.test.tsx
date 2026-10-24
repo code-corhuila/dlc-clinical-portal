@@ -7,6 +7,38 @@ import { ClinicalPortalComposition } from './ClinicalPortalComposition';
 afterEach(() => vi.unstubAllEnvs());
 
 describe('real build composition (composition contract v1, C06)', () => {
+  it('gives a secretary assistant no clinical reading or writing controls', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+    const request = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true,
+      status: 200,
+      correlationId: 'corr',
+      data: path.endsWith('/patients/p-1')
+        ? { id: 'p-1', name: 'Paciente Real', status: 'ACTIVE', version: 1 }
+        : { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } },
+    }));
+
+    render(
+      <ClinicalPortalComposition
+        patientId="p-1"
+        role="SECRETARY_ASSISTANT"
+        http={{ request } as unknown as PortalHttp}
+      />,
+    );
+
+    expect(await screen.findByText(/Acceso denegado/)).toBeInTheDocument();
+    for (const name of [
+      'Nueva entrada',
+      'Planificar nuevo tratamiento',
+      'Declarar atención completada',
+    ])
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    // PAT-003: the assistant never requests clinical narrative.
+    expect(request).not.toHaveBeenCalledWith(
+      expect.objectContaining({ path: expect.stringContaining('/entries') }),
+    );
+  });
+
   it('reads the clinical record through the compositor http capability', async () => {
     vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const request = vi.fn(async ({ path }: { path: string }) => ({
