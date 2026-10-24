@@ -7,6 +7,7 @@ import {
   type DashboardSnapshot,
 } from '../../../../model/dashboard';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { clinicTime } from '../clinicTime';
 import { ClinicalIcon } from '../components/ClinicalIcon';
 import './clinical-dashboard.css';
 
@@ -175,7 +176,7 @@ export function ClinicalDashboardPage({
             </button>
           )}
           {/* HU-CLN-003: stale data must be identifiable, so freshness stays visible. */}
-          <p>Actualizado: {view.snapshot.asOf.slice(11, 16)} UTC</p>
+          <p>Actualizado: {clinicTime(view.snapshot.asOf)}</p>
         </>
       )}
     </main>
