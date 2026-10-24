@@ -89,11 +89,17 @@ describe('Clinical portal entry (composition contract v1)', () => {
     const handle = await mount(target, context('/analytics').value);
 
     await vi.waitFor(() =>
-      expect(target.textContent).toContain(
-        'Bienvenida de nuevo, Dra. Valentina Ruiz',
-      ),
+      expect(target.textContent).toContain('Citas de hoy'),
     );
     expect(target.textContent).not.toContain('Ingresos del mes');
+    // C04: dlc-front owns the Dashboard page (title, greeting, <main>); Clinical
+    // contributes only its Analytics area inside it.
+    const area = target.querySelector(
+      'section[aria-label="Analítica clínica"]',
+    );
+    expect(area).not.toBeNull();
+    expect(target.querySelector('main, h1')).toBeNull();
+    expect(target.textContent).not.toContain('Bienvenida de nuevo');
     await handle.unmount();
   });
 
@@ -302,7 +308,7 @@ describe('Clinical portal entry (composition contract v1)', () => {
       const handle = await mount(target, context('/analytics').value);
 
       await vi.waitFor(() =>
-        expect(target.textContent).toContain('Bienvenida'),
+        expect(target.textContent).toContain('Citas de hoy'),
       );
       expect(target.querySelector('select')).toBeNull();
       await handle.unmount();
