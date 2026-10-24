@@ -45,6 +45,8 @@ export interface ClinicalShellContext {
   readonly onViewAllAppointments?: () => void;
   /** Compositor http capability (C06); passed down, never kept in globals. */
   readonly http?: PortalHttp;
+  /** Mounted inside the dlc-front Dashboard page, which owns its title (C04). */
+  readonly embedded?: boolean;
 }
 
 function isClinicalDemo(): boolean {
@@ -148,6 +150,7 @@ function ClinicalDashboardReal(
       staffId={context.staffId ?? ''}
       staffName={context.staffName ?? ''}
       onViewAllAppointments={context.onViewAllAppointments}
+      embedded={context.embedded}
     />
   );
 }
@@ -163,6 +166,7 @@ function ClinicalDashboardDemo(context: ClinicalShellContext) {
       staffId={context.staffId ?? 'demo-admin'}
       staffName={context.staffName ?? 'Laura Gómez'}
       onViewAllAppointments={context.onViewAllAppointments}
+      embedded={context.embedded}
     />
   );
 }

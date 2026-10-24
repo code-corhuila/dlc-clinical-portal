@@ -49,6 +49,7 @@ export function ClinicalRouteView({
       <ClinicalDashboardComposition
         {...viewer(session)}
         http={http}
+        embedded
         onViewAllAppointments={() =>
           void navigation.request({ path: '/app/appointments/calendar' })
         }
