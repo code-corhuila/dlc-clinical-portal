@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import { portFailureMessage } from '../../../../model/portFailure';
-import type { CareClosure } from '../../../../model/procedureCompletion';
+import type { CareClosure } from '../../../../model/careCompletion';
 
 const STATUS_LABELS: Record<CareClosure['status'], string> = {
+  AWAITING_ADMINISTRATIVE_FINALIZATION:
+    'Esperando finalización administrativa en Citas',
   CLOSURE_PENDING: 'Cierre pendiente',
   CLOSURE_COMPLETED: 'Cierre completado',
   CLOSURE_FAILED: 'Cierre fallido',
@@ -12,7 +14,6 @@ const outcome = (value?: 'PENDING' | 'COMPLETED') =>
 
 export interface CareClosureTrackerProps {
   readonly closures: readonly CareClosure[];
-  readonly procedureLabel: (procedureId: string) => string;
   readonly onRefresh: (closure: CareClosure) => Promise<CareClosure>;
   readonly onRetry?: (
     closure: CareClosure,
@@ -22,10 +23,9 @@ export interface CareClosureTrackerProps {
   readonly onChange: (closure: CareClosure) => void;
 }
 
-/** HU-XCT-001: actual downstream outcomes; never shown complete too early. */
+/** HU-XCT-001: actual downstream outcomes of each encounter closure; never shown complete too early. */
 export function CareClosureTracker({
   closures,
-  procedureLabel,
   onRefresh,
   onRetry,
   onChange,
@@ -59,10 +59,8 @@ export function CareClosureTracker({
       <ul>
         {closures.map((closure) => (
           <li key={closure.id}>
-            <strong>
-              {procedureLabel(closure.procedureId)}:{' '}
-              {STATUS_LABELS[closure.status]}
-            </strong>
+            <strong>Atención clínica: {STATUS_LABELS[closure.status]}</strong>
+            <span>Procedimientos: {closure.procedureIds.length}</span>
             <span>
               Citas: {outcome(closure.appointmentOutcome)} · Facturación:{' '}
               {outcome(closure.billingOutcome)}
