@@ -501,12 +501,16 @@ describe('demoClinicalAdapter', () => {
 
     expect(clinic.monthlyRevenue?.amount).toMatch(/^\d{1,12}\.\d{2}$/);
     expect(clinic.weeklyActivity).toHaveLength(7);
+    // Calendar dates of the current week, Monday to Sunday (contract).
+    expect(clinic.weeklyActivity[0].day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(
+      new Date(`${clinic.weeklyActivity[0].day}T12:00:00Z`).getUTCDay(),
+    ).toBe(1);
     expect(own.todayAppointments.count).toBeLessThan(
       clinic.todayAppointments.count,
     );
-    expect(own.upcomingAppointments.length).toBeLessThan(
-      clinic.upcomingAppointments.length,
-    );
+    expect(clinic).not.toHaveProperty('upcomingAppointments');
+    expect(clinic).not.toHaveProperty('pendingPatients');
   });
 
   it('applies a repeated write intent only once', async () => {

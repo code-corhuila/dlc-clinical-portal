@@ -5,6 +5,7 @@ import type {
   ProcedurePricePort,
 } from '../../../application/billingEstimate';
 import type { DashboardSnapshotPort } from '../../../application/readDashboard';
+import type { DashboardSnapshot } from '../../../model/dashboard';
 import type { CarePatientsPort } from '../../../application/listCarePatients';
 import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
@@ -166,12 +167,9 @@ export function createHttpClinicalAdapter(
         idempotencyKey,
       );
     },
-    async readDashboard() {
-      // HU-CLN-003: no Gateway analytics operation exists yet; never invent one.
-      throw {
-        code: 'UNAVAILABLE',
-        message: 'La analítica clínica aún no tiene un contrato publicado.',
-      };
+    readDashboard() {
+      // HU-CLN-003: the service scopes by the token's role (clinical-service.yaml).
+      return get<DashboardSnapshot>('/clinical-analytics/dashboard');
     },
   };
   return adapter;

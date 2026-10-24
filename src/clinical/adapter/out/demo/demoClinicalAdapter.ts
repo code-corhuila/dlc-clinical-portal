@@ -171,34 +171,27 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     },
     async readDashboard(scope) {
       const own = scope.scope === 'PROFESSIONAL';
-      const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       const counts = own ? [3, 4, 6, 2, 5, 1, 0] : [8, 11, 15, 6, 12, 4, 1];
-      const upcoming = [
-        ['a-1', 'María Jiménez', 'Control y limpieza', '10:00', false],
-        ['a-2', 'David Bravo', 'Endodoncia', '11:30', false],
-        ['a-3', 'Ana López', 'Dolor agudo', '14:00', true],
-        ['a-4', 'Tomás Silva', 'Consulta', '16:15', false],
-      ] as const;
+      const today = new Date();
+      const monday = new Date(
+        Date.UTC(
+          today.getUTCFullYear(),
+          today.getUTCMonth(),
+          today.getUTCDate(),
+        ),
+      );
+      monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
       return {
         asOf: new Date().toISOString(),
         todayAppointments: { count: own ? 5 : 12, deltaVsYesterday: 2 },
-        pendingPatients: own ? 2 : 4,
         monthlyRevenue: own
           ? undefined
           : { amount: '14500000.00', changePercent: 15 },
-        weeklyActivity: days.map((day, index) => ({
-          day,
-          count: counts[index],
-        })),
-        upcomingAppointments: upcoming
-          .slice(0, own ? 2 : 4)
-          .map(([id, patientName, reason, time, urgent]) => ({
-            id,
-            patientName,
-            reason,
-            time,
-            urgent,
-          })),
+        weeklyActivity: counts.map((count, index) => {
+          const day = new Date(monday);
+          day.setUTCDate(monday.getUTCDate() + index);
+          return { day: day.toISOString().slice(0, 10), count };
+        }),
       };
     },
     /** Synthetic Billing catalog prices (exact COP strings); read-only for Clinical. */

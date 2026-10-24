@@ -169,13 +169,25 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     ).rejects.toMatchObject({ code: 'CANCELLED' });
   });
 
-  it('reports the dashboard as unavailable: no Gateway operation exists yet', async () => {
-    const { http, request } = fakeHttp();
+  it('reads the role-scoped Clinical Analytics dashboard (HU-CLN-003)', async () => {
+    const dashboard = {
+      asOf: '2026-10-23T23:17:48Z',
+      todayAppointments: { count: 1, deltaVsYesterday: 1 },
+      weeklyActivity: [{ day: '2026-10-19', count: 0 }],
+      monthlyRevenue: { amount: '150000.50' },
+    };
+    const { http, request } = fakeHttp(ok(dashboard));
 
-    await expect(
-      createHttpClinicalAdapter(http).readDashboard({ scope: 'CLINIC' }),
-    ).rejects.toMatchObject({ code: 'UNAVAILABLE' });
-    expect(request).not.toHaveBeenCalled();
+    expect(
+      await createHttpClinicalAdapter(http).readDashboard({ scope: 'CLINIC' }),
+    ).toEqual(dashboard);
+    // The service scopes by the token's role; the client sends no scope.
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        path: '/api/v1/clinical-analytics/dashboard',
+      }),
+    );
   });
 
   it('lists care patients from clinical records and the Patients projection', async () => {
