@@ -62,6 +62,19 @@ export function ClinicalRealComposition({
       active = false;
     };
   }, [useCases]);
+  // Procedures and the declaration belong to the appointment now EN_ATENCION.
+  const [appointmentId, setAppointmentId] = useState<string>();
+  useEffect(() => {
+    if (!patientId) return;
+    let active = true;
+    useCases.adapter.readInCareAppointment(patientId).then(
+      (id) => active && setAppointmentId(id),
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [useCases, patientId]);
 
   return (
     <ClinicalPortalPage
@@ -81,6 +94,7 @@ export function ClinicalRealComposition({
         tracking: useCases.tracking,
         estimate: useCases.estimate,
         catalog,
+        appointmentId,
       }}
     />
   );
