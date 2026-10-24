@@ -25,6 +25,8 @@ export interface SessionSnapshot {
     readonly name: string;
     readonly roles: readonly string[];
   } | null;
+  /** Auth permissions of the session (C05); absent means none. */
+  readonly permissions?: readonly string[];
 }
 
 /** C04: the only way a portal changes the global URL. */
