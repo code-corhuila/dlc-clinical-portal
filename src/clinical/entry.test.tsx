@@ -314,4 +314,96 @@ describe('Clinical portal entry (composition contract v1)', () => {
       await handle.unmount();
     });
   });
+
+  describe('Administrator clinical grants come from the session permissions (PAT-003)', () => {
+    const page = (data: unknown[]) => ({
+      data,
+      meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
+    });
+    const routes: Record<string, unknown> = {
+      '/api/v1/patients/p-1': {
+        id: 'p-1',
+        name: 'Paciente Real',
+        status: 'ACTIVE',
+        version: 1,
+      },
+      '/api/v1/clinical-records': page([
+        { id: 'r-1', patientId: 'p-1', version: 1 },
+      ]),
+      '/api/v1/clinical-records/r-1/entries': page([]),
+    };
+
+    async function mountAdministrator(permissions: string[]) {
+      vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+      const target = host();
+      const ctx = context('/p-1').value;
+      const request = vi.fn(async ({ path }: { path: string }) => ({
+        ok: true,
+        status: 200,
+        correlationId: 'corr',
+        data: routes[path] ?? page([]),
+      }));
+      const handle = await mount(target, {
+        ...ctx,
+        session: {
+          ...ctx.session,
+          getSnapshot: () => ({
+            state: 'authenticated',
+            revision: 1,
+            user: {
+              id: 'admin-1',
+              name: 'Laura Gómez',
+              roles: ['ADMINISTRATOR'],
+            },
+            permissions,
+          }),
+        },
+        http: { request } as unknown as PortalContext['http'],
+      });
+      return { target, request, handle };
+    }
+
+    it('denies the record without the clinical read permission', async () => {
+      const { target, request, handle } = await mountAdministrator([]);
+
+      await vi.waitFor(() =>
+        expect(target.textContent).toContain('Acceso denegado'),
+      );
+      expect(request).not.toHaveBeenCalledWith(
+        expect.objectContaining({ path: expect.stringContaining('/entries') }),
+      );
+      await handle.unmount();
+    });
+
+    it('reads without write controls when only clinical read is granted', async () => {
+      const { target, request, handle } = await mountAdministrator([
+        'clinical:read',
+      ]);
+
+      await vi.waitFor(() =>
+        expect(request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            path: '/api/v1/clinical-records/r-1/entries',
+          }),
+        ),
+      );
+      await vi.waitFor(() =>
+        expect(target.textContent).toContain('Paciente Real'),
+      );
+      expect(target.textContent).not.toContain('Acceso denegado');
+      for (const name of ['Nueva entrada', 'Planificar nuevo tratamiento'])
+        expect(target.textContent).not.toContain(name);
+      await handle.unmount();
+    });
+
+    it('uses the configured permission names, like the Clinical API', async () => {
+      vi.stubEnv('VITE_CLINICAL_READ_PERMISSION', 'records:clinical-read');
+      const { target, handle } = await mountAdministrator(['clinical:read']);
+
+      await vi.waitFor(() =>
+        expect(target.textContent).toContain('Acceso denegado'),
+      );
+      await handle.unmount();
+    });
+  });
 });

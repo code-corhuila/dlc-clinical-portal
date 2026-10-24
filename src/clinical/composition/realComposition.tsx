@@ -16,6 +16,9 @@ export interface ClinicalRealCompositionProps {
   readonly http: PortalHttp;
   readonly patientId?: string;
   readonly role?: ClinicalRole;
+  /** Session grants; without them only a Dentist sees clinical content. */
+  readonly clinicalReadAuthorized?: boolean;
+  readonly clinicalWriteAuthorized?: boolean;
 }
 
 /** Use cases over the real adapter; created once per mounted patient context. */
@@ -42,6 +45,8 @@ export function ClinicalRealComposition({
   http,
   patientId,
   role,
+  clinicalReadAuthorized = role === 'DENTIST',
+  clinicalWriteAuthorized = role === 'DENTIST',
 }: ClinicalRealCompositionProps) {
   const [useCases] = useState(() => createRealUseCases(http));
   // Planning catalog comes from the Billing-owned price list (codes and names).
@@ -80,8 +85,8 @@ export function ClinicalRealComposition({
     <ClinicalPortalPage
       patientId={patientId ?? null}
       role={role ?? null}
-      clinicalReadAuthorized
-      clinicalWriteAuthorized
+      clinicalReadAuthorized={clinicalReadAuthorized}
+      clinicalWriteAuthorized={clinicalWriteAuthorized}
       readPort={useCases.adapter}
       patientReader={useCases.patientReader}
       writer={useCases.writer}
