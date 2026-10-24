@@ -39,6 +39,9 @@ export interface ClinicalShellContext {
   readonly role?: ClinicalRole;
   readonly staffId?: string;
   readonly staffName?: string;
+  /** Display grants from the session permissions; the Clinical API decides. */
+  readonly clinicalReadAuthorized?: boolean;
+  readonly clinicalWriteAuthorized?: boolean;
   /** Compositor navigation for the demo patient selector (C04). */
   readonly onSelectPatient?: (patientId: string) => void;
   /** Compositor navigation to the Appointments portal from the dashboard (C04). */
@@ -73,6 +76,8 @@ export function ClinicalPortalComposition(context: ClinicalShellContext) {
       http={context.http}
       patientId={context.patientId}
       role={context.role}
+      clinicalReadAuthorized={context.clinicalReadAuthorized}
+      clinicalWriteAuthorized={context.clinicalWriteAuthorized}
     />
   ) : (
     <ClinicalPortalPage />
@@ -101,7 +106,12 @@ export function ClinicalHomeComposition(
   const [load] = useState(
     () => () =>
       lister
-        ? lister.execute(context.role ?? null, true)
+        ? lister.execute(
+            context.role ?? null,
+            // The demo keeps its synthetic staff; the real build uses the session grants.
+            isClinicalDemo() ||
+              (context.clinicalReadAuthorized ?? context.role === 'DENTIST'),
+          )
         : Promise.reject({
             code: 'UNAVAILABLE',
             message:

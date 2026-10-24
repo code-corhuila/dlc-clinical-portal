@@ -1,4 +1,4 @@
-import type { ClinicalRole } from '../model/clinicalAccess';
+import { clinicalGrants, type ClinicalRole } from '../model/clinicalAccess';
 import type { PortalNavigation, PortalRoute, SessionSnapshot } from '../entry';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import {
@@ -18,7 +18,18 @@ const CLINICAL_ROLES: readonly ClinicalRole[] = [
 function viewer(snapshot: SessionSnapshot): ClinicalShellContext {
   const user = snapshot.state === 'authenticated' ? snapshot.user : null;
   const role = CLINICAL_ROLES.find((item) => user?.roles.includes(item));
-  return user ? { role, staffId: user.id, staffName: user.name } : {};
+  if (!user) return {};
+  const grants = clinicalGrants(role, snapshot.permissions ?? [], {
+    read: import.meta.env.VITE_CLINICAL_READ_PERMISSION || 'clinical:read',
+    write: import.meta.env.VITE_CLINICAL_WRITE_PERMISSION || 'clinical:write',
+  });
+  return {
+    role,
+    staffId: user.id,
+    staffName: user.name,
+    clinicalReadAuthorized: grants.read,
+    clinicalWriteAuthorized: grants.write,
+  };
 }
 
 /** Interprets the compositor local path (C04): /analytics, /{patientId} or portal 404. */
