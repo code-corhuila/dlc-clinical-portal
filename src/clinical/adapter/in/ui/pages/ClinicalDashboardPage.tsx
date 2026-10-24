@@ -18,6 +18,11 @@ export interface ClinicalDashboardPageProps {
   readonly staffName: string;
   /** Inside dlc-front: navigation to the Appointments portal (C04). */
   readonly onViewAllAppointments?: () => void;
+  /**
+   * Mounted by dlc-front inside its Dashboard page (C04): the shell owns the
+   * page title, greeting and <main>; only the Analytics area is rendered.
+   */
+  readonly embedded?: boolean;
 }
 
 type View =
@@ -95,6 +100,7 @@ export function ClinicalDashboardPage({
   staffId,
   staffName,
   onViewAllAppointments,
+  embedded = false,
 }: ClinicalDashboardPageProps) {
   const key = `${role}:${staffId}`;
   const [loaded, setLoaded] = useState<{ key: string; view: View }>();
@@ -124,10 +130,20 @@ export function ClinicalDashboardPage({
     };
   }, [key, reader, role, staffId]);
 
+  const Area = embedded ? 'section' : 'main';
   return (
-    <main className="db-page" aria-labelledby="dashboard-title">
-      <h1 id="dashboard-title">Panel</h1>
-      <p>Bienvenida de nuevo, {staffName}. Esto es lo que sucede hoy.</p>
+    <Area
+      className="db-page"
+      {...(embedded
+        ? { 'aria-label': 'Analítica clínica' }
+        : { 'aria-labelledby': 'dashboard-title' })}
+    >
+      {!embedded && (
+        <>
+          <h1 id="dashboard-title">Panel</h1>
+          <p>Bienvenida de nuevo, {staffName}. Esto es lo que sucede hoy.</p>
+        </>
+      )}
       {view.kind === 'loading' && <p role="status">Cargando panel…</p>}
       {view.kind === 'error' && <p role="alert">{view.message}</p>}
       {view.kind === 'ready' && (
@@ -179,6 +195,6 @@ export function ClinicalDashboardPage({
           <p>Actualizado: {clinicTime(view.snapshot.asOf)}</p>
         </>
       )}
-    </main>
+    </Area>
   );
 }
