@@ -97,6 +97,35 @@ describe('Clinical portal entry (composition contract v1)', () => {
     await handle.unmount();
   });
 
+  it('reads Clinical Analytics through the compositor http in the real build', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+    const target = host();
+    const ctx = context('/analytics').value;
+    const request = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      correlationId: 'corr',
+      data: {
+        asOf: '2026-10-23T23:17:48Z',
+        todayAppointments: { count: 7, deltaVsYesterday: 1 },
+        weeklyActivity: [{ day: '2026-10-19', count: 2 }],
+      },
+    }));
+
+    const handle = await mount(target, {
+      ...ctx,
+      http: { request } as unknown as PortalContext['http'],
+    });
+
+    await vi.waitFor(() =>
+      expect(target.textContent).toContain('Citas de hoy'),
+    );
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({ path: '/api/v1/clinical-analytics/dashboard' }),
+    );
+    await handle.unmount();
+  });
+
   it('shows a portal 404 for an unknown local path and recovers on updateRoute', async () => {
     const target = host();
 
