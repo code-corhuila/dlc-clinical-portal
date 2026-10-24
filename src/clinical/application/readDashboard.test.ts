@@ -6,18 +6,8 @@ import { ReadDashboard, type DashboardSnapshotPort } from './readDashboard';
 const snapshot: DashboardSnapshot = {
   asOf: '2026-10-09T09:55:00.000Z',
   todayAppointments: { count: 12, deltaVsYesterday: 2 },
-  pendingPatients: 4,
   monthlyRevenue: { amount: '14500000.00', changePercent: 15 },
-  weeklyActivity: [{ day: 'Lun', count: 8 }],
-  upcomingAppointments: [
-    {
-      id: 'a-1',
-      patientName: 'María Jiménez',
-      reason: 'Control y limpieza',
-      time: '10:00',
-      urgent: false,
-    },
-  ],
+  weeklyActivity: [{ day: '2026-10-05', count: 8 }],
 };
 
 function port(): DashboardSnapshotPort {

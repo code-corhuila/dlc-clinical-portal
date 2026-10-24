@@ -2,8 +2,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { ReadDashboard } from '../../../../application/readDashboard';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { formatCop, formatCopCompact } from '../../../../model/copMoney';
-import type { DashboardSnapshot } from '../../../../model/dashboard';
+import {
+  weekdayLabel,
+  type DashboardSnapshot,
+} from '../../../../model/dashboard';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { clinicTime } from '../clinicTime';
 import { ClinicalIcon } from '../components/ClinicalIcon';
 import './clinical-dashboard.css';
 
@@ -21,13 +25,6 @@ type View =
   | { readonly kind: 'error'; readonly message: string }
   | { readonly kind: 'ready'; snapshot: DashboardSnapshot; stale: boolean };
 
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('');
-
 /** Bar chart; the list below it is the required textual alternative. Every day tied for the busiest is highlighted, as in the mockup. */
 function WeeklyChart({
   activity,
@@ -40,7 +37,7 @@ function WeeklyChart({
       className="db-chart"
       role="img"
       aria-label={`Actividad semanal: ${activity
-        .map((item) => `${item.day} ${item.count}`)
+        .map((item) => `${weekdayLabel(item.day)} ${item.count}`)
         .join(', ')}`}
     >
       {activity.map((item) => (
@@ -52,7 +49,7 @@ function WeeklyChart({
           <span style={{ height: `${(item.count / max) * 100}%` }}>
             {item.count === max && <b aria-hidden="true">{item.count}</b>}
           </span>
-          <small>{item.day}</small>
+          <small>{weekdayLabel(item.day)}</small>
         </span>
       ))}
     </div>
@@ -60,7 +57,7 @@ function WeeklyChart({
 }
 
 /** KPI cards; revenue appears only when the use case kept it (Administrator). */
-type Kpi = [string, ReactNode, string, 'calendar' | 'users' | 'money'];
+type Kpi = [string, ReactNode, string, 'calendar' | 'money'];
 
 function kpis(data: DashboardSnapshot): Kpi[] {
   const { count, deltaVsYesterday: delta } = data.todayAppointments;
@@ -68,14 +65,10 @@ function kpis(data: DashboardSnapshot): Kpi[] {
     [
       'Citas de hoy',
       count,
-      `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
+      delta === 0
+        ? 'Igual que ayer'
+        : `${delta > 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
       'calendar',
-    ],
-    [
-      'Pacientes pendientes',
-      data.pendingPatients,
-      'En sala de espera',
-      'users',
     ],
   ];
   if (data.monthlyRevenue) {
@@ -86,7 +79,9 @@ function kpis(data: DashboardSnapshot): Kpi[] {
         {formatCopCompact(amount)}
         <span className="db-sr">{formatCop(amount)}</span>
       </>,
-      `${change >= 0 ? '↑ +' : '↓ '}${change} % vs mes anterior`,
+      change === undefined
+        ? 'Sin referencia del mes anterior'
+        : `${change >= 0 ? '↑ +' : '↓ '}${Math.abs(change)} % vs mes anterior`,
       'money',
     ]);
   }
@@ -165,50 +160,23 @@ export function ClinicalDashboardPage({
               <ul className="db-chart-text db-sr">
                 {view.snapshot.weeklyActivity.map((item) => (
                   <li key={item.day}>
-                    {item.day}: {item.count}
+                    {weekdayLabel(item.day)}: {item.count}
                   </li>
                 ))}
               </ul>
-            </section>
-            <section
-              aria-label="Próximas citas"
-              className="db-card db-upcoming"
-            >
-              <h2>Próximas citas</h2>
-              <ul>
-                {view.snapshot.upcomingAppointments.map((item, index) => (
-                  <li key={item.id}>
-                    <span aria-hidden="true" data-tone={index % 4}>
-                      {initials(item.patientName)}
-                    </span>
-                    <div>
-                      <strong>{item.patientName}</strong>
-                      {item.urgent ? (
-                        <small className="db-urgent">
-                          <ClinicalIcon name="alert" />
-                          Urgente
-                        </small>
-                      ) : (
-                        <small>{item.reason}</small>
-                      )}
-                    </div>
-                    <time>{item.time}</time>
-                  </li>
-                ))}
-              </ul>
-              {onViewAllAppointments && (
-                <button
-                  type="button"
-                  className="db-link"
-                  onClick={onViewAllAppointments}
-                >
-                  Ver todas las citas
-                </button>
-              )}
             </section>
           </div>
+          {onViewAllAppointments && (
+            <button
+              type="button"
+              className="db-link"
+              onClick={onViewAllAppointments}
+            >
+              Ver todas las citas
+            </button>
+          )}
           {/* HU-CLN-003: stale data must be identifiable, so freshness stays visible. */}
-          <p>Actualizado: {view.snapshot.asOf.slice(11, 16)} UTC</p>
+          <p>Actualizado: {clinicTime(view.snapshot.asOf)}</p>
         </>
       )}
     </main>

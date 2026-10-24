@@ -34,9 +34,76 @@ describe('ClinicalDashboardPage', () => {
     expect(
       screen.getByRole('region', { name: 'Ingresos del mes' }),
     ).toHaveTextContent(/14\.500\.000,00/);
+    // HU-CLN-003 scope: upcoming appointments and pending patients are
+    // operational Appointments data (HU-OPS-001), never Clinical analytics.
+    expect(screen.queryByRole('region', { name: 'Próximas citas' })).toBeNull();
     expect(
-      screen.getByRole('region', { name: 'Próximas citas' }),
-    ).toHaveTextContent('María Jiménez');
+      screen.queryByRole('region', { name: 'Pacientes pendientes' }),
+    ).toBeNull();
+  });
+
+  it('shows declines against yesterday and the previous month', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async () => ({
+          ...snapshot,
+          todayAppointments: { count: 4, deltaVsYesterday: -3 },
+          monthlyRevenue: { amount: '150000.50', changePercent: -12.5 },
+        }),
+      },
+      now,
+    );
+
+    renderDashboard('ADMINISTRATOR', reader);
+
+    expect(
+      await screen.findByRole('region', { name: 'Citas de hoy' }),
+    ).toHaveTextContent('↓ 3 vs ayer');
+    expect(
+      screen.getByRole('region', { name: 'Ingresos del mes' }),
+    ).toHaveTextContent('↓ 12.5 % vs mes anterior');
+  });
+
+  it('shows no arrow when today matches yesterday', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async () => ({
+          ...snapshot,
+          todayAppointments: { count: 0, deltaVsYesterday: 0 },
+        }),
+      },
+      now,
+    );
+
+    renderDashboard('DENTIST', reader);
+
+    const card = await screen.findByRole('region', { name: 'Citas de hoy' });
+    expect(card).toHaveTextContent('Igual que ayer');
+    expect(card).not.toHaveTextContent('↑');
+  });
+
+  it('shows no percentage without a previous-month reference', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async () => ({
+          ...snapshot,
+          monthlyRevenue: { amount: '150000.50' },
+        }),
+      },
+      now,
+    );
+
+    renderDashboard('ADMINISTRATOR', reader);
+
+    expect(
+      await screen.findByRole('region', { name: 'Ingresos del mes' }),
+    ).toHaveTextContent('Sin referencia del mes anterior');
   });
 
   it('draws the weekly activity chart with a textual alternative', async () => {
@@ -83,11 +150,31 @@ describe('ClinicalDashboardPage', () => {
     renderDashboard('SECRETARY_ASSISTANT');
 
     expect(
-      await screen.findByRole('region', { name: 'Pacientes pendientes' }),
-    ).toBeInTheDocument();
+      await screen.findByRole('region', { name: 'Citas de hoy' }),
+    ).toHaveTextContent('12');
     expect(
       screen.queryByRole('region', { name: 'Ingresos del mes' }),
     ).toBeNull();
+  });
+
+  it('shows the update time in the clinic timezone', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async () => ({
+          ...snapshot,
+          asOf: '2026-10-24T03:50:00Z',
+        }),
+      },
+      () => new Date('2026-10-24T03:51:00Z'),
+    );
+
+    renderDashboard('ADMINISTRATOR', reader);
+
+    expect(await screen.findByText(/Actualizado:/)).toHaveTextContent(
+      'Actualizado: 22:50',
+    );
   });
 
   it('warns that stale data is informative only', async () => {
@@ -148,9 +235,9 @@ describe('ClinicalDashboardPage', () => {
         readDashboard: async (scope) => ({
           ...(await demo.readDashboard(scope)),
           weeklyActivity: [
-            { day: 'Lun', count: 9 },
-            { day: 'Mar', count: 4 },
-            { day: 'Mié', count: 9 },
+            { day: '2026-10-19', count: 9 },
+            { day: '2026-10-20', count: 4 },
+            { day: '2026-10-21', count: 9 },
           ],
         }),
       },
