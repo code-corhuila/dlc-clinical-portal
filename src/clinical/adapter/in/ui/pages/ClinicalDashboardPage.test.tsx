@@ -157,6 +157,26 @@ describe('ClinicalDashboardPage', () => {
     ).toBeNull();
   });
 
+  it('shows the update time in the clinic timezone', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async () => ({
+          ...snapshot,
+          asOf: '2026-10-24T03:50:00Z',
+        }),
+      },
+      () => new Date('2026-10-24T03:51:00Z'),
+    );
+
+    renderDashboard('ADMINISTRATOR', reader);
+
+    expect(await screen.findByText(/Actualizado:/)).toHaveTextContent(
+      'Actualizado: 22:50',
+    );
+  });
+
   it('warns that stale data is informative only', async () => {
     const adapter = createDemoClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
