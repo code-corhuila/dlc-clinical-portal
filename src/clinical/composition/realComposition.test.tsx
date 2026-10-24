@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import { ClinicalPortalComposition } from './ClinicalPortalComposition';
@@ -108,6 +108,93 @@ describe('real build composition (composition contract v1, C06)', () => {
     expect(
       screen.getByRole('button', { name: 'Nueva entrada' }),
     ).toBeInTheDocument();
+  });
+
+  it('plans procedures for the appointment in care read from Appointments', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+    const page = (data: unknown[]) => ({
+      data,
+      meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
+    });
+    const routes: Record<string, unknown> = {
+      '/api/v1/patients/p-1': {
+        id: 'p-1',
+        name: 'Paciente Real',
+        status: 'ACTIVE',
+        version: 1,
+      },
+      '/api/v1/clinical-records': page([
+        { id: 'r-1', patientId: 'p-1', version: 1 },
+      ]),
+      '/api/v1/clinical-records/r-1/entries': page([]),
+      '/api/v1/treatments': page([]),
+      '/api/v1/appointments': page([
+        { id: 'ap-9', patientId: 'p-1', status: 'EN_ATENCION' },
+      ]),
+      '/api/v1/procedure-prices': page([
+        {
+          id: 'x',
+          procedureCode: 'D1110',
+          name: 'Limpieza profunda',
+          basePrice: '180000.00',
+          currency: 'COP',
+          status: 'ACTIVE',
+        },
+      ]),
+    };
+    const request = vi.fn(
+      async ({ method, path }: { method: string; path: string }) => ({
+        ok: true,
+        status: method === 'POST' ? 201 : 200,
+        correlationId: 'corr',
+        data:
+          method === 'POST'
+            ? {
+                id: 't-1',
+                patientId: 'p-1',
+                clinicalReason: 'Control',
+                status: 'PLANNED',
+                procedures: [],
+                version: 1,
+              }
+            : routes[path],
+      }),
+    );
+
+    render(
+      <ClinicalPortalComposition
+        patientId="p-1"
+        role="DENTIST"
+        http={{ request } as unknown as PortalHttp}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Planificar nuevo tratamiento',
+      }),
+    );
+    fireEvent.change(screen.getByLabelText('Motivo clínico'), {
+      target: { value: 'Control' },
+    });
+    fireEvent.click(
+      await screen.findByRole('checkbox', { name: 'Limpieza profunda' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Planificar tratamiento' }),
+    );
+
+    await vi.waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          path: '/api/v1/treatments',
+          body: expect.objectContaining({
+            procedures: [{ procedureCode: 'D1110', appointmentId: 'ap-9' }],
+          }),
+        }),
+      ),
+    );
   });
 
   it('keeps the synthetic adapter out of the real composition source', () => {
