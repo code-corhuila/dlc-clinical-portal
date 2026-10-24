@@ -1,7 +1,8 @@
 /**
- * Clinical Analytics dashboard snapshot (ADR-006, Figma 88:1998): Clinical
- * projections plus minimized Appointments/Billing facts. Read-only; it never
- * drives operational state. Money is an exact COP decimal string.
+ * Clinical Analytics dashboard (`ClinicalDashboard`, clinical-service.yaml;
+ * ADR-006, HU-CLN-003, Figma 88:1998): read-only projections that never drive
+ * operational state. Money is an exact COP decimal string. Upcoming
+ * appointments and pending patients are operational data (HU-OPS-001).
  */
 export interface DashboardSnapshot {
   readonly asOf: string;
@@ -9,19 +10,20 @@ export interface DashboardSnapshot {
     readonly count: number;
     readonly deltaVsYesterday: number;
   };
-  readonly pendingPatients: number;
+  /** Administrator only; changePercent is absent without a previous month. */
   readonly monthlyRevenue?: {
     readonly amount: string;
-    readonly changePercent: number;
+    readonly changePercent?: number;
   };
+  /** Calendar dates (YYYY-MM-DD) of the current week, Monday to Sunday. */
   readonly weeklyActivity: readonly { day: string; count: number }[];
-  readonly upcomingAppointments: readonly {
-    readonly id: string;
-    readonly patientName: string;
-    readonly reason: string;
-    readonly time: string;
-    readonly urgent: boolean;
-  }[];
+}
+
+const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+/** Short Spanish weekday of a calendar date (clinic day, no timezone shift). */
+export function weekdayLabel(day: string): string {
+  return WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()];
 }
 
 /** Role scopes from the navigation-map access matrix. */
