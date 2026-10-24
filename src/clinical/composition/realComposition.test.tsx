@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import { ClinicalPortalComposition } from './ClinicalPortalComposition';
@@ -34,6 +34,61 @@ describe('real build composition (composition contract v1, C06)', () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ path: '/api/v1/patients/p-1' }),
     );
+  });
+
+  it('labels consultations for the declaration with the clinic day', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+    const page = (data: unknown[]) => ({
+      data,
+      meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
+    });
+    const routes: Record<string, unknown> = {
+      '/api/v1/patients/p-1': {
+        id: 'p-1',
+        name: 'Paciente Real',
+        status: 'ACTIVE',
+        version: 1,
+      },
+      '/api/v1/clinical-records': page([
+        { id: 'r-1', patientId: 'p-1', version: 1 },
+      ]),
+      '/api/v1/clinical-records/r-1/entries': page([
+        {
+          id: 'c-1',
+          recordId: 'r-1',
+          kind: 'CONSULTATION',
+          text: 'Dolor en 36',
+          authorId: 'a-1',
+          createdAt: '2026-10-24T03:50:00Z',
+          updatedAt: '2026-10-24T03:50:00Z',
+          version: 1,
+        },
+      ]),
+      '/api/v1/treatments': page([]),
+    };
+    const request = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true,
+      status: 200,
+      correlationId: 'corr',
+      data: routes[path] ?? page([]),
+    }));
+
+    render(
+      <ClinicalPortalComposition
+        patientId="p-1"
+        role="DENTIST"
+        http={{ request } as unknown as PortalHttp}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Declarar atención completada',
+      }),
+    );
+    expect(
+      await screen.findByRole('option', { name: /Dolor en 36/ }),
+    ).toHaveTextContent('2026-10-23 · Dolor en 36');
   });
 
   it('wires treatments, Billing estimate and writes in the real build', async () => {

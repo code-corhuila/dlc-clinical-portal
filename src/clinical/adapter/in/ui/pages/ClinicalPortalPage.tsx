@@ -26,6 +26,7 @@ import type { BillingEstimate } from '../../../../application/billingEstimate';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
 import { CareCompletionCard } from '../components/CareCompletionCard';
 import { ClinicalDialog } from '../components/ClinicalDialog';
+import { clinicDay } from '../clinicTime';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 
 export interface ClinicalPortalPageProps {
@@ -174,7 +175,7 @@ export function ClinicalPortalPage({
           .filter((entry) => entry.kind === 'CONSULTATION')
           .map((entry) => ({
             id: entry.id,
-            label: `${entry.createdAt?.slice(0, 10) ?? ''} · ${
+            label: `${entry.createdAt ? clinicDay(entry.createdAt) : ''} · ${
               entry.text.length > 40
                 ? `${entry.text.slice(0, 40)}…`
                 : entry.text
