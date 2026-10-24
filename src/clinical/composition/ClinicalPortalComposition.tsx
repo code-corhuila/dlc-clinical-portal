@@ -118,6 +118,8 @@ export function ClinicalHomeComposition(
 export function ClinicalDashboardComposition(context: ClinicalShellContext) {
   return isClinicalDemo() ? (
     <ClinicalDashboardDemo {...context} />
+  ) : context.http ? (
+    <ClinicalDashboardReal {...context} http={context.http} />
   ) : (
     <main className="portal-placeholder">
       <h1>Clinical dashboard</h1>
@@ -125,6 +127,28 @@ export function ClinicalDashboardComposition(context: ClinicalShellContext) {
         Clinical analytics require the shared session supplied by dlc-front.
       </p>
     </main>
+  );
+}
+
+/** HU-CLN-003 over the compositor http (C06); the service scopes by role. */
+function ClinicalDashboardReal(
+  context: ClinicalShellContext & { readonly http: PortalHttp },
+) {
+  const [reader] = useState(
+    () =>
+      new ReadDashboard(
+        createHttpClinicalAdapter(context.http),
+        () => new Date(),
+      ),
+  );
+  return (
+    <ClinicalDashboardPage
+      reader={reader}
+      role={context.role ?? null}
+      staffId={context.staffId ?? ''}
+      staffName={context.staffName ?? ''}
+      onViewAllAppointments={context.onViewAllAppointments}
+    />
   );
 }
 
