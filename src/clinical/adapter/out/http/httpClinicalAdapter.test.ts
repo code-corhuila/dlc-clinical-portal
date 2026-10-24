@@ -130,6 +130,31 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     expect(request.mock.calls[0][0].query).toEqual({ patientId: ['p-1'] });
   });
 
+  it('reads the in-care appointment of the patient from Appointments', async () => {
+    const { http, request } = fakeHttp(
+      ok({
+        data: [
+          { id: 'ap-1', patientId: 'p-1', status: 'FINALIZADA' },
+          { id: 'ap-2', patientId: 'p-1', status: 'EN_ATENCION' },
+        ],
+        meta,
+      }),
+      ok({ data: [], meta: { ...meta, total: 0 } }),
+    );
+    const adapter = createHttpClinicalAdapter(http);
+
+    expect(await adapter.readInCareAppointment('p-1')).toBe('ap-2');
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        path: '/api/v1/appointments',
+        query: { patientId: ['p-1'], limit: ['100'] },
+      }),
+    );
+    // No appointment in care: planning and declaring stay blocked.
+    expect(await adapter.readInCareAppointment('p-1')).toBeUndefined();
+  });
+
   it('maps an owner failure to a typed error with the central message and traceId', async () => {
     const { http } = fakeHttp({
       ok: false,
