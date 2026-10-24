@@ -64,7 +64,9 @@ function kpis(data: DashboardSnapshot): Kpi[] {
     [
       'Citas de hoy',
       count,
-      `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
+      delta === 0
+        ? 'Igual que ayer'
+        : `${delta > 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
       'calendar',
     ],
   ];

@@ -66,6 +66,26 @@ describe('ClinicalDashboardPage', () => {
     ).toHaveTextContent('↓ 12.5 % vs mes anterior');
   });
 
+  it('shows no arrow when today matches yesterday', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const reader = new ReadDashboard(
+      {
+        readDashboard: async () => ({
+          ...snapshot,
+          todayAppointments: { count: 0, deltaVsYesterday: 0 },
+        }),
+      },
+      now,
+    );
+
+    renderDashboard('DENTIST', reader);
+
+    const card = await screen.findByRole('region', { name: 'Citas de hoy' });
+    expect(card).toHaveTextContent('Igual que ayer');
+    expect(card).not.toHaveTextContent('↑');
+  });
+
   it('shows no percentage without a previous-month reference', async () => {
     const adapter = createDemoClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
