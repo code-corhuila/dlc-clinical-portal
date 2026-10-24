@@ -695,3 +695,17 @@ No terminal logs or timestamps are invented for this historical note.
 - **Flow:** `develop` → `promotion/*` → `qa` with `cherry-pick -x` → `release/2.0.1` cut from `main` → `main` with the teacher's approval; tag `v2.0.1` after that merge if the team decides so.
 - **TDD:** documentation only; no RED.
 - **Validation (Windows):** `git diff --check`, size and commit gates PASS; no code changed.
+
+## DEV-CLIN-PORTAL-ADMIN-GRANTS-049
+
+- **Request (2026-10-24, project owner):** close the audit finding "the real build passes `clinicalWriteAuthorized` fixed to `true`". Branch `fix/clinical-admin-grants-from-session` from `origin/develop` `56011e7`.
+- **Change:** the route view now derives the display grants from the C05 session snapshot, as the Clinical API does. A Dentist is granted by role, and the API still checks the assignment. An Administrator is granted read or write only when the session carries `VITE_CLINICAL_READ_PERMISSION` or `VITE_CLINICAL_WRITE_PERMISSION`; the defaults `clinical:read` and `clinical:write` match the API `CLINICAL_READ_PERMISSION` and `CLINICAL_WRITE_PERMISSION`. The Assistant is never granted (PAT-003). The real record page and the real clinical home receive these grants instead of `true`. The demo build keeps its own selectors.
+- **TDD:** genuine RED in three entry tests, all in the real build. An Administrator without permissions still saw the record. One with only `clinical:read` still saw "Nueva entrada". A custom permission name was ignored. All three pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npx vitest run src/clinical` and `npm test` (340 tests);
+  - coverage (96.35 % statements, 92.32 % branches);
+  - build and `git diff --check`;
+  - size gate 69/400.
+- **Browser verification:** not performed. No layout changed, and the entry tests cover the mounted behaviour through the compositor contract.
+- **Limitation:** IAM still issues `permissions: []`, so with the real Auth an Administrator sees "Acceso denegado" until Auth and Clinical agree on the permission names. The API answers the same way, so the screen now matches the server instead of showing controls that end in 403.
