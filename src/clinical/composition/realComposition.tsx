@@ -3,6 +3,7 @@ import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
 import { createHttpClinicalAdapter } from '../adapter/out/http/httpClinicalAdapter';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import { AmendClinicalEntry } from '../application/amendClinicalEntry';
+import { OpenClinicalRecord } from '../application/openClinicalRecord';
 import { BillingEstimate } from '../application/billingEstimate';
 import { CareClosureTracking } from '../application/careClosureTracking';
 import { CompleteProcedure } from '../application/completeProcedure';
@@ -27,6 +28,7 @@ function createRealUseCases(http: PortalHttp) {
   return {
     adapter,
     patientReader: new ReadPatientForCare(adapter),
+    opener: new OpenClinicalRecord(adapter),
     writer: new RecordClinicalEntry(adapter),
     amender: new AmendClinicalEntry(adapter),
     declarer: new DeclareCareCompletion(adapter),
@@ -89,6 +91,7 @@ export function ClinicalRealComposition({
       clinicalWriteAuthorized={clinicalWriteAuthorized}
       readPort={useCases.adapter}
       patientReader={useCases.patientReader}
+      opener={useCases.opener}
       writer={useCases.writer}
       amender={useCases.amender}
       declarer={useCases.declarer}

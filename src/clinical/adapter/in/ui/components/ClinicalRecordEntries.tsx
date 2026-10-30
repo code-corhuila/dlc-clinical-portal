@@ -8,6 +8,7 @@ import type { ClinicalEntry } from '../../../../model/clinicalEntry';
 import { AmendEntryForm } from './AmendEntryForm';
 import { clinicDateTime } from '../clinicTime';
 import { ClinicalIcon } from './ClinicalIcon';
+import { portFailureMessage } from '../../../../model/portFailure';
 import {
   clinicalEntryLabel,
   toClinicalRecordViewModel,
@@ -31,6 +32,8 @@ export interface ClinicalRecordEntriesProps {
   readonly authorName?: (authorId: string) => string;
   readonly children?: React.ReactNode;
   readonly onAmend?: AmendHandler;
+  /** Present only for a clinical writer; opens the record of a patient without one. */
+  readonly onOpenRecord?: () => Promise<void>;
 }
 
 type AmendHandler = (
@@ -48,6 +51,7 @@ export function ClinicalRecordEntries({
   authorName = (authorId) => authorId,
   children,
   onAmend,
+  onOpenRecord,
 }: ClinicalRecordEntriesProps) {
   const view = toClinicalRecordViewModel(
     resolveClinicalAccess(role, clinicalReadAuthorized === true),
@@ -76,9 +80,57 @@ export function ClinicalRecordEntries({
           </select>
         )}
       </div>
-      {renderState(view, authorName, onRetry, onAmend, kind)}
+      {view.state === 'missing' ? (
+        <MissingRecord onOpen={onOpenRecord} />
+      ) : (
+        renderState(view, authorName, onRetry, onAmend, kind)
+      )}
       {(view.state === 'data' || view.state === 'empty') && children}
     </section>
+  );
+}
+
+function MissingRecord({ onOpen }: { readonly onOpen?: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string>();
+  async function open() {
+    if (!onOpen) return;
+    setBusy(true);
+    setMessage(undefined);
+    try {
+      await onOpen();
+    } catch (error) {
+      setMessage(
+        portFailureMessage(error, 'No fue posible abrir la historia clínica.'),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="cr-state">
+      <h3 className="cr-state__title">Sin historia clínica</h3>
+      <p className="cr-state__text">
+        {onOpen
+          ? 'Este paciente aún no tiene historia clínica en Clinical.'
+          : 'Este paciente aún no tiene historia clínica; la abre el profesional que lo atiende.'}
+      </p>
+      {onOpen && (
+        <button
+          className="cr-button"
+          type="button"
+          disabled={busy}
+          onClick={() => void open()}
+        >
+          Abrir historia clínica
+        </button>
+      )}
+      {message && (
+        <p className="cr-state__text" role="alert">
+          {message}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -116,6 +168,8 @@ function renderState(
           </p>
         </div>
       );
+    case 'missing':
+      return null;
     case 'error':
       return (
         <div className="cr-state" role="alert">
