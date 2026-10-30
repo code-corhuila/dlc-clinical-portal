@@ -9,6 +9,9 @@ services:
       dockerfile: deploy/Dockerfile
       args:
         BUILD_SCRIPT: build
+        VITE_CLINICAL_READ_PERMISSION: ${VITE_CLINICAL_READ_PERMISSION:-clinical:read}
+        VITE_CLINICAL_WRITE_PERMISSION: ${VITE_CLINICAL_WRITE_PERMISSION:-clinical:write}
+        VITE_CLINIC_TIMEZONE: ${VITE_CLINIC_TIMEZONE:-America/Bogota}
     ports:
       - "${PORTAL_PORT:-4173}:80"
 

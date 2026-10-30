@@ -61,12 +61,18 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     const adapter = createHttpClinicalAdapter(http);
 
     expect(await adapter.findRecordId('p-1')).toBe('r-1');
-    expect(await adapter.readEntries('r-1')).toEqual({ data: [entry], meta });
+    expect(await adapter.readEntries('r-1')).toEqual({
+      data: [entry],
+      meta: { page: 1, limit: 100, total: 1, totalPages: 1 },
+    });
     expect(await adapter.readRecordVersion('r-1')).toBe(4);
     expect(request.mock.calls.map(([call]) => [call.path, call.query])).toEqual(
       [
         ['/api/v1/clinical-records', { patientId: ['p-1'] }],
-        ['/api/v1/clinical-records/r-1/entries', undefined],
+        [
+          '/api/v1/clinical-records/r-1/entries',
+          { page: ['1'], limit: ['100'] },
+        ],
         ['/api/v1/clinical-records/r-1', undefined],
       ],
     );
@@ -127,7 +133,11 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
       '/api/v1/care-closures/c-1',
       '/api/v1/procedure-prices',
     ]);
-    expect(request.mock.calls[0][0].query).toEqual({ patientId: ['p-1'] });
+    expect(request.mock.calls[0][0].query).toEqual({
+      patientId: ['p-1'],
+      page: ['1'],
+      limit: ['100'],
+    });
   });
 
   it('reads the in-care appointment of the patient from Appointments', async () => {
@@ -148,11 +158,74 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
       expect.objectContaining({
         method: 'GET',
         path: '/api/v1/appointments',
-        query: { patientId: ['p-1'], limit: ['100'] },
+        query: expect.objectContaining({ patientId: ['p-1'], limit: ['100'] }),
       }),
+    );
+    // Only the window around now: an appointment in care started recently.
+    const { from, to } = request.mock.calls[0][0].query;
+    expect(Date.parse(to[0]) - Date.parse(from[0])).toBe(2 * 864e5);
+    expect(Math.abs(Date.parse(from[0]) + 864e5 - Date.now())).toBeLessThan(
+      60e3,
     );
     // No appointment in care: planning and declaring stay blocked.
     expect(await adapter.readInCareAppointment('p-1')).toBeUndefined();
+  });
+
+  // Owners page every list (default 20, at most 100, _shared.yaml): a longitudinal
+  // history, a dentist's patients or the price catalogue must not stop at page one.
+  it('reads every page of the owner lists', async () => {
+    const total = 230;
+    const request = vi.fn(
+      async ({
+        path,
+        query,
+      }: {
+        path: string;
+        query?: Record<string, string[]>;
+      }) => {
+        if (path.startsWith('/api/v1/patients/'))
+          return ok({
+            id: path.split('/').pop(),
+            name: 'P',
+            status: 'ACTIVE',
+            version: 1,
+          });
+        const page = Number(query?.page?.[0] ?? '1');
+        const limit = Number(query?.limit?.[0] ?? '20');
+        const from = (page - 1) * limit;
+        const data = Array.from(
+          { length: Math.max(0, Math.min(limit, total - from)) },
+          (_, i) => ({
+            id: `x-${from + i}`,
+            patientId: `p-${from + i}`,
+            procedureCode: `C-${from + i}`,
+            name: 'n',
+            basePrice: '1.00',
+            currency: 'COP',
+            status: 'ACTIVE',
+          }),
+        );
+        return ok({
+          data,
+          meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+        });
+      },
+    );
+    const adapter = createHttpClinicalAdapter({
+      request,
+    } as unknown as PortalHttp);
+
+    expect((await adapter.readEntries('r-1')).data).toHaveLength(total);
+    expect(await adapter.listTreatments('p-1')).toHaveLength(total);
+    expect(await adapter.listProcedurePrices()).toHaveLength(total);
+    expect(await adapter.listCarePatients()).toHaveLength(total);
+    const listCalls = request.mock.calls
+      .map(([call]) => call)
+      .filter((call) => !call.path.startsWith('/api/v1/patients/'));
+    expect(listCalls.every((call) => call.query?.limit?.[0] === '100')).toBe(
+      true,
+    );
+    expect(listCalls).toHaveLength(4 * 3);
   });
 
   it('maps an owner failure to a typed error with the central message and traceId', async () => {

@@ -13,7 +13,10 @@ import type { TreatmentPort } from '../../../application/treatmentPlan';
 import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
 import type { CareCompletionPort } from '../../../application/declareCareCompletion';
 import type { CareClosurePort } from '../../../application/careClosureTracking';
-import type { ClinicalEntryPage } from '../../../model/clinicalEntry';
+import type {
+  ClinicalEntryPage,
+  PaginatedMeta,
+} from '../../../model/clinicalEntry';
 import type { PatientForCare } from '../../../model/patientForCare';
 import type { ProcedureCompletion } from '../../../model/procedureCompletion';
 import type {
@@ -27,7 +30,14 @@ const API = '/api/v1';
 
 interface Page<T> {
   readonly data: readonly T[];
+  readonly meta?: PaginatedMeta;
 }
+
+// Owners page every list (default 20, at most 100, _shared.yaml). The bound
+// keeps a broken meta from looping: 50 pages are 5,000 items.
+const PAGE_SIZE = 100;
+const MAX_PAGES = 50;
+const DAY_MS = 864e5;
 
 /** Read side of the real Clinical adapter over the compositor capability. */
 export interface HttpClinicalReads
@@ -68,11 +78,41 @@ export function createHttpClinicalAdapter(
       headers: { 'Idempotency-Key': idempotencyKey },
     });
 
+  // Reads every page of a list and returns it as one page.
+  const getAll = async <T>(
+    path: string,
+    query: Record<string, string[]> = {},
+  ): Promise<{ data: T[]; meta: PaginatedMeta }> => {
+    const data: T[] = [];
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const result = await get<Page<T>>(path, {
+        ...query,
+        page: [String(page)],
+        limit: [String(PAGE_SIZE)],
+      });
+      data.push(...result.data);
+      const totalPages = result.meta?.totalPages ?? page;
+      if (page >= totalPages || result.data.length === 0)
+        return {
+          data,
+          meta: {
+            page: 1,
+            limit: PAGE_SIZE,
+            total: data.length,
+            totalPages: 1,
+          },
+        };
+    }
+    throw {
+      code: 'UNAVAILABLE',
+      message: 'La lista supera el máximo que se puede mostrar.',
+    };
+  };
+
   const adapter: HttpClinicalAdapter = {
     async listCarePatients() {
       // Records the owner already filtered by assignment; names from Patients.
-      const records =
-        await get<Page<{ patientId: string }>>('/clinical-records');
+      const records = await getAll<{ patientId: string }>('/clinical-records');
       return Promise.all(
         records.data.map((record) => adapter.readPatient(record.patientId)),
       );
@@ -97,8 +137,8 @@ export function createHttpClinicalAdapter(
       if (!record) throw { code: 'NOT_FOUND' };
       return record.id;
     },
-    readEntries(recordId) {
-      return get<ClinicalEntryPage>(`/clinical-records/${recordId}/entries`);
+    readEntries(recordId): Promise<ClinicalEntryPage> {
+      return getAll(`/clinical-records/${recordId}/entries`);
     },
     async readRecordVersion(recordId) {
       return (await get<{ version: number }>(`/clinical-records/${recordId}`))
@@ -106,21 +146,27 @@ export function createHttpClinicalAdapter(
     },
     async listTreatments(patientId) {
       return (
-        await get<Page<Treatment>>('/treatments', { patientId: [patientId] })
+        await getAll<Treatment>('/treatments', { patientId: [patientId] })
       ).data;
     },
     readCareClosure(closureId) {
       return get<CareClosure>(`/care-closures/${closureId}`);
     },
     async readInCareAppointment(patientId) {
-      const page = await get<Page<{ id: string; status: string }>>(
+      // An appointment in care started recently: search a day around now.
+      const now = Date.now();
+      const page = await getAll<{ id: string; status: string }>(
         '/appointments',
-        { patientId: [patientId], limit: ['100'] },
+        {
+          patientId: [patientId],
+          from: [new Date(now - DAY_MS).toISOString()],
+          to: [new Date(now + DAY_MS).toISOString()],
+        },
       );
       return page.data.find((item) => item.status === 'EN_ATENCION')?.id;
     },
     async listProcedurePrices() {
-      const page = await get<Page<ProcedurePrice>>('/procedure-prices');
+      const page = await getAll<ProcedurePrice>('/procedure-prices');
       return page.data.map(
         ({ procedureCode, name, basePrice, currency, status }) => ({
           procedureCode,
