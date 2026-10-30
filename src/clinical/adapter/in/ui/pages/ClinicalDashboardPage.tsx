@@ -28,6 +28,8 @@ export interface ClinicalDashboardPageProps {
 type View =
   | { readonly kind: 'loading' }
   | { readonly kind: 'error'; readonly message: string }
+  // HU-CLN-003: no projection built yet (503); no indicator is shown.
+  | { readonly kind: 'no-data' }
   | { readonly kind: 'ready'; snapshot: DashboardSnapshot; stale: boolean };
 
 /** Bar chart; the list below it is the required textual alternative. Every day tied for the busiest is highlighted, as in the mockup. */
@@ -93,6 +95,11 @@ function kpis(data: DashboardSnapshot): Kpi[] {
   return cards;
 }
 
+const isNoData = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: unknown }).code === 'SERVICE_UNAVAILABLE';
+
 /** Clinical Analytics dashboard (Figma 88:1998); mounted by dlc-front. */
 export function ClinicalDashboardPage({
   reader,
@@ -104,6 +111,7 @@ export function ClinicalDashboardPage({
 }: ClinicalDashboardPageProps) {
   const key = `${role}:${staffId}`;
   const [loaded, setLoaded] = useState<{ key: string; view: View }>();
+  const [attempt, setAttempt] = useState(0);
   // A result from another role/staff context is never shown while reloading.
   const view: View = loaded?.key === key ? loaded.view : { kind: 'loading' };
 
@@ -116,19 +124,26 @@ export function ClinicalDashboardPage({
         active &&
         setLoaded({
           key,
-          view: {
-            kind: 'error',
-            message: portFailureMessage(
-              error,
-              'No fue posible cargar el panel.',
-            ),
-          },
+          view: isNoData(error)
+            ? { kind: 'no-data' }
+            : {
+                kind: 'error',
+                message: portFailureMessage(
+                  error,
+                  'No fue posible cargar el panel.',
+                ),
+              },
         }),
     );
     return () => {
       active = false;
     };
-  }, [key, reader, role, staffId]);
+  }, [key, reader, role, staffId, attempt]);
+
+  const retry = () => {
+    setLoaded(undefined);
+    setAttempt((value) => value + 1);
+  };
 
   const Area = embedded ? 'section' : 'main';
   return (
@@ -145,7 +160,26 @@ export function ClinicalDashboardPage({
         </>
       )}
       {view.kind === 'loading' && <p role="status">Cargando panel…</p>}
-      {view.kind === 'error' && <p role="alert">{view.message}</p>}
+      {view.kind === 'no-data' && (
+        <div className="db-empty" role="status">
+          <h2>Aún no hay datos de analítica</h2>
+          <p>
+            Las métricas aparecen cuando Clinical procesa la primera actividad
+            (citas, atenciones o pagos).
+          </p>
+          <button type="button" onClick={retry}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {view.kind === 'error' && (
+        <div className="db-empty">
+          <p role="alert">{view.message}</p>
+          <button type="button" onClick={retry}>
+            Reintentar
+          </button>
+        </div>
+      )}
       {view.kind === 'ready' && (
         <>
           {view.stale && (
