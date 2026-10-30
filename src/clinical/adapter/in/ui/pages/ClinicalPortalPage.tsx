@@ -28,6 +28,7 @@ import { CareCompletionCard } from '../components/CareCompletionCard';
 import { ClinicalDialog } from '../components/ClinicalDialog';
 import { clinicDay } from '../clinicTime';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
+import type { OpenClinicalRecord } from '../../../../application/openClinicalRecord';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
@@ -36,6 +37,7 @@ export interface ClinicalPortalPageProps {
   readonly clinicalWriteAuthorized?: boolean;
   readonly readPort?: ClinicalRecordEntriesPort;
   readonly writer?: RecordClinicalEntry;
+  readonly opener?: OpenClinicalRecord;
   readonly authorName?: (authorId: string) => string;
   readonly patientReader?: ReadPatientForCare;
   readonly amender?: AmendClinicalEntry;
@@ -72,6 +74,7 @@ export function ClinicalPortalPage({
   clinicalWriteAuthorized = false,
   readPort,
   writer,
+  opener,
   authorName,
   patientReader,
   treatments,
@@ -79,6 +82,8 @@ export function ClinicalPortalPage({
   declarer,
 }: ClinicalPortalPageProps) {
   const request = useRef(0);
+  // One open intent per patient: its key is reused if the same intent is retried.
+  const openKeys = useRef(new Map<string, string>());
   const [retry, setRetry] = useState(0);
   const [patientView, setPatientView] = useState<PatientView>();
   const [dialog, setDialog] = useState<'entry' | 'declare'>();
@@ -190,6 +195,24 @@ export function ClinicalPortalPage({
         : undefined,
     [clinicalReadAuthorized, estimate, role],
   );
+  const openRecord =
+    opener &&
+    patientId &&
+    status.kind === 'missing' &&
+    resolveClinicalWriteAccess(role, clinicalWriteAuthorized) === 'granted'
+      ? async () => {
+          if (!openKeys.current.has(patientId))
+            openKeys.current.set(patientId, crypto.randomUUID());
+          await opener.execute({
+            patientId,
+            role,
+            clinicalWriteAuthorized,
+            idempotencyKey: openKeys.current.get(patientId)!,
+          });
+          openKeys.current.delete(patientId);
+          setRetry((value) => value + 1);
+        }
+      : undefined;
   const canWrite =
     writer !== undefined &&
     status.kind === 'ready' &&
@@ -285,6 +308,7 @@ export function ClinicalPortalPage({
               clinicalReadAuthorized={clinicalReadAuthorized}
               status={status}
               authorName={authorName}
+              onOpenRecord={openRecord}
               onAmend={
                 canWrite && amender
                   ? async (entry, correction, idempotencyKey) => {
