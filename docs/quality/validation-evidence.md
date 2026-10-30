@@ -743,3 +743,21 @@ No terminal logs or timestamps are invented for this historical note.
   - coverage (95.98 % statements, 92.06 % branches);
   - build, `git diff --check` and the size gate (187/400).
 - **Browser verification:** done in the local validation stack, with `dlc-front` at `:8080` and this branch's real release `0.1.0` behind the local stand-in Gateway and the real Clinical API in qa mode. Signed in as the demo dentist, Ana Torres (no record) showed "Sin historia clínica" with the button. Clicking it created the record, and the page then showed "Nueva entrada", the quick note and "Declarar atención completada". The test record was removed afterwards from the local database.
+
+## DEV-CLIN-PORTAL-CARE-LIST-052
+
+- **Request (2026-10-30, project owner):** found during the manual end-to-end validation. The Clinical home listed only patients that already had a clinical record (`GET /clinical-records`). An assigned patient without one never appeared, so the "Abrir historia clínica" action from DEV-CLIN-PORTAL-OPEN-RECORD-051 was reachable only by typing the patient URL. Branch `fix/clinical-list-patients-without-record` from `origin/develop`.
+- **Change:**
+  - `listCarePatients` in the HTTP adapter joins the patients with a record and the patients on the reader's agenda: `GET /appointments` from one day before to one day after now, with no `dentistId`, because Appointments scopes the agenda to the reader. Only `PROGRAMADA`, `CONFIRMADA` and `EN_ATENCION` count.
+  - The agenda is best effort. If Appointments fails, the patients with a record are still listed.
+  - Each item carries `hasRecord`. A patient without a record shows the "Sin historia clínica" badge, and its button reads "Abrir historia clínica". The button leads to the patient page, which already offers to open the record.
+- **TDD:** genuine RED in four tests: the joined list with `hasRecord`, the agenda failure, the page count of the owner lists (now five lists), and the card of a patient without a record. All pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npm test` (349 tests);
+  - build, `git diff --check` and the size gate.
+- **Browser verification:** done after a clean reinstall of the local validation stack, with a fresh Mongo and every image rebuilt without cache. The setup was `dlc-front` at `:8080` and this branch's real release `0.1.0` behind the local stand-in Gateway, which now also answers the agenda without `patientId`.
+  - Signed in as the demo dentist, the home listed Ana Torres and Luis Pérez, both marked "Sin historia clínica" with "Abrir historia clínica".
+  - Opening Ana's page and the record sent `POST /clinical-records`, which returned `201`.
+  - Back on the home, Ana showed "Ver historia clínica" and Luis still offered to open his record.
+  - The test record was removed afterwards from the local database.
