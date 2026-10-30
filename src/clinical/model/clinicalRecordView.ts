@@ -20,6 +20,8 @@ export type ClinicalRecordStatus =
   | { readonly kind: 'loading' }
   | { readonly kind: 'ready'; readonly page: ClinicalEntryPage }
   | { readonly kind: 'forbidden' }
+  /** The patient has no clinical record yet; it can be opened. */
+  | { readonly kind: 'missing' }
   | { readonly kind: 'error'; readonly message: string };
 
 export type ClinicalRecordViewModel =
@@ -27,6 +29,7 @@ export type ClinicalRecordViewModel =
   | { readonly state: 'empty' }
   | { readonly state: 'data'; readonly entries: readonly ClinicalEntry[] }
   | { readonly state: 'forbidden' }
+  | { readonly state: 'missing' }
   | { readonly state: 'error'; readonly message: string };
 
 /** Denied access wins so protected narrative never reaches the DOM. */
@@ -42,6 +45,9 @@ export function toClinicalRecordViewModel(
   }
   if (status.kind === 'error') {
     return { state: 'error', message: status.message };
+  }
+  if (status.kind === 'missing') {
+    return { state: 'missing' };
   }
   return status.page.data.length === 0
     ? { state: 'empty' }
