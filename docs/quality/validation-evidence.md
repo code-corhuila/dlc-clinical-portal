@@ -709,3 +709,21 @@ No terminal logs or timestamps are invented for this historical note.
   - size gate 69/400.
 - **Browser verification:** not performed. No layout changed, and the entry tests cover the mounted behaviour through the compositor contract.
 - **Limitation:** IAM still issues `permissions: []`, so with the real Auth an Administrator sees "Acceso denegado" until Auth and Clinical agree on the permission names. The API answers the same way, so the screen now matches the server instead of showing controls that end in 403.
+
+## DEV-CLIN-PORTAL-OWNER-READS-050
+
+- **Request (2026-10-29, project owner):** fix the Clinical gaps found in the integration readiness review. Branch `fix/clinical-owner-reads-complete` from `origin/develop`.
+- **Change:**
+  - The real HTTP adapter reads every page of the owner lists instead of the first page only. Owners return 20 items by default and at most 100 (`_shared.yaml`). The affected lists were the record entries, the treatments, the clinical home list and the Billing price catalogue. Before this change, a history with more than 20 entries hid the newest ones (the order is ascending), along with the consultations the declaration offers. A dentist with more than 20 patients, or a catalogue with more than 20 prices, was cut the same way.
+  - Pages are requested with `limit=100`, bounded to 50 pages; beyond that the read fails with a message instead of truncating silently.
+  - The in-care appointment is searched within a day around now (`from`/`to`, contract parameters) instead of among the first 100 appointments of the patient.
+  - `deploy/Dockerfile` and `deploy/compose.yml` take `VITE_CLINICAL_READ_PERMISSION`, `VITE_CLINICAL_WRITE_PERMISSION` and `VITE_CLINIC_TIMEZONE` as build arguments. They are fixed at build time and must equal the API values of the stage.
+- **TDD:** genuine RED: `reads every page of the owner lists` got 20 of 230 entries, and the in-care appointment test found no `from`/`to` window. Both pass after the change. Two existing assertions were updated to the paged query and the merged page meta.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npx vitest run src/clinical` and `npm test` (341 tests);
+  - coverage (96.31 % statements, 92.39 % branches);
+  - build, `git diff --check` and the size gate.
+
+  A Docker build with `--build-arg VITE_CLINICAL_READ_PERMISSION=records:probe-read` puts that name into `portals/clinical/0.1.0/entry.js`.
+- **Browser verification:** not performed. No layout changed; the adapter tests cover the requests.
