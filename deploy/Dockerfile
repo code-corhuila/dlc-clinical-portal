@@ -5,6 +5,11 @@ RUN npm ci
 COPY . .
 # build: real remote (no synthetic data); build:demo: synthetic demo remote.
 ARG BUILD_SCRIPT=build
+# Fixed at build time; per stage they must equal the Clinical API CLINICAL_READ_PERMISSION,
+# CLINICAL_WRITE_PERMISSION and CLINIC_TIMEZONE.
+ARG VITE_CLINICAL_READ_PERMISSION=clinical:read
+ARG VITE_CLINICAL_WRITE_PERMISSION=clinical:write
+ARG VITE_CLINIC_TIMEZONE=America/Bogota
 RUN npm run "$BUILD_SCRIPT"
 
 FROM nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de
