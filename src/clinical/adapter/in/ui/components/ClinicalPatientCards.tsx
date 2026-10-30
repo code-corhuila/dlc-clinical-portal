@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { PatientForCare } from '../../../../model/patientForCare';
+import type { CarePatient } from '../../../../application/listCarePatients';
 import { portFailureMessage } from '../../../../model/portFailure';
 import './patient-cards.css';
 
 export interface ClinicalPatientCardsProps {
-  readonly load: () => Promise<readonly PatientForCare[]>;
+  readonly load: () => Promise<readonly CarePatient[]>;
   readonly onOpen: (patientId: string) => void;
   /** Search text from the compositor route (`?q=`), if any. */
   readonly initialQuery?: string;
@@ -13,7 +13,7 @@ export interface ClinicalPatientCardsProps {
 type View =
   | { readonly kind: 'loading' }
   | { readonly kind: 'error'; readonly message: string }
-  | { readonly kind: 'ready'; readonly patients: readonly PatientForCare[] };
+  | { readonly kind: 'ready'; readonly patients: readonly CarePatient[] };
 
 const initials = (name: string) =>
   name
@@ -118,9 +118,16 @@ export function ClinicalPatientCards({
               >
                 {patient.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
               </span>
+              {patient.hasRecord === false && (
+                <span className="pc-status pc-status--no-record">
+                  Sin historia clínica
+                </span>
+              )}
             </div>
             <button type="button" onClick={() => onOpen(patient.id)}>
-              Ver historia clínica
+              {patient.hasRecord === false
+                ? 'Abrir historia clínica'
+                : 'Ver historia clínica'}
             </button>
           </article>
         ))}
