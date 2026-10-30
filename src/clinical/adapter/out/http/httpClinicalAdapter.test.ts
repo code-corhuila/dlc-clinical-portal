@@ -225,7 +225,8 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     expect(listCalls.every((call) => call.query?.limit?.[0] === '100')).toBe(
       true,
     );
-    expect(listCalls).toHaveLength(4 * 3);
+    // Records, entries, treatments, prices and the agenda: three pages each.
+    expect(listCalls).toHaveLength(5 * 3);
   });
 
   it('opens a clinical record with its intent key; an existing record is not a failure', async () => {
@@ -317,18 +318,72 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     );
   });
 
-  it('lists care patients from clinical records and the Patients projection', async () => {
+  it('lists care patients from clinical records and the agenda, marking those without a record', async () => {
     const { http, request } = fakeHttp(
       ok({ data: [{ id: 'r-1', patientId: 'p-1', version: 1 }], meta }),
+      ok({
+        data: [
+          { id: 'ap-1', patientId: 'p-1', status: 'EN_ATENCION' },
+          { id: 'ap-2', patientId: 'p-2', status: 'CONFIRMADA' },
+          { id: 'ap-3', patientId: 'p-2', status: 'PROGRAMADA' },
+          { id: 'ap-4', patientId: 'p-3', status: 'CANCELADA' },
+        ],
+        meta,
+      }),
+      ok({ id: 'p-1', name: 'Ana García', status: 'ACTIVE', version: 3 }),
+      ok({ id: 'p-2', name: 'Luis Pérez', status: 'ACTIVE', version: 1 }),
+    );
+
+    expect(await createHttpClinicalAdapter(http).listCarePatients()).toEqual([
+      {
+        id: 'p-1',
+        name: 'Ana García',
+        status: 'ACTIVE',
+        version: 3,
+        hasRecord: true,
+      },
+      {
+        id: 'p-2',
+        name: 'Luis Pérez',
+        status: 'ACTIVE',
+        version: 1,
+        hasRecord: false,
+      },
+    ]);
+    expect(request.mock.calls.map(([call]) => call.path)).toEqual([
+      '/api/v1/clinical-records',
+      '/api/v1/appointments',
+      '/api/v1/patients/p-1',
+      '/api/v1/patients/p-2',
+    ]);
+    // The owner scopes the agenda to the reader; the client sends no dentist.
+    const { from, to, dentistId } = request.mock.calls[1][0].query;
+    expect(dentistId).toBeUndefined();
+    expect(Date.parse(to[0]) - Date.parse(from[0])).toBe(2 * 864e5);
+  });
+
+  it('still lists patients with a record when the agenda cannot be read', async () => {
+    const { http } = fakeHttp(
+      ok({ data: [{ id: 'r-1', patientId: 'p-1', version: 1 }], meta }),
+      {
+        ok: false,
+        kind: 'http',
+        status: 503,
+        error: 'UNAVAILABLE',
+        message: 'down',
+        correlationId: 'corr-3',
+      },
       ok({ id: 'p-1', name: 'Ana García', status: 'ACTIVE', version: 3 }),
     );
 
     expect(await createHttpClinicalAdapter(http).listCarePatients()).toEqual([
-      { id: 'p-1', name: 'Ana García', status: 'ACTIVE', version: 3 },
-    ]);
-    expect(request.mock.calls.map(([call]) => call.path)).toEqual([
-      '/api/v1/clinical-records',
-      '/api/v1/patients/p-1',
+      {
+        id: 'p-1',
+        name: 'Ana García',
+        status: 'ACTIVE',
+        version: 3,
+        hasRecord: true,
+      },
     ]);
   });
 });
