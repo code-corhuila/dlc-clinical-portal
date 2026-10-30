@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ReadDashboard } from '../../../../application/readDashboard';
 import { createDemoClinicalAdapter } from '../../../out/demo/demoClinicalAdapter';
@@ -208,6 +208,52 @@ describe('ClinicalDashboardPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No fue posible cargar el panel.',
     );
+  });
+
+  // HU-CLN-003: no projection yet answers 503 and no indicator is shown.
+  it('explains that analytics has no data yet and offers a retry', async () => {
+    const adapter = createDemoClinicalAdapter();
+    const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
+    const readDashboard = vi
+      .fn()
+      .mockRejectedValueOnce({
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'El servicio no está disponible en este momento.',
+        traceId: 'trace-1',
+      })
+      .mockResolvedValueOnce(snapshot);
+    renderDashboard('ADMINISTRATOR', new ReadDashboard({ readDashboard }, now));
+
+    const empty = (
+      await screen.findByRole('heading', {
+        name: 'Aún no hay datos de analítica',
+      })
+    ).closest('[role="status"]');
+    expect(empty).toHaveTextContent('Aún no hay datos de analítica');
+    expect(empty).toHaveTextContent(
+      'Las métricas aparecen cuando Clinical procesa la primera actividad',
+    );
+    expect(empty).not.toHaveTextContent(/guardando|trace-1/);
+    expect(screen.queryByRole('region', { name: 'Citas de hoy' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(
+      await screen.findByRole('region', { name: 'Citas de hoy' }),
+    ).toHaveTextContent('12');
+    expect(readDashboard).toHaveBeenCalledTimes(2);
+  });
+
+  it('offers a retry after any other failure', async () => {
+    const readDashboard = vi
+      .fn()
+      .mockRejectedValue({ code: 'INTERNAL_ERROR', message: 'Error interno.' });
+    renderDashboard('ADMINISTRATOR', new ReadDashboard({ readDashboard }, now));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Error interno.',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await vi.waitFor(() => expect(readDashboard).toHaveBeenCalledTimes(2));
   });
 
   it('does not keep the administrator revenue visible after a role change', async () => {

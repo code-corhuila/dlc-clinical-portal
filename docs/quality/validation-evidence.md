@@ -761,3 +761,20 @@ No terminal logs or timestamps are invented for this historical note.
   - Opening Ana's page and the record sent `POST /clinical-records`, which returned `201`.
   - Back on the home, Ana showed "Ver historia clínica" and Luis still offered to open his record.
   - The test record was removed afterwards from the local database.
+
+## DEV-CLIN-PORTAL-DASHBOARD-NO-DATA-053
+
+- **Request (2026-10-30, project owner):** found after a clean reinstall of the local validation stack. With no projection built yet, the Clinical API answers `503` on purpose (HU-CLN-003: "no indicator value is shown"). The dashboard showed the generic central message, which talks about saving and carries a technical reference, and offered no retry. Branch `fix/clinical-dashboard-no-data` from `origin/develop`.
+- **Change:**
+  - `SERVICE_UNAVAILABLE` from the dashboard read now leads to its own state: "Aún no hay datos de analítica" with "Las métricas aparecen cuando Clinical procesa la primera actividad (citas, atenciones o pagos)." It still shows no indicator.
+  - That state and the generic error now both offer "Reintentar", which reloads the snapshot.
+  - Other failures keep the central message.
+- **TDD:** genuine RED in two tests: the no-data state followed by a successful retry, and the retry after another failure. Both pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npm test` (351 tests);
+  - build and `git diff --check`.
+- **Browser verification:** done in the local validation stack (`dlc-front` at `:8080`, this branch's real release `0.1.0`, the real Clinical API in qa mode, with no projection built yet):
+  - signed in as the demo dentist, the dashboard showed the new state;
+  - after one simulated `AppointmentScheduled` event, "Reintentar" showed "Citas de hoy: 1" and the weekly activity;
+  - the analytics documents were removed afterwards from the local database.

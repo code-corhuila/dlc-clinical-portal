@@ -235,3 +235,28 @@
   outline: 2px solid #0f766e;
   outline-offset: 2px;
 }
+
+.db-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.db-empty h2,
+.db-empty p {
+  margin: 0;
+}
+
+.db-empty button {
+  border: 1px solid #b8e3dd;
+  border-radius: 8px;
+  padding: 6px 14px;
+  background: #e8f6f4;
+  color: #0f766e;
+  font-weight: 600;
+  cursor: pointer;
+}
