@@ -18,6 +18,23 @@ const patients = [
 ];
 
 describe('ClinicalPatientCards', () => {
+  it('offers to open the record of a patient in care who has none yet', async () => {
+    const onOpen = vi.fn();
+    render(
+      <ClinicalPatientCards
+        load={async () => [{ ...patients[1], hasRecord: false }]}
+        onOpen={onOpen}
+      />,
+    );
+
+    const card = await screen.findByRole('article');
+    expect(within(card).getByText('Sin historia clínica')).toBeInTheDocument();
+    fireEvent.click(
+      within(card).getByRole('button', { name: 'Abrir historia clínica' }),
+    );
+    expect(onOpen).toHaveBeenCalledWith('patient-b');
+  });
+
   it('shows one card per patient with a button to open the clinical record', async () => {
     const onOpen = vi.fn();
     render(

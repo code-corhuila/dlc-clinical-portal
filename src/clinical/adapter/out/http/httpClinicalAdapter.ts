@@ -39,6 +39,8 @@ interface Page<T> {
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50;
 const DAY_MS = 864e5;
+// Agenda states where the patient is still to be (or being) attended.
+const ACTIVE_APPOINTMENT = new Set(['PROGRAMADA', 'CONFIRMADA', 'EN_ATENCION']);
 
 /** Read side of the real Clinical adapter over the compositor capability. */
 export interface HttpClinicalReads
@@ -115,8 +117,26 @@ export function createHttpClinicalAdapter(
     async listCarePatients() {
       // Records the owner already filtered by assignment; names from Patients.
       const records = await getAll<{ patientId: string }>('/clinical-records');
+      const withRecord = new Set(records.data.map((r) => r.patientId));
+      // Patients on the reader's agenda may still need their record opened.
+      // The agenda is best effort: without it the records are still listed.
+      const now = Date.now();
+      const agenda = await getAll<{ patientId: string; status: string }>(
+        '/appointments',
+        {
+          from: [new Date(now - DAY_MS).toISOString()],
+          to: [new Date(now + DAY_MS).toISOString()],
+        },
+      ).catch(() => ({ data: [] }));
+      const ids = new Set(withRecord);
+      agenda.data
+        .filter((item) => ACTIVE_APPOINTMENT.has(item.status))
+        .forEach((item) => ids.add(item.patientId));
       return Promise.all(
-        records.data.map((record) => adapter.readPatient(record.patientId)),
+        [...ids].map(async (patientId) => ({
+          ...(await adapter.readPatient(patientId)),
+          hasRecord: withRecord.has(patientId),
+        })),
       );
     },
     async readPatient(patientId) {
