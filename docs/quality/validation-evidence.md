@@ -727,3 +727,19 @@ No terminal logs or timestamps are invented for this historical note.
 
   A Docker build with `--build-arg VITE_CLINICAL_READ_PERMISSION=records:probe-read` puts that name into `portals/clinical/0.1.0/entry.js`.
 - **Browser verification:** not performed. No layout changed; the adapter tests cover the requests.
+
+## DEV-CLIN-PORTAL-OPEN-RECORD-051
+
+- **Request (2026-10-30, project owner):** found while preparing the manual end-to-end validation. With an assigned patient who has no clinical record yet, the real build showed "Error al cargar el registro" and offered no way to start the history; the portal never used `POST /clinical-records`. Branch `feat/clinical-open-record` from `origin/develop`.
+- **Change:**
+  - `ClinicalRecordEntriesWorkflow` maps `NOT_FOUND` from the record lookup to a new `missing` state instead of an error.
+  - The new `OpenClinicalRecord` use case checks clinical write access and an intent key, then calls the owner through the new `ClinicalRecordOpenPort`.
+  - The HTTP adapter implements it with `POST /clinical-records` (`Idempotency-Key`). `RECORD_ALREADY_EXISTS` counts as success, because one record per patient is the goal.
+  - The record view shows "Sin historia clínica". A clinical writer also gets "Abrir historia clínica"; the key is reused while that intent is retried. A reader without write access sees only the text. After opening, the record reloads.
+- **TDD:** genuine RED in four tests: missing state in the workflow, the use case (the module did not exist), the adapter's `openRecord`, and the real-build composition for a writer and a read-only Administrator. All pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npm test` (347 tests);
+  - coverage (95.98 % statements, 92.06 % branches);
+  - build, `git diff --check` and the size gate (187/400).
+- **Browser verification:** done in the local validation stack, with `dlc-front` at `:8080` and this branch's real release `0.1.0` behind the local stand-in Gateway and the real Clinical API in qa mode. Signed in as the demo dentist, Ana Torres (no record) showed "Sin historia clínica" with the button. Clicking it created the record, and the page then showed "Nueva entrada", the quick note and "Declarar atención completada". The test record was removed afterwards from the local database.

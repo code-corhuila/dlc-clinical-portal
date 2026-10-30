@@ -7,6 +7,7 @@ import type {
 import type { DashboardSnapshotPort } from '../../../application/readDashboard';
 import type { DashboardSnapshot } from '../../../model/dashboard';
 import type { CarePatientsPort } from '../../../application/listCarePatients';
+import type { ClinicalRecordOpenPort } from '../../../application/openClinicalRecord';
 import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
 import type { TreatmentPort } from '../../../application/treatmentPlan';
@@ -56,6 +57,7 @@ export interface HttpClinicalReads
 
 /** Real Clinical adapter: every port over the compositor capability. */
 export type HttpClinicalAdapter = HttpClinicalReads &
+  ClinicalRecordOpenPort &
   ClinicalEntryWritePort &
   ClinicalEntryAmendPort &
   TreatmentPort &
@@ -176,6 +178,15 @@ export function createHttpClinicalAdapter(
           status,
         }),
       );
+    },
+    async openRecord(patientId, idempotencyKey) {
+      try {
+        await post('/clinical-records', { patientId }, idempotencyKey);
+      } catch (error) {
+        // One record per patient: opened meanwhile by another request is the goal reached.
+        if ((error as { code?: unknown }).code !== 'RECORD_ALREADY_EXISTS')
+          throw error;
+      }
     },
     async appendEntry(recordId, request, idempotencyKey) {
       await post(

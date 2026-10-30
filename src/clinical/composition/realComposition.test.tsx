@@ -39,6 +39,86 @@ describe('real build composition (composition contract v1, C06)', () => {
     );
   });
 
+  it('lets the dentist open the clinical record of a patient without one', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+    const page = (data: unknown[]) => ({
+      data,
+      meta: { page: 1, limit: 100, total: data.length, totalPages: 1 },
+    });
+    let opened = false;
+    const request = vi.fn(
+      async ({ method, path }: { method: string; path: string }) => {
+        if (method === 'POST' && path === '/api/v1/clinical-records') {
+          opened = true;
+          return {
+            ok: true,
+            status: 201,
+            correlationId: 'c',
+            data: { id: 'r-1', patientId: 'p-1', version: 1 },
+          };
+        }
+        const data = path.endsWith('/patients/p-1')
+          ? { id: 'p-1', name: 'Paciente Nuevo', status: 'ACTIVE', version: 1 }
+          : path === '/api/v1/clinical-records'
+            ? page(opened ? [{ id: 'r-1', patientId: 'p-1', version: 1 }] : [])
+            : page([]);
+        return { ok: true, status: 200, correlationId: 'c', data };
+      },
+    );
+
+    render(
+      <ClinicalPortalComposition
+        patientId="p-1"
+        role="DENTIST"
+        clinicalReadAuthorized
+        clinicalWriteAuthorized
+        http={{ request } as unknown as PortalHttp}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Abrir historia clínica' }),
+    );
+    expect(
+      await screen.findByText('Sin entradas clínicas'),
+    ).toBeInTheDocument();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        path: '/api/v1/clinical-records',
+        body: { patientId: 'p-1' },
+      }),
+    );
+    expect(screen.queryByText('Error al cargar el registro')).toBeNull();
+  });
+
+  it('shows no open action to a reader without clinical write access', async () => {
+    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+    const request = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true,
+      status: 200,
+      correlationId: 'c',
+      data: path.endsWith('/patients/p-1')
+        ? { id: 'p-1', name: 'Paciente Nuevo', status: 'ACTIVE', version: 1 }
+        : { data: [], meta: { page: 1, limit: 100, total: 0, totalPages: 1 } },
+    }));
+
+    render(
+      <ClinicalPortalComposition
+        patientId="p-1"
+        role="ADMINISTRATOR"
+        clinicalReadAuthorized
+        clinicalWriteAuthorized={false}
+        http={{ request } as unknown as PortalHttp}
+      />,
+    );
+
+    expect(await screen.findByText('Sin historia clínica')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Abrir historia clínica' }),
+    ).toBeNull();
+  });
+
   it('reads the clinical record through the compositor http capability', async () => {
     vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const request = vi.fn(async ({ path }: { path: string }) => ({

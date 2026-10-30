@@ -228,6 +228,35 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     expect(listCalls).toHaveLength(4 * 3);
   });
 
+  it('opens a clinical record with its intent key; an existing record is not a failure', async () => {
+    const { http, request } = fakeHttp(
+      ok({ id: 'r-1', patientId: 'p-1', version: 1 }),
+      {
+        ok: false,
+        kind: 'http',
+        status: 409,
+        error: 'RECORD_ALREADY_EXISTS',
+        message: 'exists',
+        correlationId: 'corr-2',
+      },
+    );
+    const adapter = createHttpClinicalAdapter(http);
+
+    await adapter.openRecord('p-1', 'key-open-1');
+    // Opened concurrently by another request: the record exists, which is the goal.
+    await adapter.openRecord('p-1', 'key-open-2');
+
+    expect(request).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        method: 'POST',
+        path: '/api/v1/clinical-records',
+        body: { patientId: 'p-1' },
+        headers: { 'Idempotency-Key': 'key-open-1' },
+      }),
+    );
+  });
+
   it('maps an owner failure to a typed error with the central message and traceId', async () => {
     const { http } = fakeHttp({
       ok: false,
