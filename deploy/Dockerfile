@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# build: real remote (no synthetic data); build:demo: synthetic demo remote.
+# build: the real remote (no synthetic data).
 ARG BUILD_SCRIPT=build
 # Fixed at build time; per stage they must equal the Clinical API CLINICAL_READ_PERMISSION,
 # CLINICAL_WRITE_PERMISSION and CLINIC_TIMEZONE.

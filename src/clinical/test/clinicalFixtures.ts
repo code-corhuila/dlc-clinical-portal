@@ -1,4 +1,4 @@
-/** Deterministic synthetic fixtures for tests and the VITE_CLINICAL_DEMO demo. */
+/** Deterministic synthetic fixtures, for tests only. */
 import type { ClinicalEntry } from '../model/clinicalEntry';
 import type { ClinicalRecordStatus } from '../model/clinicalRecordView';
 
@@ -21,7 +21,7 @@ export const evolutionEntry: ClinicalEntry = {
   version: 1,
 };
 
-export const demoRecordStatus: ClinicalRecordStatus = {
+export const sampleRecordStatus: ClinicalRecordStatus = {
   kind: 'ready',
   page: {
     data: [consultationEntry, evolutionEntry],
