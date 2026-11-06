@@ -9,6 +9,11 @@ permanent branches. A release is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+### Removed
+
+- The demo build (`build:demo`, `.env.demo`, `VITE_CLINICAL_DEMO`) and the `clinical-portal-demo` remote: every build runs over the
+  `dlc-front` session and http. The in-memory adapter remains for tests only.
+
 ## [2.0.1] - 2026-10-14
 
 Documentation release for MVP 2.

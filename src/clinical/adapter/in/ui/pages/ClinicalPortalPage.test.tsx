@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   consultationEntry,
   evolutionEntry,
-} from '../../../../fixtures/clinicalFixtures';
+} from '../../../../test/clinicalFixtures';
 import { ClinicalPortalPage } from './ClinicalPortalPage';
 import type { ClinicalRecordEntriesPort } from '../../../../application/clinicalRecordEntriesWorkflow';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
