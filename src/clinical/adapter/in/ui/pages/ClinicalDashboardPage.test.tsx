@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ReadDashboard } from '../../../../application/readDashboard';
-import { createDemoClinicalAdapter } from '../../../out/demo/demoClinicalAdapter';
+import { createInMemoryClinicalAdapter } from '../../../../test/inMemoryClinicalAdapter';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { ClinicalDashboardPage } from './ClinicalDashboardPage';
 
@@ -19,7 +19,7 @@ function renderDashboard(role: ClinicalRole, reader = demoReader()) {
 }
 
 function demoReader() {
-  return new ReadDashboard(createDemoClinicalAdapter(), now);
+  return new ReadDashboard(createInMemoryClinicalAdapter(), now);
 }
 
 describe('ClinicalDashboardPage', () => {
@@ -43,7 +43,7 @@ describe('ClinicalDashboardPage', () => {
   });
 
   it('shows declines against yesterday and the previous month', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
     const reader = new ReadDashboard(
       {
@@ -67,7 +67,7 @@ describe('ClinicalDashboardPage', () => {
   });
 
   it('shows no arrow when today matches yesterday', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
     const reader = new ReadDashboard(
       {
@@ -87,7 +87,7 @@ describe('ClinicalDashboardPage', () => {
   });
 
   it('shows no percentage without a previous-month reference', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
     const reader = new ReadDashboard(
       {
@@ -158,7 +158,7 @@ describe('ClinicalDashboardPage', () => {
   });
 
   it('shows the update time in the clinic timezone', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
     const reader = new ReadDashboard(
       {
@@ -178,7 +178,7 @@ describe('ClinicalDashboardPage', () => {
   });
 
   it('warns that stale data is informative only', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
     const reader = new ReadDashboard(
       {
@@ -212,7 +212,7 @@ describe('ClinicalDashboardPage', () => {
 
   // HU-CLN-003: no projection yet answers 503 and no indicator is shown.
   it('explains that analytics has no data yet and offers a retry', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const snapshot = await adapter.readDashboard({ scope: 'CLINIC' });
     const readDashboard = vi
       .fn()
@@ -275,7 +275,7 @@ describe('ClinicalDashboardPage', () => {
   });
 
   it('highlights every day that ties for the busiest of the week', async () => {
-    const demo = createDemoClinicalAdapter();
+    const demo = createInMemoryClinicalAdapter();
     const reader = new ReadDashboard(
       {
         readDashboard: async (scope) => ({

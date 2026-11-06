@@ -778,3 +778,14 @@ No terminal logs or timestamps are invented for this historical note.
   - signed in as the demo dentist, the dashboard showed the new state;
   - after one simulated `AppointmentScheduled` event, "Reintentar" showed "Citas de hoy: 1" and the weekly activity;
   - the analytics documents were removed afterwards from the local database.
+
+## DEV-CLIN-PORTAL-NO-DEMO-054
+
+- **Request (2026-11-06, project owner):** real integration and final delivery; no demo build, synthetic data or demo remote. Branch `chore/remove-clinical-demo` from `origin/develop` `ead8fb9`.
+- **Change:**
+  - The composition root wires only the compositor http (C06); without it the remote shows the placeholder. `VITE_CLINICAL_DEMO`, `.env.demo`, `build:demo`, the `-demo` release suffix and the `clinical-portal-demo` compose service are gone.
+  - The in-memory adapter, its seed, the fixtures and the former demo page moved to `src/clinical/test`, which only tests import; coverage excludes it.
+  - Entry and dashboard tests that relied on the demo flag now run the real build over a routed http stub.
+  - Testing Library async queries wait 5 s and tests 15 s: under full-suite load, 1 s queries and the 5 s test limit failed 1 to 5 random tests per run on `develop` as well.
+- **TDD:** behavior-preserving removal; no new behavior, so no RED. The suite was the safety net before and after.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage three times in a row (346 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate (345/400). The release `0.1.0` bundle contains no synthetic strings.

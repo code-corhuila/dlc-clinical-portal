@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   consultationEntry,
   evolutionEntry,
-} from '../../../../fixtures/clinicalFixtures';
+} from '../../../../test/clinicalFixtures';
 import type { ClinicalEntry } from '../../../../model/clinicalEntry';
 import type { ClinicalRecordStatus } from '../../../../model/clinicalRecordView';
 import type { ClinicalRecordEntriesProps } from './ClinicalRecordEntries';

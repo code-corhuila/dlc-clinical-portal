@@ -1,6 +1,7 @@
 import { fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { contractVersion, mount, portalId, type PortalContext } from './entry';
+import { createInMemoryClinicalAdapter } from './test/inMemoryClinicalAdapter';
 
 const route = (localPath: string) => ({
   compositionId: 'composition-1',
@@ -50,6 +51,60 @@ function context(localPath: string, abort = new AbortController()) {
 
 const host = () => document.body.appendChild(document.createElement('div'));
 
+const listPage = (data: unknown[]) => ({
+  data,
+  meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
+});
+const patients: Record<string, string> = {
+  'patient-a': 'Ana García Rodríguez',
+  'patient-b': 'Mateo Herrera Gómez',
+};
+
+/** Mounts the real build for the dentist session over a routed http stub. */
+async function mountWith(
+  localPath: string,
+  query: Record<string, string[]> = {},
+  overrides: Partial<PortalContext> = {},
+) {
+  const snapshot = await createInMemoryClinicalAdapter().readDashboard({
+    scope: 'PROFESSIONAL',
+    professionalId: 'staff-1',
+  });
+  const routes: Record<string, unknown> = {
+    '/api/v1/clinical-records': listPage(
+      Object.keys(patients).map((patientId, index) => ({
+        id: `r-${index}`,
+        patientId,
+        version: 1,
+      })),
+    ),
+    '/api/v1/clinical-analytics/dashboard': snapshot,
+  };
+  for (const [id, name] of Object.entries(patients))
+    routes[`/api/v1/patients/${id}`] = {
+      id,
+      name,
+      status: 'ACTIVE',
+      version: 1,
+    };
+  const request = vi.fn(async ({ path }: { path: string }) => ({
+    ok: true,
+    status: 200,
+    correlationId: 'corr',
+    data: routes[path] ?? listPage([]),
+  }));
+  const target = host();
+  const ctx = context(localPath);
+  const value = {
+    ...ctx.value,
+    route: { ...ctx.value.route, query },
+    http: { request } as unknown as PortalContext['http'],
+    ...overrides,
+  };
+  const handle = await mount(target, value);
+  return { target, handle, navigation: value.navigation, request };
+}
+
 afterEach(() => {
   vi.unstubAllEnvs();
   document.body.innerHTML = '';
@@ -63,10 +118,7 @@ describe('Clinical portal entry (composition contract v1)', () => {
   });
 
   it('mounts the clinical record of the routed patient inside the host', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-    const target = host();
-
-    const handle = await mount(target, context('/patient-b').value);
+    const { target, handle } = await mountWith('/patient-b');
 
     expect(typeof handle.updateRoute).toBe('function');
     expect(typeof handle.canLeave).toBe('function');
@@ -83,10 +135,7 @@ describe('Clinical portal entry (composition contract v1)', () => {
   });
 
   it('mounts Clinical Analytics on /analytics with the session viewer', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-    const target = host();
-
-    const handle = await mount(target, context('/analytics').value);
+    const { target, handle } = await mountWith('/analytics');
 
     await vi.waitFor(() =>
       expect(target.textContent).toContain('Citas de hoy'),
@@ -103,8 +152,7 @@ describe('Clinical portal entry (composition contract v1)', () => {
     await handle.unmount();
   });
 
-  it('reads Clinical Analytics through the compositor http in the real build', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
+  it('reads Clinical Analytics through the compositor http', async () => {
     const target = host();
     const ctx = context('/analytics').value;
     const request = vi.fn(async () => ({
@@ -179,8 +227,6 @@ describe('Clinical portal entry (composition contract v1)', () => {
   });
 
   it('clears private clinical content when the session stops being authenticated', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-    const target = host();
     const ctx = context('/patient-b');
     let state = 'authenticated';
     const getSnapshot = ctx.value.session.getSnapshot;
@@ -190,8 +236,8 @@ describe('Clinical portal entry (composition contract v1)', () => {
         state === 'authenticated'
           ? getSnapshot()
           : { state, revision: 2, user: null },
-    };
-    const handle = await mount(target, { ...ctx.value, session });
+    } as PortalContext['session'];
+    const { target, handle } = await mountWith('/patient-b', {}, { session });
     await vi.waitFor(() =>
       expect(target.textContent).toContain('Mateo Herrera'),
     );
@@ -204,75 +250,42 @@ describe('Clinical portal entry (composition contract v1)', () => {
     await handle.unmount();
   });
 
-  describe('demo bar inside the compositor', () => {
-    it('replaces the patient selector with a back button to the clinical home', async () => {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-      const target = host();
-      const ctx = context('/patient-b');
-
-      const handle = await mount(target, ctx.value);
+  describe('shell navigation over the compositor http', () => {
+    it('offers a back button from a record to the clinical home', async () => {
+      const { target, handle, navigation } = await mountWith('/patient-b');
       await vi.waitFor(() =>
         expect(target.textContent).toContain('Mateo Herrera'),
       );
 
-      expect(target.querySelector('select[aria-label="Paciente"]')).toBeNull();
-      expect(target.textContent).not.toMatch(/Vista|Autorización clínica/);
+      expect(target.querySelector('select')).toBeNull();
       const back = [...target.querySelectorAll('button')].find(
         (button) => button.textContent === 'Volver a Historia clínica',
       )!;
       fireEvent.click(back);
-      expect(ctx.value.navigation.request).toHaveBeenCalledWith({
+      expect(navigation.request).toHaveBeenCalledWith({
         path: '/app/clinical',
       });
       await handle.unmount();
     });
 
-    it('offers the same back button in the real build', async () => {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
-      const target = host();
-      const ctx = context('/patient-b');
-
-      const handle = await mount(target, ctx.value);
-
-      expect(
-        [...target.querySelectorAll('button')].some(
-          (button) => button.textContent === 'Volver a Historia clínica',
-        ),
-      ).toBe(true);
-      await handle.unmount();
-    });
-
     it('shows patient cards on the clinical home and opens the record through the shell', async () => {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-      const target = host();
-      const ctx = context('/');
-
-      const handle = await mount(target, ctx.value);
+      const { target, handle, navigation } = await mountWith('/');
       await vi.waitFor(() =>
-        expect(target.querySelectorAll('article').length).toBeGreaterThan(1),
+        expect(target.querySelectorAll('article')).toHaveLength(2),
       );
-      expect(target.querySelector('select')).toBeNull();
       const card = [...target.querySelectorAll('article')].find((item) =>
         item.textContent?.includes('Ana García Rodríguez'),
       )!;
       fireEvent.click(card.querySelector('button')!);
 
-      expect(ctx.value.navigation.request).toHaveBeenCalledWith({
+      expect(navigation.request).toHaveBeenCalledWith({
         path: '/app/clinical/patient-a',
       });
       await handle.unmount();
     });
 
     it('filters the clinical home from the route query q', async () => {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-      const target = host();
-      const ctx = context('/');
-      const value = {
-        ...ctx.value,
-        route: { ...ctx.value.route, query: { q: ['mateo'] } },
-      };
-
-      const handle = await mount(target, value);
+      const { target, handle } = await mountWith('/', { q: ['mateo'] });
       await vi.waitFor(() =>
         expect(target.querySelectorAll('article')).toHaveLength(1),
       );
@@ -281,36 +294,21 @@ describe('Clinical portal entry (composition contract v1)', () => {
     });
 
     it('labels the weekly range and links to Appointments through the shell', async () => {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-      const target = host();
-      const ctx = context('/analytics');
-
-      const handle = await mount(target, ctx.value);
+      const { target, handle, navigation } = await mountWith('/analytics');
       await vi.waitFor(() =>
         expect(target.textContent).toContain('Esta semana'),
       );
       expect(target.textContent).toContain('Actualizado');
+      expect(target.textContent).toContain('Citas de hoy');
+      expect(target.querySelector('select')).toBeNull();
       const link = [...target.querySelectorAll('button')].find(
         (button) => button.textContent === 'Ver todas las citas',
       )!;
       fireEvent.click(link);
 
-      expect(ctx.value.navigation.request).toHaveBeenCalledWith({
+      expect(navigation.request).toHaveBeenCalledWith({
         path: '/app/appointments/calendar',
       });
-      await handle.unmount();
-    });
-
-    it('shows only the dashboard on /analytics, without demo selectors', async () => {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-      const target = host();
-
-      const handle = await mount(target, context('/analytics').value);
-
-      await vi.waitFor(() =>
-        expect(target.textContent).toContain('Citas de hoy'),
-      );
-      expect(target.querySelector('select')).toBeNull();
       await handle.unmount();
     });
   });
@@ -334,7 +332,6 @@ describe('Clinical portal entry (composition contract v1)', () => {
     };
 
     async function mountAdministrator(permissions: string[]) {
-      vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
       const target = host();
       const ctx = context('/p-1').value;
       const request = vi.fn(async ({ path }: { path: string }) => ({

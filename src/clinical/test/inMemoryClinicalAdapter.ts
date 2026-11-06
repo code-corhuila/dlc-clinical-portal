@@ -1,30 +1,24 @@
-import type { ClinicalRecordEntriesPort } from '../../../application/clinicalRecordEntriesWorkflow';
-import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
-import type { PatientForCarePort } from '../../../application/readPatientForCare';
-import type { PatientForCare } from '../../../model/patientForCare';
-import type { TreatmentPort } from '../../../application/treatmentPlan';
-import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
-import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
-import type { ProcedureCompletion } from '../../../model/procedureCompletion';
-import type { CareClosure } from '../../../model/careCompletion';
-import type { CareCompletionPort } from '../../../application/declareCareCompletion';
-import type { CareClosurePort } from '../../../application/careClosureTracking';
-import type { ProcedurePricePort } from '../../../application/billingEstimate';
-import type { DashboardSnapshotPort } from '../../../application/readDashboard';
-import type { CarePatientsPort } from '../../../application/listCarePatients';
-import type { Treatment } from '../../../model/treatment';
-import type {
-  ClinicalEntry,
-  ClinicalEntryPage,
-} from '../../../model/clinicalEntry';
-import {
-  consultationEntry,
-  evolutionEntry,
-} from '../../../fixtures/clinicalFixtures';
-import { demoSeedPatients } from './demoSeed';
+import type { ClinicalRecordEntriesPort } from '../application/clinicalRecordEntriesWorkflow';
+import type { ClinicalEntryWritePort } from '../application/recordClinicalEntry';
+import type { PatientForCarePort } from '../application/readPatientForCare';
+import type { PatientForCare } from '../model/patientForCare';
+import type { TreatmentPort } from '../application/treatmentPlan';
+import type { ClinicalEntryAmendPort } from '../application/amendClinicalEntry';
+import type { ProcedureCompletionPort } from '../application/completeProcedure';
+import type { ProcedureCompletion } from '../model/procedureCompletion';
+import type { CareClosure } from '../model/careCompletion';
+import type { CareCompletionPort } from '../application/declareCareCompletion';
+import type { CareClosurePort } from '../application/careClosureTracking';
+import type { ProcedurePricePort } from '../application/billingEstimate';
+import type { DashboardSnapshotPort } from '../application/readDashboard';
+import type { CarePatientsPort } from '../application/listCarePatients';
+import type { Treatment } from '../model/treatment';
+import type { ClinicalEntry, ClinicalEntryPage } from '../model/clinicalEntry';
+import { consultationEntry, evolutionEntry } from './clinicalFixtures';
+import { seedPatients } from './inMemorySeed';
 
 /** In-memory synthetic adapter, wired only by the dev demo composition. */
-export interface DemoClinicalAdapter
+export interface InMemoryClinicalAdapter
   extends
     ClinicalRecordEntriesPort,
     ClinicalEntryWritePort,
@@ -41,25 +35,25 @@ export interface DemoClinicalAdapter
 }
 
 /** Synthetic Billing catalog references: codes and names only, never prices. */
-export const demoProcedureCatalog = [
+export const testProcedureCatalog = [
   { code: 'D1110', label: 'Limpieza profunda' },
   { code: 'D2391', label: 'Resina simple' },
   { code: 'D7140', label: 'Extracción simple' },
 ] as const;
 
 /** Synthetic EN_ATENCION appointment per assigned patient. */
-function buildDemoAppointments(): Record<string, string> {
+function buildSeedAppointments(): Record<string, string> {
   const appointments: Record<string, string> = {
     'patient-a': 'appointment-a',
     'patient-b': 'appointment-b',
   };
-  for (const { patient, appointmentId } of demoSeedPatients)
+  for (const { patient, appointmentId } of seedPatients)
     if (appointmentId) appointments[patient.id] = appointmentId;
   return appointments;
 }
 
 // Pure, so the real build drops the synthetic data when nothing imports it.
-export const demoAppointments = /* @__PURE__ */ buildDemoAppointments();
+export const testAppointments = /* @__PURE__ */ buildSeedAppointments();
 
 const records: Record<string, string> = {
   'patient-a': 'record-a',
@@ -97,7 +91,7 @@ const authors: Record<string, string> = {
   [evolutionEntry.authorId]: 'Dr. Mateo López',
 };
 
-export function createDemoClinicalAdapter(): DemoClinicalAdapter {
+export function createInMemoryClinicalAdapter(): InMemoryClinicalAdapter {
   const closedRecords = new Set(['record-d']);
   /** Idempotency-Key replay: a repeated intent has no second effect. */
   const applied = new Set<string>();
@@ -150,7 +144,7 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'patient-b': [],
     'patient-d': [],
   };
-  for (const seed of demoSeedPatients) {
+  for (const seed of seedPatients) {
     patients[seed.patient.id] = seed.patient;
     records[seed.patient.id] = seed.patient.id.replace('patient-', 'record-');
     entries[records[seed.patient.id]] = [...seed.entries];
