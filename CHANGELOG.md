@@ -11,6 +11,7 @@ permanent branches. A release is tagged `v<version>` once it is merged.
 
 ### Fixed
 
+- The care patient list leaves out a patient that Patients answers 404 for (e.g. a record whose patient was removed) instead of failing the whole list with "El recurso solicitado no está disponible".
 - New clinical entries carry the appointment now EN_ATENCION, so Billing can admit the encounter's manual charges.
 
 ### Removed
