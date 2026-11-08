@@ -8,56 +8,9 @@
   color: #1f2933;
 }
 
-.cl-demo {
-  box-sizing: border-box;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  align-items: center;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 24px 32px;
-  font-size: 14px;
-}
-
-.cl-demo > p {
-  flex-basis: 100%;
-  margin: 0;
-  color: #0f766e;
-  font-weight: 600;
-}
-
-.cl-demo > label {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-weight: 600;
-}
-
-.cl-demo select {
-  border: 1px solid #d6dee2;
-  border-radius: 8px;
-  padding: 8px;
-}
-
 /* Inside the compositor host the shell owns the viewport height. */
 .cl-portal .portal-placeholder {
   min-height: 0;
-}
-
-.cl-demo > .portal-placeholder {
-  flex-basis: 100%;
-  max-width: none;
-  min-height: 0;
-  padding: 0;
-}
-
-.cl-demo .portal-placeholder > h1 {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
 }
 
 .cl-workspace {
@@ -253,8 +206,7 @@
 }
 
 @media (max-width: 768px) {
-  .portal-placeholder,
-  .cl-demo {
+  .portal-placeholder {
     padding: 16px;
   }
 }
