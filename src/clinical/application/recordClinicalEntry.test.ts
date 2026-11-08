@@ -24,6 +24,21 @@ function context(role: ClinicalRole | null, clinicalWriteAuthorized: boolean) {
 const consultation = { kind: 'CONSULTATION', text: 'Consulta' } as const;
 
 describe('RecordClinicalEntry', () => {
+  it('links the entry to the appointment in care, so Billing can admit its charges', async () => {
+    const port = writePort();
+
+    await new RecordClinicalEntry(port).execute(
+      { ...context('DENTIST', true), appointmentId: 'appointment-1' },
+      consultation,
+    );
+
+    expect(port.appendEntry).toHaveBeenCalledWith(
+      'record-1',
+      { ...consultation, appointmentId: 'appointment-1' },
+      'intent-1',
+    );
+  });
+
   it('resolves the record and appends an authorized consultation', async () => {
     const port = writePort();
 
