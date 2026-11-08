@@ -795,3 +795,10 @@ No terminal logs or timestamps are invented for this historical note.
   - The Administrator read the same record with both evolutions and no write controls.
   - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
   - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).
+
+## DEV-CLIN-PORTAL-ENCOUNTER-ENTRY-055
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. A consultation recorded from "Nueva entrada" reached Billing without `appointmentId`, so `POST /manual-charges` answered `404 Manual source not found` and the encounter charges never completed. Branch `fix/consultation-encounter-appointment` from `origin/develop` `3b4c2a7`.
+- **Change:** the real composition passes the appointment now EN_ATENCION to the page, and `RecordClinicalEntry` adds it to the entry request (`appointmentId`, optional in the contract). Without an appointment in care the request is unchanged.
+- **TDD:** genuine RED in two tests (use case and page), both green after the change.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage (348 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate.

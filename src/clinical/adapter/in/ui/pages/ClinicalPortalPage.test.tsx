@@ -117,6 +117,63 @@ describe('ClinicalPortalPage', () => {
     );
   });
 
+  it('links a new entry to the appointment in care', async () => {
+    const port = {
+      findRecordId: vi.fn().mockResolvedValue('record-1'),
+      readEntries: async () => ({
+        data: [consultationEntry],
+        meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      }),
+      appendEntry: vi.fn(async () => undefined),
+    };
+    const BoundPage = ClinicalPortalPage as unknown as React.ComponentType<
+      BoundPageProps & {
+        readonly appointmentId?: string;
+        readonly patientReader?: ReadPatientForCare;
+      }
+    >;
+    render(
+      <BoundPage
+        patientId="patient-1"
+        role="DENTIST"
+        clinicalReadAuthorized
+        clinicalWriteAuthorized
+        appointmentId="appointment-1"
+        readPort={port}
+        writer={new RecordClinicalEntry(port)}
+        patientReader={
+          new ReadPatientForCare({
+            readPatient: async (id) => ({
+              id,
+              name: 'Paciente en atención',
+              status: 'ACTIVE',
+              version: 1,
+            }),
+          })
+        }
+      />,
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Nueva entrada' }),
+    );
+    fireEvent.change(screen.getByLabelText('Narrativa clínica'), {
+      target: { value: 'Consulta en atención' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar entrada' }));
+
+    await vi.waitFor(() =>
+      expect(port.appendEntry).toHaveBeenCalledWith(
+        'record-1',
+        {
+          kind: 'CONSULTATION',
+          text: 'Consulta en atención',
+          appointmentId: 'appointment-1',
+        },
+        expect.any(String),
+      ),
+    );
+  });
+
   it('loads authorized entries from an explicit patient context and typed port', async () => {
     const readPort: ClinicalRecordEntriesPort = {
       findRecordId: vi.fn().mockResolvedValue('record-1'),
