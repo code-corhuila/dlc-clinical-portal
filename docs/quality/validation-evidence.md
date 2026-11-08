@@ -802,3 +802,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Change:** the real composition passes the appointment now EN_ATENCION to the page, and `RecordClinicalEntry` adds it to the entry request (`appointmentId`, optional in the contract). Without an appointment in care the request is unchanged.
 - **TDD:** genuine RED in two tests (use case and page), both green after the change.
 - **Validation (Windows):** typecheck, lint, format, `npm test` with coverage (348 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate.
+
+## DEV-CLIN-PORTAL-CARE-LIST-MISSING-PATIENT-056
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. "Historia clínica" failed with "El recurso solicitado no está disponible" for the administrator because one clinical record pointed to a patient that Patients answers 404 for. Branch `fix/care-list-missing-patient` from `origin/develop` `214724f`.
+- **Change:** `listCarePatients` leaves out a patient whose `GET /patients/{id}` answers 404; any other failure still fails the list. Owner failures now keep the HTTP `status` next to the error code.
+- **TDD:** genuine RED in the adapter test (one 404 patient among the list), green after the change.
+- **Validation (Windows):** lint, format, `vitest run` (349 tests), coverage (95.35 % statements, 96.82 % lines), build, `git diff --check` and the size gate.
+- **Browser:** local full stack through dlc-front as Administrator: the list shows the two existing patients and omits the orphan record.

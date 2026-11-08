@@ -48,6 +48,7 @@ export async function send<T>(
   if (result.kind === 'cancelled') throw { code: 'CANCELLED' };
   throw {
     code: result.status === 403 ? 'FORBIDDEN' : result.error,
+    status: result.status,
     message: result.message,
     details: result.details,
     traceId: result.traceId ?? result.correlationId,
