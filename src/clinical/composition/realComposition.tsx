@@ -95,6 +95,7 @@ export function ClinicalRealComposition({
       writer={useCases.writer}
       amender={useCases.amender}
       declarer={useCases.declarer}
+      appointmentId={appointmentId}
       authorName={(authorId) => `Profesional ${authorId.slice(0, 8)}`}
       treatments={{
         plan: useCases.plan,
