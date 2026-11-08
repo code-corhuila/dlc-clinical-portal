@@ -1,3 +1,4 @@
+import { manualChargePath } from '../model/billingNavigation';
 import { useEffect, useState } from 'react';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
 import { createHttpClinicalAdapter } from '../adapter/out/http/httpClinicalAdapter';
@@ -15,6 +16,7 @@ import type { ClinicalRole } from '../model/clinicalAccess';
 
 export interface ClinicalRealCompositionProps {
   readonly http: PortalHttp;
+  readonly onNavigateBilling?: (path: string) => Promise<void>;
   readonly patientId?: string;
   readonly role?: ClinicalRole;
   /** Session grants; without them only a Dentist sees clinical content. */
@@ -45,6 +47,7 @@ function createRealUseCases(http: PortalHttp) {
  */
 export function ClinicalRealComposition({
   http,
+  onNavigateBilling,
   patientId,
   role,
   clinicalReadAuthorized = role === 'DENTIST',
@@ -95,6 +98,11 @@ export function ClinicalRealComposition({
       writer={useCases.writer}
       amender={useCases.amender}
       declarer={useCases.declarer}
+      onPriceExtra={
+        patientId && onNavigateBilling
+          ? (source) => onNavigateBilling(manualChargePath(patientId, source))
+          : undefined
+      }
       authorName={(authorId) => `Profesional ${authorId.slice(0, 8)}`}
       treatments={{
         plan: useCases.plan,

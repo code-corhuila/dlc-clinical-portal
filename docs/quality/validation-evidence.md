@@ -778,3 +778,10 @@ No terminal logs or timestamps are invented for this historical note.
   - signed in as the demo dentist, the dashboard showed the new state;
   - after one simulated `AppointmentScheduled` event, "Reintentar" showed "Citas de hoy: 1" and the weekly activity;
   - the analytics documents were removed afterwards from the local database.
+
+## BILLING-MANUAL-NAV-20261107
+
+- **Scope:** HU-BIL-004 contextual source navigation to Billing.
+- **Tested source:** `e087c5ee1c54e5f39d5de5f1c1e270c933362338`, after integrating the current origin/develop.
+- **Validation:** 354 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
+- **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.

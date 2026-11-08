@@ -50,6 +50,7 @@ export interface ClinicalShellContext {
   readonly http?: PortalHttp;
   /** Mounted inside the dlc-front Dashboard page, which owns its title (C04). */
   readonly embedded?: boolean;
+  readonly onNavigateBilling?: (path: string) => Promise<void>;
 }
 
 function isClinicalDemo(): boolean {
@@ -74,6 +75,7 @@ export function ClinicalPortalComposition(context: ClinicalShellContext) {
     <ClinicalRealComposition
       key={`${context.patientId}:${context.role}`}
       http={context.http}
+      onNavigateBilling={context.onNavigateBilling}
       patientId={context.patientId}
       role={context.role}
       clinicalReadAuthorized={context.clinicalReadAuthorized}
