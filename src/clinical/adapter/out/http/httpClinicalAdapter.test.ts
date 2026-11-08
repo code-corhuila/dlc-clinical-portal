@@ -275,6 +275,7 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
       createHttpClinicalAdapter(http).readPatient('p-1'),
     ).rejects.toEqual({
       code: 'FORBIDDEN',
+      status: 403,
       message: 'Operación no permitida.',
       details: [],
       traceId: 'trace-9',
@@ -360,6 +361,38 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
     const { from, to, dentistId } = request.mock.calls[1][0].query;
     expect(dentistId).toBeUndefined();
     expect(Date.parse(to[0]) - Date.parse(from[0])).toBe(2 * 864e5);
+  });
+
+  it('skips a patient that Patients no longer has instead of failing the whole list', async () => {
+    const { http } = fakeHttp(
+      ok({
+        data: [
+          { id: 'r-1', patientId: 'p-1', version: 1 },
+          { id: 'r-9', patientId: 'p-gone', version: 1 },
+        ],
+        meta,
+      }),
+      ok({ data: [], meta }),
+      ok({ id: 'p-1', name: 'Ana García', status: 'ACTIVE', version: 3 }),
+      {
+        ok: false,
+        kind: 'http',
+        status: 404,
+        error: 'PATIENT_NOT_FOUND',
+        message: 'not found',
+        correlationId: 'corr-404',
+      },
+    );
+
+    expect(await createHttpClinicalAdapter(http).listCarePatients()).toEqual([
+      {
+        id: 'p-1',
+        name: 'Ana García',
+        status: 'ACTIVE',
+        version: 3,
+        hasRecord: true,
+      },
+    ]);
   });
 
   it('still lists patients with a record when the agenda cannot be read', async () => {

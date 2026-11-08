@@ -132,12 +132,22 @@ export function createHttpClinicalAdapter(
       agenda.data
         .filter((item) => ACTIVE_APPOINTMENT.has(item.status))
         .forEach((item) => ids.add(item.patientId));
-      return Promise.all(
-        [...ids].map(async (patientId) => ({
-          ...(await adapter.readPatient(patientId)),
-          hasRecord: withRecord.has(patientId),
-        })),
+      // A patient Patients no longer has (404) is left out; other failures
+      // still fail the list.
+      const patients = await Promise.all(
+        [...ids].map(async (patientId) => {
+          try {
+            return {
+              ...(await adapter.readPatient(patientId)),
+              hasRecord: withRecord.has(patientId),
+            };
+          } catch (error) {
+            if ((error as { status?: number }).status === 404) return null;
+            throw error;
+          }
+        }),
       );
+      return patients.filter((patient) => patient !== null);
     },
     async readPatient(patientId) {
       // PatientView: Patient or PatientForCare; keep only the care projection.
