@@ -810,3 +810,10 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED in the adapter test (one 404 patient among the list), green after the change.
 - **Validation (Windows):** lint, format, `vitest run` (349 tests), coverage (95.35 % statements, 96.82 % lines), build, `git diff --check` and the size gate.
 - **Browser:** local full stack through dlc-front as Administrator: the list shows the two existing patients and omits the orphan record.
+
+## BILLING-MANUAL-NAV-20261107
+
+- **Scope:** HU-BIL-004 contextual source navigation to Billing.
+- **Tested source:** `e087c5ee1c54e5f39d5de5f1c1e270c933362338`, after integrating the current origin/develop.
+- **Validation:** 354 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
+- **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.
