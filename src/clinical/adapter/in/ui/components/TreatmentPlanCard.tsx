@@ -1,3 +1,4 @@
+import type { ManualChargeSource } from '../../../../model/billingNavigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   TREATMENT_STATUS_LABELS,
@@ -43,6 +44,7 @@ export interface TreatmentPlanCardProps {
   readonly onDeclareOpen?: () => void;
   readonly diagnoses: readonly Option[];
   readonly appointmentId?: string;
+  readonly onPriceExtra?: (source: ManualChargeSource) => Promise<void>;
 }
 
 /** Page-29 treatment plan: clinical procedures only, never prices. */
@@ -56,6 +58,7 @@ export function TreatmentPlanCard({
   onDeclareOpen,
   diagnoses,
   appointmentId = '',
+  onPriceExtra,
 }: TreatmentPlanCardProps) {
   const [treatments, setTreatments] = useState<readonly Treatment[]>();
   const [failed, setFailed] = useState(false);
@@ -83,7 +86,11 @@ export function TreatmentPlanCard({
   const [notice, setNotice] = useState<string>();
   const [planning, setPlanning] = useState(false);
   const [unpriced, setUnpriced] = useState<
-    readonly (ExtraItem & { procedure: string; appointmentId: string })[]
+    readonly (ExtraItem & {
+      procedure: string;
+      appointmentId: string;
+      procedureId: string;
+    })[]
   >([]);
   const label = (code: string) =>
     catalog.find((item) => item.code === code)?.label ?? code;
@@ -275,6 +282,26 @@ export function TreatmentPlanCard({
                 {item.description} · {EXTRA_ITEM_TYPE_LABELS[item.type]} ·
                 Cantidad: {item.quantity} · {item.procedure} · Cita:{' '}
                 {item.appointmentId} · Ref.: {item.sourceRecordId}
+                {onPriceExtra && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await onPriceExtra({
+                          appointmentId: item.appointmentId,
+                          procedureId: item.procedureId,
+                          sourceRecordId: item.sourceRecordId,
+                        });
+                      } catch {
+                        setNotice(
+                          'No fue posible abrir Facturación. Puede reintentar.',
+                        );
+                      }
+                    }}
+                  >
+                    Registrar precio en Facturación
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -298,6 +325,7 @@ export function TreatmentPlanCard({
               ...unpriced,
               ...recorded.map((item) => ({
                 ...item,
+                procedureId: procedure.id,
                 procedure: label(procedure.procedureCode),
                 appointmentId: procedure.appointmentId,
               })),

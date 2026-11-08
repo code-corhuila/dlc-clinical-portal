@@ -90,6 +90,11 @@ export function ClinicalRouteView({
           {...viewer(session)}
           patientId={segments[0]}
           onSelectPatient={onSelectPatient}
+          onNavigateBilling={async (path) => {
+            const result = await navigation.request({ path });
+            if (result.status !== 'applied')
+              throw new Error('Billing navigation unavailable');
+          }}
           http={http}
         />
       </>

@@ -1,3 +1,4 @@
+import type { ManualChargeSource } from '../../../../model/billingNavigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ClinicalRecordEntriesWorkflow,
@@ -32,6 +33,7 @@ import type { OpenClinicalRecord } from '../../../../application/openClinicalRec
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
+  readonly onPriceExtra?: (source: ManualChargeSource) => Promise<void>;
   readonly role?: ClinicalRole | null;
   readonly clinicalReadAuthorized?: boolean;
   readonly clinicalWriteAuthorized?: boolean;
@@ -71,6 +73,7 @@ interface RecordView {
  */
 export function ClinicalPortalPage({
   patientId,
+  onPriceExtra,
   role = null,
   clinicalReadAuthorized = false,
   clinicalWriteAuthorized = false,
@@ -253,6 +256,11 @@ export function ClinicalPortalPage({
                 onDeclareOpen={
                   declarer && role === 'DENTIST' && canWrite
                     ? () => setDialog('declare')
+                    : undefined
+                }
+                onPriceExtra={
+                  canWrite && (role === 'DENTIST' || role === 'ADMINISTRATOR')
+                    ? onPriceExtra
                     : undefined
                 }
                 appointmentId={treatments.appointmentId}
