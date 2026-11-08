@@ -225,15 +225,6 @@ No terminal logs or timestamps are invented for this historical note.
 
 **Conclusion:** PASS for local tooling validation. GitHub Actions, commit SHA traceability and the Pull Request itself remain PENDING until authorization is granted.
 
-## DEV-CLIN-PORTAL-PROMOTION-BRANCH-GATE-037
-
-- **Decision (2026-10-09, project owner, option A):** keep `promotion/*` as the controlled exception for QA promotions. Norm 6.3.3 and dlc-docs `00-governance/git-conventions.md` name `qa/*`, but Git cannot create `refs/heads/qa/*` while the permanent `qa` branch exists (verified: "'refs/heads/qa' exists; cannot create 'refs/heads/qa/x'"). Previous promotions #7, #8, #12, #13, #15 and #17 already used `promotion/*`.
-- **Branch:** `chore/clinical-promotion-branch-gate` from `origin/develop` `84becf5`.
-- **Change:** the branch gate admits `promotion/` only into `qa`; the `qa/*` nomenclature conflict finding is kept unchanged.
-- **Promotion audit (before this change):** all 32 code commits on `qa` carry `(cherry picked from commit …)` trailers whose sources exist in `develop`; the 6 merges on `qa` come from `promotion/*` PRs branched from `qa` (no develop→qa merge); `main` holds only the two seed commits. 43 develop commits remain to promote.
-- **TDD:** genuine RED: `promotion/clinical-front-only` → `qa` was rejected with `BRANCH_UNKNOWN_PREFIX` (1 test); a target other than `qa` still fails.
-- **Validation (Windows):** `npm test` 273 tests PASS; typecheck, lint, format, build, `git diff --check` and size gate PASS.
-
 ## DEV-CLIN-PORTAL-RECORD-001
 
 - **HU / Issue:** HU-CLN-001, increment 01 (Clinical record: UI states and read-only entries) · `code-corhuila/dlc-clinical-portal#3` — this increment contributes to the issue and does not complete the HU.
@@ -604,6 +595,15 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED: a throwing route view was not reported (1 test) and an expired session kept the clinical record rendered (1 test).
 - **Validation (Windows):** `npm test` 272 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings in the remote or the real entry), `git diff --check` and size gate PASS. No browser verification claimed for this increment (behavior covered by tests; no compositor yet).
 
+## DEV-CLIN-PORTAL-PROMOTION-BRANCH-GATE-037
+
+- **Decision (2026-10-09, project owner, option A):** keep `promotion/*` as the controlled exception for QA promotions. Norm 6.3.3 and dlc-docs `00-governance/git-conventions.md` name `qa/*`, but Git cannot create `refs/heads/qa/*` while the permanent `qa` branch exists (verified: "'refs/heads/qa' exists; cannot create 'refs/heads/qa/x'"). Previous promotions #7, #8, #12, #13, #15 and #17 already used `promotion/*`.
+- **Branch:** `chore/clinical-promotion-branch-gate` from `origin/develop` `84becf5`.
+- **Change:** the branch gate admits `promotion/` only into `qa`; the `qa/*` nomenclature conflict finding is kept unchanged.
+- **Promotion audit (before this change):** all 32 code commits on `qa` carry `(cherry picked from commit …)` trailers whose sources exist in `develop`; the 6 merges on `qa` come from `promotion/*` PRs branched from `qa` (no develop→qa merge); `main` holds only the two seed commits. 43 develop commits remain to promote.
+- **TDD:** genuine RED: `promotion/clinical-front-only` → `qa` was rejected with `BRANCH_UNKNOWN_PREFIX` (1 test); a target other than `qa` still fails.
+- **Validation (Windows):** `npm test` 273 tests PASS; typecheck, lint, format, build, `git diff --check` and size gate PASS.
+
 ## DEV-CLIN-PORTAL-EMBEDDED-DEMO-BAR-038
 
 - **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C04 and C05 (dlc-docs `638e4f2`). Branch `feat/clinical-embedded-demo-bar-38` from `origin/develop`.
@@ -795,3 +795,25 @@ No terminal logs or timestamps are invented for this historical note.
   - The Administrator read the same record with both evolutions and no write controls.
   - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
   - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).
+
+## DEV-CLIN-PORTAL-ENCOUNTER-ENTRY-055
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. A consultation recorded from "Nueva entrada" reached Billing without `appointmentId`, so `POST /manual-charges` answered `404 Manual source not found` and the encounter charges never completed. Branch `fix/consultation-encounter-appointment` from `origin/develop` `3b4c2a7`.
+- **Change:** the real composition passes the appointment now EN_ATENCION to the page, and `RecordClinicalEntry` adds it to the entry request (`appointmentId`, optional in the contract). Without an appointment in care the request is unchanged.
+- **TDD:** genuine RED in two tests (use case and page), both green after the change.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage (348 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate.
+
+## DEV-CLIN-PORTAL-CARE-LIST-MISSING-PATIENT-056
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. "Historia clínica" failed with "El recurso solicitado no está disponible" for the administrator because one clinical record pointed to a patient that Patients answers 404 for. Branch `fix/care-list-missing-patient` from `origin/develop` `214724f`.
+- **Change:** `listCarePatients` leaves out a patient whose `GET /patients/{id}` answers 404; any other failure still fails the list. Owner failures now keep the HTTP `status` next to the error code.
+- **TDD:** genuine RED in the adapter test (one 404 patient among the list), green after the change.
+- **Validation (Windows):** lint, format, `vitest run` (349 tests), coverage (95.35 % statements, 96.82 % lines), build, `git diff --check` and the size gate.
+- **Browser:** local full stack through dlc-front as Administrator: the list shows the two existing patients and omits the orphan record.
+
+## BILLING-MANUAL-NAV-20261107
+
+- **Scope:** HU-BIL-004 contextual source navigation to Billing.
+- **Tested source:** `e087c5ee1c54e5f39d5de5f1c1e270c933362338`, after integrating the current origin/develop.
+- **Validation:** 354 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
+- **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.

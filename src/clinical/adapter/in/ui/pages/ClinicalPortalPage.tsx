@@ -1,3 +1,4 @@
+import type { ManualChargeSource } from '../../../../model/billingNavigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ClinicalRecordEntriesWorkflow,
@@ -32,6 +33,7 @@ import type { OpenClinicalRecord } from '../../../../application/openClinicalRec
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
+  readonly onPriceExtra?: (source: ManualChargeSource) => Promise<void>;
   readonly role?: ClinicalRole | null;
   readonly clinicalReadAuthorized?: boolean;
   readonly clinicalWriteAuthorized?: boolean;
@@ -42,6 +44,8 @@ export interface ClinicalPortalPageProps {
   readonly patientReader?: ReadPatientForCare;
   readonly amender?: AmendClinicalEntry;
   readonly declarer?: DeclareCareCompletion;
+  /** Appointment now EN_ATENCION; new entries belong to its encounter. */
+  readonly appointmentId?: string;
   readonly treatments?: {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
@@ -69,6 +73,7 @@ interface RecordView {
  */
 export function ClinicalPortalPage({
   patientId,
+  onPriceExtra,
   role = null,
   clinicalReadAuthorized = false,
   clinicalWriteAuthorized = false,
@@ -78,6 +83,7 @@ export function ClinicalPortalPage({
   authorName,
   patientReader,
   treatments,
+  appointmentId,
   amender,
   declarer,
 }: ClinicalPortalPageProps) {
@@ -155,7 +161,13 @@ export function ClinicalPortalPage({
     writer && patientId
       ? async (entry: ClinicalEntryRequest, idempotencyKey: string) => {
           await writer.execute(
-            { patientId, role, clinicalWriteAuthorized, idempotencyKey },
+            {
+              patientId,
+              role,
+              clinicalWriteAuthorized,
+              idempotencyKey,
+              appointmentId: appointmentId ?? treatments?.appointmentId,
+            },
             entry,
           );
           setRetry((value) => value + 1);
@@ -244,6 +256,11 @@ export function ClinicalPortalPage({
                 onDeclareOpen={
                   declarer && role === 'DENTIST' && canWrite
                     ? () => setDialog('declare')
+                    : undefined
+                }
+                onPriceExtra={
+                  canWrite && (role === 'DENTIST' || role === 'ADMINISTRATOR')
+                    ? onPriceExtra
                     : undefined
                 }
                 appointmentId={treatments.appointmentId}
