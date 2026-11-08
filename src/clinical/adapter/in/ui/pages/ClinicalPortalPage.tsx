@@ -44,6 +44,8 @@ export interface ClinicalPortalPageProps {
   readonly patientReader?: ReadPatientForCare;
   readonly amender?: AmendClinicalEntry;
   readonly declarer?: DeclareCareCompletion;
+  /** Appointment now EN_ATENCION; new entries belong to its encounter. */
+  readonly appointmentId?: string;
   readonly treatments?: {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
@@ -81,6 +83,7 @@ export function ClinicalPortalPage({
   authorName,
   patientReader,
   treatments,
+  appointmentId,
   amender,
   declarer,
 }: ClinicalPortalPageProps) {
@@ -158,7 +161,13 @@ export function ClinicalPortalPage({
     writer && patientId
       ? async (entry: ClinicalEntryRequest, idempotencyKey: string) => {
           await writer.execute(
-            { patientId, role, clinicalWriteAuthorized, idempotencyKey },
+            {
+              patientId,
+              role,
+              clinicalWriteAuthorized,
+              idempotencyKey,
+              appointmentId: appointmentId ?? treatments?.appointmentId,
+            },
             entry,
           );
           setRetry((value) => value + 1);

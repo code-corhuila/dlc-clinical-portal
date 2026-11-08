@@ -8,7 +8,6 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe('real build composition (composition contract v1, C06)', () => {
   it('gives a secretary assistant no clinical reading or writing controls', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const request = vi.fn(async ({ path }: { path: string }) => ({
       ok: true,
       status: 200,
@@ -40,7 +39,6 @@ describe('real build composition (composition contract v1, C06)', () => {
   });
 
   it('lets the dentist open the clinical record of a patient without one', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const page = (data: unknown[]) => ({
       data,
       meta: { page: 1, limit: 100, total: data.length, totalPages: 1 },
@@ -93,7 +91,6 @@ describe('real build composition (composition contract v1, C06)', () => {
   });
 
   it('shows no open action to a reader without clinical write access', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const request = vi.fn(async ({ path }: { path: string }) => ({
       ok: true,
       status: 200,
@@ -120,7 +117,6 @@ describe('real build composition (composition contract v1, C06)', () => {
   });
 
   it('reads the clinical record through the compositor http capability', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const request = vi.fn(async ({ path }: { path: string }) => ({
       ok: true,
       status: 200,
@@ -149,7 +145,6 @@ describe('real build composition (composition contract v1, C06)', () => {
   });
 
   it('labels consultations for the declaration with the clinic day', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const page = (data: unknown[]) => ({
       data,
       meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
@@ -204,7 +199,6 @@ describe('real build composition (composition contract v1, C06)', () => {
   });
 
   it('wires treatments, Billing estimate and writes in the real build', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const page = (data: unknown[]) => ({
       data,
       meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
@@ -278,7 +272,6 @@ describe('real build composition (composition contract v1, C06)', () => {
   });
 
   it('plans procedures for the appointment in care read from Appointments', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'false');
     const page = (data: unknown[]) => ({
       data,
       meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },

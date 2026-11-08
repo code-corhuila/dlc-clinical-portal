@@ -779,6 +779,38 @@ No terminal logs or timestamps are invented for this historical note.
   - after one simulated `AppointmentScheduled` event, "Reintentar" showed "Citas de hoy: 1" and the weekly activity;
   - the analytics documents were removed afterwards from the local database.
 
+## DEV-CLIN-PORTAL-NO-DEMO-054
+
+- **Request (2026-11-06, project owner):** real integration and final delivery; no demo build, synthetic data or demo remote. Branch `chore/remove-clinical-demo` from `origin/develop` `ead8fb9`.
+- **Change:**
+  - The composition root wires only the compositor http (C06); without it the remote shows the placeholder. `VITE_CLINICAL_DEMO`, `.env.demo`, `build:demo`, the `-demo` release suffix and the `clinical-portal-demo` compose service are gone.
+  - The in-memory adapter, its seed, the fixtures and the former demo page moved to `src/clinical/test`, which only tests import; coverage excludes it.
+  - Entry and dashboard tests that relied on the demo flag now run the real build over a routed http stub.
+  - Testing Library async queries wait 5 s and tests 15 s: under full-suite load, 1 s queries and the 5 s test limit failed 1 to 5 random tests per run on `develop` as well.
+- **TDD:** behavior-preserving removal; no new behavior, so no RED. The suite was the safety net before and after.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage three times in a row (346 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate (345/400). The release `0.1.0` bundle contains no synthetic strings.
+- **Browser verification (2026-11-08, real stack):** `dlc-front` (branch `chore/clinical-real-release-2`) at `:8081` with this release `0.1.0`, `dlc-api-gateway`, `dlc-iam-api`, `dlc-patient-api`, `dlc-appointments-api` from `develop` and `dlc-clinical-api` with ADR-019 (`code-corhuila/dlc-clinical-api#124`), on Postgres and MongoDB migrated by their `-db` repositories.
+  - A Dentist registered by the Administrator signed in through the IAM portal; the clinical home listed the assigned patient from `GET /clinical-records`, `GET /appointments` and `GET /patients/{id}` (all `200`).
+  - The record showed the patient header and timeline; "Nueva entrada" sent `POST /clinical-records/{id}/entries` (`201`) and the evolution appeared.
+  - The Administrator read the same record with both evolutions and no write controls.
+  - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
+  - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).
+
+## DEV-CLIN-PORTAL-ENCOUNTER-ENTRY-055
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. A consultation recorded from "Nueva entrada" reached Billing without `appointmentId`, so `POST /manual-charges` answered `404 Manual source not found` and the encounter charges never completed. Branch `fix/consultation-encounter-appointment` from `origin/develop` `3b4c2a7`.
+- **Change:** the real composition passes the appointment now EN_ATENCION to the page, and `RecordClinicalEntry` adds it to the entry request (`appointmentId`, optional in the contract). Without an appointment in care the request is unchanged.
+- **TDD:** genuine RED in two tests (use case and page), both green after the change.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage (348 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate.
+
+## DEV-CLIN-PORTAL-CARE-LIST-MISSING-PATIENT-056
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. "Historia clínica" failed with "El recurso solicitado no está disponible" for the administrator because one clinical record pointed to a patient that Patients answers 404 for. Branch `fix/care-list-missing-patient` from `origin/develop` `214724f`.
+- **Change:** `listCarePatients` leaves out a patient whose `GET /patients/{id}` answers 404; any other failure still fails the list. Owner failures now keep the HTTP `status` next to the error code.
+- **TDD:** genuine RED in the adapter test (one 404 patient among the list), green after the change.
+- **Validation (Windows):** lint, format, `vitest run` (349 tests), coverage (95.35 % statements, 96.82 % lines), build, `git diff --check` and the size gate.
+- **Browser:** local full stack through dlc-front as Administrator: the list shows the two existing patients and omits the orphan record.
+
 ## BILLING-MANUAL-NAV-20261107
 
 - **Scope:** HU-BIL-004 contextual source navigation to Billing.

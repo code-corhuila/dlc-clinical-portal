@@ -1,13 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ClinicalDashboard } from './ClinicalDashboard';
+import type { PortalHttp } from './adapter/out/http/portalHttp';
+import { createInMemoryClinicalAdapter } from './test/inMemoryClinicalAdapter';
 
 describe('ClinicalDashboard (federated entry for /app/dashboard)', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('waits for the dlc-front session outside the demo, without synthetic data', () => {
+  it('waits for the dlc-front session, without clinical data', () => {
     render(<ClinicalDashboard />);
 
     expect(
@@ -16,33 +14,23 @@ describe('ClinicalDashboard (federated entry for /app/dashboard)', () => {
     expect(screen.queryByText(/14\.500\.000/)).toBeNull();
   });
 
-  it('renders the synthetic dashboard only with the dev demo flag', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-    render(<ClinicalDashboard />);
-
-    expect(
-      await screen.findByRole('heading', { name: 'Panel' }),
-    ).toBeInTheDocument();
-  });
-
-  it('renders the synthetic dashboard in the explicit demo build', async () => {
-    vi.stubEnv('DEV', false);
-    vi.stubEnv('MODE', 'demo');
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
-    render(<ClinicalDashboard />);
-
-    expect(
-      await screen.findByRole('heading', { name: 'Panel' }),
-    ).toBeInTheDocument();
-  });
-
   it('uses the role and staff name supplied by the shell', async () => {
-    vi.stubEnv('VITE_CLINICAL_DEMO', 'true');
+    const snapshot = await createInMemoryClinicalAdapter().readDashboard({
+      scope: 'PROFESSIONAL',
+      professionalId: 'staff-1',
+    });
+    const request = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      correlationId: 'corr',
+      data: snapshot,
+    }));
     render(
       <ClinicalDashboard
         role="DENTIST"
-        staffId="demo-dentist"
+        staffId="staff-1"
         staffName="Dra. Valentina Ruiz"
+        http={{ request } as unknown as PortalHttp}
       />,
     );
 
@@ -52,5 +40,8 @@ describe('ClinicalDashboard (federated entry for /app/dashboard)', () => {
     expect(
       screen.queryByRole('region', { name: 'Ingresos del mes' }),
     ).toBeNull();
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({ path: '/api/v1/clinical-analytics/dashboard' }),
+    );
   });
 });

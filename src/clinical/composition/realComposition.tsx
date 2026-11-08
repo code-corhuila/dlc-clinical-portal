@@ -103,6 +103,7 @@ export function ClinicalRealComposition({
           ? (source) => onNavigateBilling(manualChargePath(patientId, source))
           : undefined
       }
+      appointmentId={appointmentId}
       authorName={(authorId) => `Profesional ${authorId.slice(0, 8)}`}
       treatments={{
         plan: useCases.plan,
