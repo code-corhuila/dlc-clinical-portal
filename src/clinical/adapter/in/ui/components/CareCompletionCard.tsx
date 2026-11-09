@@ -8,6 +8,18 @@ import { clinicDateTime } from '../clinicTime';
 import { CareClosureTracker } from './CareClosureTracker';
 import { useIntentKey } from './useIntentKey';
 
+/** 409 CARE_STATE_CONFLICT: the encounter was already declared or the appointment left EN_ATENCION. */
+const CARE_STATE_CONFLICT_MESSAGE =
+  'Esta atención ya fue declarada o la cita ya no está en atención; no se puede declarar de nuevo. Revise el estado de la cita en Citas.';
+
+function careStateConflict(error: unknown): error is object {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'CARE_STATE_CONFLICT'
+  );
+}
+
 export interface CareCompletionCardProps {
   readonly consultations: readonly { id: string; label: string }[];
   readonly onDeclare?: (
@@ -49,7 +61,12 @@ export function CareCompletionCard({
         setClosure(await onReadClosure(declared.careClosureId));
     } catch (error) {
       setMessage(
-        portFailureMessage(error, 'No fue posible declarar el cierre clínico.'),
+        portFailureMessage(
+          careStateConflict(error)
+            ? { ...error, message: CARE_STATE_CONFLICT_MESSAGE }
+            : error,
+          'No fue posible declarar el cierre clínico.',
+        ),
       );
     } finally {
       setPending(false);
