@@ -11,6 +11,8 @@ permanent branches. A release is tagged `v<version>` once it is merged.
 
 ### Fixed
 
+- Declaring an encounter that was already declared (or whose appointment left EN_ATENCION) explains it instead of the generic "Actualiza y revisa el conflicto" text (`CARE_STATE_CONFLICT`).
+
 - The care patient list leaves out a patient that Patients answers 404 for (e.g. a record whose patient was removed) instead of failing the whole list with "El recurso solicitado no está disponible".
 - New clinical entries carry the appointment now EN_ATENCION, so Billing can admit the encounter's manual charges.
 

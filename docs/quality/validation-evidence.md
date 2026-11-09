@@ -817,3 +817,11 @@ No terminal logs or timestamps are invented for this historical note.
 - **Tested source:** `e087c5ee1c54e5f39d5de5f1c1e270c933362338`, after integrating the current origin/develop.
 - **Validation:** 354 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
 - **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.
+
+## DEV-CLIN-PORTAL-CARE-CONFLICT-MESSAGE-057
+
+- **Request (2026-11-09, project owner):** found in the real front run. Declaring the encounter of a consultation that was already declared answered 409 `CARE_STATE_CONFLICT`, and the dialog only showed dlc-front's generic "Actualiza y revisa el conflicto antes de continuar". Branch `fix/care-declaration-conflict-message` from `origin/develop`.
+- **Change:** `CareCompletionCard` shows "Esta atención ya fue declarada o la cita ya no está en atención; no se puede declarar de nuevo. Revise el estado de la cita en Citas." with the support reference for `CARE_STATE_CONFLICT`; other failures are unchanged.
+- **TDD:** genuine RED in the card test (generic text shown), green after the change.
+- **Validation (Windows):** typecheck, lint, format, `vitest run` (353 tests), build, size gate.
+- **Browser:** local full stack as Dentist on the patient whose encounter `bd205199` was already declared: the dialog shows the new message with its reference.

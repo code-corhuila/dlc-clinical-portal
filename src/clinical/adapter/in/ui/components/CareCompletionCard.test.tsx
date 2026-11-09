@@ -32,4 +32,35 @@ describe('CareCompletionCard', () => {
       'declarada completada el 23 oct 2026, 22:50',
     );
   });
+
+  it('explains a care-state conflict instead of the generic conflict text', async () => {
+    const onDeclare = vi.fn(async () => {
+      throw {
+        code: 'CARE_STATE_CONFLICT',
+        message: 'Actualiza y revisa el conflicto antes de continuar.',
+        traceId: 'trace-7',
+      };
+    });
+    render(
+      <CareCompletionCard
+        consultations={[{ id: 'c-1', label: '2026-10-23 · Dolor' }]}
+        onDeclare={onDeclare as never}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'c-1' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Declarar atención clínica completada',
+      }),
+    );
+
+    expect(
+      await screen.findByText(
+        /ya fue declarada o la cita ya no está en atención/,
+      ),
+    ).toHaveTextContent('Referencia: trace-7');
+  });
 });
