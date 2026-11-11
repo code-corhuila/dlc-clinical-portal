@@ -30,6 +30,7 @@ import { ClinicalDialog } from '../components/ClinicalDialog';
 import { clinicDateTime } from '../clinicTime';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 import type { OpenClinicalRecord } from '../../../../application/openClinicalRecord';
+import { ensureProceduresReady } from '../../../../model/careCompletionReadiness';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
@@ -379,8 +380,19 @@ export function ClinicalPortalPage({
             >
               <CareCompletionCard
                 consultations={careConsultations}
-                onDeclare={(consultationId, idempotencyKey) =>
-                  declarer.execute(
+                onDeclare={async (consultationId, idempotencyKey) => {
+                  const currentAppointment = treatments?.appointmentId ?? appointmentId;
+                  if (!loadTreatments || !currentAppointment) {
+                    throw { code: 'PROCEDURES_UNAVAILABLE', message: 'No fue posible verificar los procedimientos de esta cita. Inténtelo nuevamente.' };
+                  }
+                  let plans;
+                  try {
+                    plans = await loadTreatments();
+                  } catch {
+                    throw { code: 'PROCEDURES_UNAVAILABLE', message: 'No fue posible verificar los procedimientos de esta cita. Inténtelo nuevamente.' };
+                  }
+                  ensureProceduresReady(plans, currentAppointment);
+                  return declarer.execute(
                     {
                       patientId,
                       role,
@@ -389,10 +401,10 @@ export function ClinicalPortalPage({
                     },
                     {
                       consultationId,
-                      appointmentId: treatments?.appointmentId ?? '',
+                      appointmentId: currentAppointment,
                     },
-                  )
-                }
+                  );
+                }}
                 onReadClosure={
                   treatments?.tracking &&
                   ((closureId) =>

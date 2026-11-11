@@ -62,9 +62,10 @@ export function CareClosureTracker({
             <strong>Atención clínica: {STATUS_LABELS[closure.status]}</strong>
             <span>Procedimientos: {closure.procedureIds.length}</span>
             <span>
-              Citas: {outcome(closure.appointmentOutcome)} · Facturación:{' '}
+              Citas: {outcome(closure.appointmentOutcome)} · Procesamiento de cargos:{' '}
               {outcome(closure.billingOutcome)}
             </span>
+            <span>El procesamiento de cargos no genera ni emite una factura.</span>
             {closure.failureReason && <span>{closure.failureReason}</span>}
             {closure.status !== 'CLOSURE_COMPLETED' && (
               <button
