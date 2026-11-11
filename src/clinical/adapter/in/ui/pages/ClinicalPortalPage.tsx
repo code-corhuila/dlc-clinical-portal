@@ -27,7 +27,7 @@ import type { BillingEstimate } from '../../../../application/billingEstimate';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
 import { CareCompletionCard } from '../components/CareCompletionCard';
 import { ClinicalDialog } from '../components/ClinicalDialog';
-import { clinicDay } from '../clinicTime';
+import { clinicDateTime } from '../clinicTime';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
 import type { OpenClinicalRecord } from '../../../../application/openClinicalRecord';
 
@@ -192,13 +192,19 @@ export function ClinicalPortalPage({
           .filter((entry) => entry.kind === 'CONSULTATION')
           .map((entry) => ({
             id: entry.id,
-            label: `${entry.createdAt ? clinicDay(entry.createdAt) : ''} · ${
+            label: `${entry.createdAt ? clinicDateTime(entry.createdAt) : 'Fecha y hora no disponibles'} · ${
               entry.text.length > 40
                 ? `${entry.text.slice(0, 40)}…`
                 : entry.text
             }`,
           }))
       : [];
+  const careConsultations = status.kind === 'ready' && appointmentId
+    ? consultations.filter((consultation) => {
+        const entry = status.page.data.find((item) => item.id === consultation.id);
+        return !entry?.appointmentId || entry.appointmentId === appointmentId;
+      })
+    : [];
   const estimate = treatments?.estimate;
   const loadPrices = useMemo(
     () =>
@@ -372,7 +378,7 @@ export function ClinicalPortalPage({
               onClose={closeDialog}
             >
               <CareCompletionCard
-                consultations={consultations}
+                consultations={careConsultations}
                 onDeclare={(consultationId, idempotencyKey) =>
                   declarer.execute(
                     {

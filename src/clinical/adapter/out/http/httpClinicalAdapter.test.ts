@@ -161,12 +161,9 @@ describe('httpClinicalAdapter reads (composition contract v1, C06)', () => {
         query: expect.objectContaining({ patientId: ['p-1'], limit: ['100'] }),
       }),
     );
-    // Only the window around now: an appointment in care started recently.
-    const { from, to } = request.mock.calls[0][0].query;
-    expect(Date.parse(to[0]) - Date.parse(from[0])).toBe(2 * 864e5);
-    expect(Math.abs(Date.parse(from[0]) + 864e5 - Date.now())).toBeLessThan(
-      60e3,
-    );
+    // Appointment dates do not determine whether an encounter is currently in care.
+    expect(request.mock.calls[0][0].query).not.toHaveProperty('from');
+    expect(request.mock.calls[0][0].query).not.toHaveProperty('to');
     // No appointment in care: planning and declaring stay blocked.
     expect(await adapter.readInCareAppointment('p-1')).toBeUndefined();
   });

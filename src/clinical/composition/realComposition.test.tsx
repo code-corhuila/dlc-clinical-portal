@@ -144,7 +144,7 @@ describe('real build composition (composition contract v1, C06)', () => {
     );
   });
 
-  it('labels consultations for the declaration with the clinic day', async () => {
+  it('labels the active appointment consultations with clinic date and time', async () => {
     const page = (data: unknown[]) => ({
       data,
       meta: { page: 1, limit: 20, total: data.length, totalPages: 1 },
@@ -164,6 +164,7 @@ describe('real build composition (composition contract v1, C06)', () => {
           id: 'c-1',
           recordId: 'r-1',
           kind: 'CONSULTATION',
+          appointmentId: 'ap-1',
           text: 'Dolor en 36',
           authorId: 'a-1',
           createdAt: '2026-10-24T03:50:00Z',
@@ -172,6 +173,7 @@ describe('real build composition (composition contract v1, C06)', () => {
         },
       ]),
       '/api/v1/treatments': page([]),
+      '/api/v1/appointments': page([{ id: 'ap-1', patientId: 'p-1', status: 'EN_ATENCION' }]),
     };
     const request = vi.fn(async ({ path }: { path: string }) => ({
       ok: true,
@@ -195,7 +197,7 @@ describe('real build composition (composition contract v1, C06)', () => {
     );
     expect(
       await screen.findByRole('option', { name: /Dolor en 36/ }),
-    ).toHaveTextContent('2026-10-23 · Dolor en 36');
+    ).toHaveTextContent('23 oct 2026, 22:50 · Dolor en 36');
   });
 
   it('wires treatments, Billing estimate and writes in the real build', async () => {

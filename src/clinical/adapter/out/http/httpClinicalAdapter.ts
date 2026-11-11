@@ -185,15 +185,10 @@ export function createHttpClinicalAdapter(
       return get<CareClosure>(`/care-closures/${closureId}`);
     },
     async readInCareAppointment(patientId) {
-      // An appointment in care started recently: search a day around now.
-      const now = Date.now();
+      // The authoritative status, rather than the scheduled date, identifies care in progress.
       const page = await getAll<{ id: string; status: string }>(
         '/appointments',
-        {
-          patientId: [patientId],
-          from: [new Date(now - DAY_MS).toISOString()],
-          to: [new Date(now + DAY_MS).toISOString()],
-        },
+        { patientId: [patientId] },
       );
       return page.data.find((item) => item.status === 'EN_ATENCION')?.id;
     },

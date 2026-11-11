@@ -102,6 +102,9 @@ export function CareCompletionCard({
             Declare cuando todas las notas, procedimientos y extras estén
             guardados. Después no se admiten registros tardíos.
           </p>
+          {consultations.length === 0 && (
+            <p>Registre una consulta nueva para la cita en atención antes de declarar el cierre.</p>
+          )}
           <label htmlFor="care-completion-consultation">
             Consulta de la atención
           </label>
@@ -118,7 +121,7 @@ export function CareCompletionCard({
             ))}
           </select>
           {message && <p className="cc-error">{message}</p>}
-          <button type="button" disabled={pending} onClick={declare}>
+          <button type="button" disabled={pending || !consultationId} onClick={declare}>
             Declarar atención clínica completada
           </button>
         </>

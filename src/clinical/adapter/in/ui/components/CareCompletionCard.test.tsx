@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { CareCompletionCard } from './CareCompletionCard';
 
 describe('CareCompletionCard', () => {
+  it('requires an available consultation before closing', () => {
+    render(<CareCompletionCard consultations={[]} onDeclare={vi.fn()} />);
+    expect(screen.getByText(/Registre una consulta nueva/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Declarar atención clínica completada' })).toBeDisabled();
+  });
   it('shows the declaration time on the clinic clock', async () => {
     const onDeclare = vi.fn(async () => ({
       careClosureId: 'cl-1',
