@@ -9,6 +9,8 @@ permanent branches. A release is tagged `v<version>` once it is merged.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-14
+
 ### Fixed
 
 - Declaring an encounter that was already declared (or whose appointment left EN_ATENCION) explains it instead of the generic "Actualiza y revisa el conflicto" text (`CARE_STATE_CONFLICT`).
