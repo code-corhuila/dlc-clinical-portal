@@ -10,7 +10,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --config vite.entry.config.ts",
-    "build:demo": "tsc -b && vite build --mode demo && vite build --config vite.entry.config.ts --mode demo",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "eslint .",

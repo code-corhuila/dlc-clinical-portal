@@ -225,15 +225,6 @@ No terminal logs or timestamps are invented for this historical note.
 
 **Conclusion:** PASS for local tooling validation. GitHub Actions, commit SHA traceability and the Pull Request itself remain PENDING until authorization is granted.
 
-## DEV-CLIN-PORTAL-PROMOTION-BRANCH-GATE-037
-
-- **Decision (2026-10-09, project owner, option A):** keep `promotion/*` as the controlled exception for QA promotions. Norm 6.3.3 and dlc-docs `00-governance/git-conventions.md` name `qa/*`, but Git cannot create `refs/heads/qa/*` while the permanent `qa` branch exists (verified: "'refs/heads/qa' exists; cannot create 'refs/heads/qa/x'"). Previous promotions #7, #8, #12, #13, #15 and #17 already used `promotion/*`.
-- **Branch:** `chore/clinical-promotion-branch-gate` from `origin/develop` `84becf5`.
-- **Change:** the branch gate admits `promotion/` only into `qa`; the `qa/*` nomenclature conflict finding is kept unchanged.
-- **Promotion audit (before this change):** all 32 code commits on `qa` carry `(cherry picked from commit …)` trailers whose sources exist in `develop`; the 6 merges on `qa` come from `promotion/*` PRs branched from `qa` (no develop→qa merge); `main` holds only the two seed commits. 43 develop commits remain to promote.
-- **TDD:** genuine RED: `promotion/clinical-front-only` → `qa` was rejected with `BRANCH_UNKNOWN_PREFIX` (1 test); a target other than `qa` still fails.
-- **Validation (Windows):** `npm test` 273 tests PASS; typecheck, lint, format, build, `git diff --check` and size gate PASS.
-
 ## DEV-CLIN-PORTAL-RECORD-001
 
 - **HU / Issue:** HU-CLN-001, increment 01 (Clinical record: UI states and read-only entries) · `code-corhuila/dlc-clinical-portal#3` — this increment contributes to the issue and does not complete the HU.
@@ -604,6 +595,15 @@ No terminal logs or timestamps are invented for this historical note.
 - **TDD:** genuine RED: a throwing route view was not reported (1 test) and an expired session kept the clinical record rendered (1 test).
 - **Validation (Windows):** `npm test` 272 tests PASS; typecheck, lint, format, `npm run build` (no synthetic strings in the remote or the real entry), `git diff --check` and size gate PASS. No browser verification claimed for this increment (behavior covered by tests; no compositor yet).
 
+## DEV-CLIN-PORTAL-PROMOTION-BRANCH-GATE-037
+
+- **Decision (2026-10-09, project owner, option A):** keep `promotion/*` as the controlled exception for QA promotions. Norm 6.3.3 and dlc-docs `00-governance/git-conventions.md` name `qa/*`, but Git cannot create `refs/heads/qa/*` while the permanent `qa` branch exists (verified: "'refs/heads/qa' exists; cannot create 'refs/heads/qa/x'"). Previous promotions #7, #8, #12, #13, #15 and #17 already used `promotion/*`.
+- **Branch:** `chore/clinical-promotion-branch-gate` from `origin/develop` `84becf5`.
+- **Change:** the branch gate admits `promotion/` only into `qa`; the `qa/*` nomenclature conflict finding is kept unchanged.
+- **Promotion audit (before this change):** all 32 code commits on `qa` carry `(cherry picked from commit …)` trailers whose sources exist in `develop`; the 6 merges on `qa` come from `promotion/*` PRs branched from `qa` (no develop→qa merge); `main` holds only the two seed commits. 43 develop commits remain to promote.
+- **TDD:** genuine RED: `promotion/clinical-front-only` → `qa` was rejected with `BRANCH_UNKNOWN_PREFIX` (1 test); a target other than `qa` still fails.
+- **Validation (Windows):** `npm test` 273 tests PASS; typecheck, lint, format, build, `git diff --check` and size gate PASS.
+
 ## DEV-CLIN-PORTAL-EMBEDDED-DEMO-BAR-038
 
 - **Stories:** HU-CLN-001 and HU-CLN-003 (code-corhuila/dlc-clinical-portal#3, #5); composition contract v1 C04 and C05 (dlc-docs `638e4f2`). Branch `feat/clinical-embedded-demo-bar-38` from `origin/develop`.
@@ -695,3 +695,133 @@ No terminal logs or timestamps are invented for this historical note.
 - **Flow:** `develop` → `promotion/*` → `qa` with `cherry-pick -x` → `release/2.0.1` cut from `main` → `main` with the teacher's approval; tag `v2.0.1` after that merge if the team decides so.
 - **TDD:** documentation only; no RED.
 - **Validation (Windows):** `git diff --check`, size and commit gates PASS; no code changed.
+
+## DEV-CLIN-PORTAL-ADMIN-GRANTS-049
+
+- **Request (2026-10-24, project owner):** close the audit finding "the real build passes `clinicalWriteAuthorized` fixed to `true`". Branch `fix/clinical-admin-grants-from-session` from `origin/develop` `56011e7`.
+- **Change:** the route view now derives the display grants from the C05 session snapshot, as the Clinical API does. A Dentist is granted by role, and the API still checks the assignment. An Administrator is granted read or write only when the session carries `VITE_CLINICAL_READ_PERMISSION` or `VITE_CLINICAL_WRITE_PERMISSION`; the defaults `clinical:read` and `clinical:write` match the API `CLINICAL_READ_PERMISSION` and `CLINICAL_WRITE_PERMISSION`. The Assistant is never granted (PAT-003). The real record page and the real clinical home receive these grants instead of `true`. The demo build keeps its own selectors.
+- **TDD:** genuine RED in three entry tests, all in the real build. An Administrator without permissions still saw the record. One with only `clinical:read` still saw "Nueva entrada". A custom permission name was ignored. All three pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npx vitest run src/clinical` and `npm test` (340 tests);
+  - coverage (96.35 % statements, 92.32 % branches);
+  - build and `git diff --check`;
+  - size gate 69/400.
+- **Browser verification:** not performed. No layout changed, and the entry tests cover the mounted behaviour through the compositor contract.
+- **Limitation:** IAM still issues `permissions: []`, so with the real Auth an Administrator sees "Acceso denegado" until Auth and Clinical agree on the permission names. The API answers the same way, so the screen now matches the server instead of showing controls that end in 403.
+
+## DEV-CLIN-PORTAL-OWNER-READS-050
+
+- **Request (2026-10-29, project owner):** fix the Clinical gaps found in the integration readiness review. Branch `fix/clinical-owner-reads-complete` from `origin/develop`.
+- **Change:**
+  - The real HTTP adapter reads every page of the owner lists instead of the first page only. Owners return 20 items by default and at most 100 (`_shared.yaml`). The affected lists were the record entries, the treatments, the clinical home list and the Billing price catalogue. Before this change, a history with more than 20 entries hid the newest ones (the order is ascending), along with the consultations the declaration offers. A dentist with more than 20 patients, or a catalogue with more than 20 prices, was cut the same way.
+  - Pages are requested with `limit=100`, bounded to 50 pages; beyond that the read fails with a message instead of truncating silently.
+  - The in-care appointment is searched within a day around now (`from`/`to`, contract parameters) instead of among the first 100 appointments of the patient.
+  - `deploy/Dockerfile` and `deploy/compose.yml` take `VITE_CLINICAL_READ_PERMISSION`, `VITE_CLINICAL_WRITE_PERMISSION` and `VITE_CLINIC_TIMEZONE` as build arguments. They are fixed at build time and must equal the API values of the stage.
+- **TDD:** genuine RED: `reads every page of the owner lists` got 20 of 230 entries, and the in-care appointment test found no `from`/`to` window. Both pass after the change. Two existing assertions were updated to the paged query and the merged page meta.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npx vitest run src/clinical` and `npm test` (341 tests);
+  - coverage (96.31 % statements, 92.39 % branches);
+  - build, `git diff --check` and the size gate.
+
+  A Docker build with `--build-arg VITE_CLINICAL_READ_PERMISSION=records:probe-read` puts that name into `portals/clinical/0.1.0/entry.js`.
+- **Browser verification:** not performed. No layout changed; the adapter tests cover the requests.
+
+## DEV-CLIN-PORTAL-OPEN-RECORD-051
+
+- **Request (2026-10-30, project owner):** found while preparing the manual end-to-end validation. With an assigned patient who has no clinical record yet, the real build showed "Error al cargar el registro" and offered no way to start the history; the portal never used `POST /clinical-records`. Branch `feat/clinical-open-record` from `origin/develop`.
+- **Change:**
+  - `ClinicalRecordEntriesWorkflow` maps `NOT_FOUND` from the record lookup to a new `missing` state instead of an error.
+  - The new `OpenClinicalRecord` use case checks clinical write access and an intent key, then calls the owner through the new `ClinicalRecordOpenPort`.
+  - The HTTP adapter implements it with `POST /clinical-records` (`Idempotency-Key`). `RECORD_ALREADY_EXISTS` counts as success, because one record per patient is the goal.
+  - The record view shows "Sin historia clínica". A clinical writer also gets "Abrir historia clínica"; the key is reused while that intent is retried. A reader without write access sees only the text. After opening, the record reloads.
+- **TDD:** genuine RED in four tests: missing state in the workflow, the use case (the module did not exist), the adapter's `openRecord`, and the real-build composition for a writer and a read-only Administrator. All pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npm test` (347 tests);
+  - coverage (95.98 % statements, 92.06 % branches);
+  - build, `git diff --check` and the size gate (187/400).
+- **Browser verification:** done in the local validation stack, with `dlc-front` at `:8080` and this branch's real release `0.1.0` behind the local stand-in Gateway and the real Clinical API in qa mode. Signed in as the demo dentist, Ana Torres (no record) showed "Sin historia clínica" with the button. Clicking it created the record, and the page then showed "Nueva entrada", the quick note and "Declarar atención completada". The test record was removed afterwards from the local database.
+
+## DEV-CLIN-PORTAL-CARE-LIST-052
+
+- **Request (2026-10-30, project owner):** found during the manual end-to-end validation. The Clinical home listed only patients that already had a clinical record (`GET /clinical-records`). An assigned patient without one never appeared, so the "Abrir historia clínica" action from DEV-CLIN-PORTAL-OPEN-RECORD-051 was reachable only by typing the patient URL. Branch `fix/clinical-list-patients-without-record` from `origin/develop`.
+- **Change:**
+  - `listCarePatients` in the HTTP adapter joins the patients with a record and the patients on the reader's agenda: `GET /appointments` from one day before to one day after now, with no `dentistId`, because Appointments scopes the agenda to the reader. Only `PROGRAMADA`, `CONFIRMADA` and `EN_ATENCION` count.
+  - The agenda is best effort. If Appointments fails, the patients with a record are still listed.
+  - Each item carries `hasRecord`. A patient without a record shows the "Sin historia clínica" badge, and its button reads "Abrir historia clínica". The button leads to the patient page, which already offers to open the record.
+- **TDD:** genuine RED in four tests: the joined list with `hasRecord`, the agenda failure, the page count of the owner lists (now five lists), and the card of a patient without a record. All pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npm test` (349 tests);
+  - build, `git diff --check` and the size gate.
+- **Browser verification:** done after a clean reinstall of the local validation stack, with a fresh Mongo and every image rebuilt without cache. The setup was `dlc-front` at `:8080` and this branch's real release `0.1.0` behind the local stand-in Gateway, which now also answers the agenda without `patientId`.
+  - Signed in as the demo dentist, the home listed Ana Torres and Luis Pérez, both marked "Sin historia clínica" with "Abrir historia clínica".
+  - Opening Ana's page and the record sent `POST /clinical-records`, which returned `201`.
+  - Back on the home, Ana showed "Ver historia clínica" and Luis still offered to open his record.
+  - The test record was removed afterwards from the local database.
+
+## DEV-CLIN-PORTAL-DASHBOARD-NO-DATA-053
+
+- **Request (2026-10-30, project owner):** found after a clean reinstall of the local validation stack. With no projection built yet, the Clinical API answers `503` on purpose (HU-CLN-003: "no indicator value is shown"). The dashboard showed the generic central message, which talks about saving and carries a technical reference, and offered no retry. Branch `fix/clinical-dashboard-no-data` from `origin/develop`.
+- **Change:**
+  - `SERVICE_UNAVAILABLE` from the dashboard read now leads to its own state: "Aún no hay datos de analítica" with "Las métricas aparecen cuando Clinical procesa la primera actividad (citas, atenciones o pagos)." It still shows no indicator.
+  - That state and the generic error now both offer "Reintentar", which reloads the snapshot.
+  - Other failures keep the central message.
+- **TDD:** genuine RED in two tests: the no-data state followed by a successful retry, and the retry after another failure. Both pass after the change.
+- **Validation (Windows):** all checks pass:
+  - typecheck, lint and format;
+  - `npm test` (351 tests);
+  - build and `git diff --check`.
+- **Browser verification:** done in the local validation stack (`dlc-front` at `:8080`, this branch's real release `0.1.0`, the real Clinical API in qa mode, with no projection built yet):
+  - signed in as the demo dentist, the dashboard showed the new state;
+  - after one simulated `AppointmentScheduled` event, "Reintentar" showed "Citas de hoy: 1" and the weekly activity;
+  - the analytics documents were removed afterwards from the local database.
+
+## DEV-CLIN-PORTAL-NO-DEMO-054
+
+- **Request (2026-11-06, project owner):** real integration and final delivery; no demo build, synthetic data or demo remote. Branch `chore/remove-clinical-demo` from `origin/develop` `ead8fb9`.
+- **Change:**
+  - The composition root wires only the compositor http (C06); without it the remote shows the placeholder. `VITE_CLINICAL_DEMO`, `.env.demo`, `build:demo`, the `-demo` release suffix and the `clinical-portal-demo` compose service are gone.
+  - The in-memory adapter, its seed, the fixtures and the former demo page moved to `src/clinical/test`, which only tests import; coverage excludes it.
+  - Entry and dashboard tests that relied on the demo flag now run the real build over a routed http stub.
+  - Testing Library async queries wait 5 s and tests 15 s: under full-suite load, 1 s queries and the 5 s test limit failed 1 to 5 random tests per run on `develop` as well.
+- **TDD:** behavior-preserving removal; no new behavior, so no RED. The suite was the safety net before and after.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage three times in a row (346 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate (345/400). The release `0.1.0` bundle contains no synthetic strings.
+- **Browser verification (2026-11-08, real stack):** `dlc-front` (branch `chore/clinical-real-release-2`) at `:8081` with this release `0.1.0`, `dlc-api-gateway`, `dlc-iam-api`, `dlc-patient-api`, `dlc-appointments-api` from `develop` and `dlc-clinical-api` with ADR-019 (`code-corhuila/dlc-clinical-api#124`), on Postgres and MongoDB migrated by their `-db` repositories.
+  - A Dentist registered by the Administrator signed in through the IAM portal; the clinical home listed the assigned patient from `GET /clinical-records`, `GET /appointments` and `GET /patients/{id}` (all `200`).
+  - The record showed the patient header and timeline; "Nueva entrada" sent `POST /clinical-records/{id}/entries` (`201`) and the evolution appeared.
+  - The Administrator read the same record with both evolutions and no write controls.
+  - The dashboard showed "Aún no hay datos de analítica": no projection exists because the Appointments relay was off.
+  - Local setup notes: the bootstrap Administrator and the Dentist e-mail verification were set in SQL (the IAM SMTP adapter requires direct TLS, which the local mail catcher lacks).
+
+## DEV-CLIN-PORTAL-ENCOUNTER-ENTRY-055
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. A consultation recorded from "Nueva entrada" reached Billing without `appointmentId`, so `POST /manual-charges` answered `404 Manual source not found` and the encounter charges never completed. Branch `fix/consultation-encounter-appointment` from `origin/develop` `3b4c2a7`.
+- **Change:** the real composition passes the appointment now EN_ATENCION to the page, and `RecordClinicalEntry` adds it to the entry request (`appointmentId`, optional in the contract). Without an appointment in care the request is unchanged.
+- **TDD:** genuine RED in two tests (use case and page), both green after the change.
+- **Validation (Windows):** typecheck, lint, format, `npm test` with coverage (348 tests, 96.9 % of lines), `test:build`, build, `git diff --check` and the size gate.
+
+## DEV-CLIN-PORTAL-CARE-LIST-MISSING-PATIENT-056
+
+- **Request (2026-11-08, project owner):** found in the real front end-to-end run. "Historia clínica" failed with "El recurso solicitado no está disponible" for the administrator because one clinical record pointed to a patient that Patients answers 404 for. Branch `fix/care-list-missing-patient` from `origin/develop` `214724f`.
+- **Change:** `listCarePatients` leaves out a patient whose `GET /patients/{id}` answers 404; any other failure still fails the list. Owner failures now keep the HTTP `status` next to the error code.
+- **TDD:** genuine RED in the adapter test (one 404 patient among the list), green after the change.
+- **Validation (Windows):** lint, format, `vitest run` (349 tests), coverage (95.35 % statements, 96.82 % lines), build, `git diff --check` and the size gate.
+- **Browser:** local full stack through dlc-front as Administrator: the list shows the two existing patients and omits the orphan record.
+
+## BILLING-MANUAL-NAV-20261107
+
+- **Scope:** HU-BIL-004 contextual source navigation to Billing.
+- **Tested source:** `e087c5ee1c54e5f39d5de5f1c1e270c933362338`, after integrating the current origin/develop.
+- **Validation:** 354 tests passed; typecheck and production build passed. Docker image built for local interface deployment.
+- **Limits:** no real IAM/Gateway business acceptance, browser visual acceptance or production deployment is claimed. No credentials or private environment files are included.
+
+## DEV-CLIN-PORTAL-CARE-CONFLICT-MESSAGE-057
+
+- **Request (2026-11-09, project owner):** found in the real front run. Declaring the encounter of a consultation that was already declared answered 409 `CARE_STATE_CONFLICT`, and the dialog only showed dlc-front's generic "Actualiza y revisa el conflicto antes de continuar". Branch `fix/care-declaration-conflict-message` from `origin/develop`.
+- **Change:** `CareCompletionCard` shows "Esta atención ya fue declarada o la cita ya no está en atención; no se puede declarar de nuevo. Revise el estado de la cita en Citas." with the support reference for `CARE_STATE_CONFLICT`; other failures are unchanged.
+- **TDD:** genuine RED in the card test (generic text shown), green after the change.
+- **Validation (Windows):** typecheck, lint, format, `vitest run` (353 tests), build, size gate.
+- **Browser:** local full stack as Dentist on the patient whose encounter `bd205199` was already declared: the dialog shows the new message with its reference.

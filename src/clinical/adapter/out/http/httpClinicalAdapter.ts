@@ -5,17 +5,25 @@ import type {
   ProcedurePricePort,
 } from '../../../application/billingEstimate';
 import type { DashboardSnapshotPort } from '../../../application/readDashboard';
+import type { DashboardSnapshot } from '../../../model/dashboard';
 import type { CarePatientsPort } from '../../../application/listCarePatients';
+import type { ClinicalRecordOpenPort } from '../../../application/openClinicalRecord';
 import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
 import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
 import type { TreatmentPort } from '../../../application/treatmentPlan';
 import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
 import type { CareCompletionPort } from '../../../application/declareCareCompletion';
 import type { CareClosurePort } from '../../../application/careClosureTracking';
-import type { ClinicalEntryPage } from '../../../model/clinicalEntry';
+import type {
+  ClinicalEntryPage,
+  PaginatedMeta,
+} from '../../../model/clinicalEntry';
 import type { PatientForCare } from '../../../model/patientForCare';
-import type { CareClosure } from '../../../model/procedureCompletion';
-import type { ClinicalCareCompletion } from '../../../model/careCompletion';
+import type { ProcedureCompletion } from '../../../model/procedureCompletion';
+import type {
+  CareClosure,
+  ClinicalCareCompletion,
+} from '../../../model/careCompletion';
 import type { Treatment } from '../../../model/treatment';
 import { send, type PortalHttp } from './portalHttp';
 
@@ -23,7 +31,16 @@ const API = '/api/v1';
 
 interface Page<T> {
   readonly data: readonly T[];
+  readonly meta?: PaginatedMeta;
 }
+
+// Owners page every list (default 20, at most 100, _shared.yaml). The bound
+// keeps a broken meta from looping: 50 pages are 5,000 items.
+const PAGE_SIZE = 100;
+const MAX_PAGES = 50;
+const DAY_MS = 864e5;
+// Agenda states where the patient is still to be (or being) attended.
+const ACTIVE_APPOINTMENT = new Set(['PROGRAMADA', 'CONFIRMADA', 'EN_ATENCION']);
 
 /** Read side of the real Clinical adapter over the compositor capability. */
 export interface HttpClinicalReads
@@ -36,10 +53,13 @@ export interface HttpClinicalReads
   readRecordVersion(recordId: string): Promise<number>;
   listTreatments(patientId: string): Promise<readonly Treatment[]>;
   readCareClosure(closureId: string): Promise<CareClosure>;
+  /** Appointment of the patient now EN_ATENCION (Appointments), if any. */
+  readInCareAppointment(patientId: string): Promise<string | undefined>;
 }
 
 /** Real Clinical adapter: every port over the compositor capability. */
 export type HttpClinicalAdapter = HttpClinicalReads &
+  ClinicalRecordOpenPort &
   ClinicalEntryWritePort &
   ClinicalEntryAmendPort &
   TreatmentPort &
@@ -62,14 +82,72 @@ export function createHttpClinicalAdapter(
       headers: { 'Idempotency-Key': idempotencyKey },
     });
 
+  // Reads every page of a list and returns it as one page.
+  const getAll = async <T>(
+    path: string,
+    query: Record<string, string[]> = {},
+  ): Promise<{ data: T[]; meta: PaginatedMeta }> => {
+    const data: T[] = [];
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const result = await get<Page<T>>(path, {
+        ...query,
+        page: [String(page)],
+        limit: [String(PAGE_SIZE)],
+      });
+      data.push(...result.data);
+      const totalPages = result.meta?.totalPages ?? page;
+      if (page >= totalPages || result.data.length === 0)
+        return {
+          data,
+          meta: {
+            page: 1,
+            limit: PAGE_SIZE,
+            total: data.length,
+            totalPages: 1,
+          },
+        };
+    }
+    throw {
+      code: 'UNAVAILABLE',
+      message: 'La lista supera el máximo que se puede mostrar.',
+    };
+  };
+
   const adapter: HttpClinicalAdapter = {
     async listCarePatients() {
       // Records the owner already filtered by assignment; names from Patients.
-      const records =
-        await get<Page<{ patientId: string }>>('/clinical-records');
-      return Promise.all(
-        records.data.map((record) => adapter.readPatient(record.patientId)),
+      const records = await getAll<{ patientId: string }>('/clinical-records');
+      const withRecord = new Set(records.data.map((r) => r.patientId));
+      // Patients on the reader's agenda may still need their record opened.
+      // The agenda is best effort: without it the records are still listed.
+      const now = Date.now();
+      const agenda = await getAll<{ patientId: string; status: string }>(
+        '/appointments',
+        {
+          from: [new Date(now - DAY_MS).toISOString()],
+          to: [new Date(now + DAY_MS).toISOString()],
+        },
+      ).catch(() => ({ data: [] }));
+      const ids = new Set(withRecord);
+      agenda.data
+        .filter((item) => ACTIVE_APPOINTMENT.has(item.status))
+        .forEach((item) => ids.add(item.patientId));
+      // A patient Patients no longer has (404) is left out; other failures
+      // still fail the list.
+      const patients = await Promise.all(
+        [...ids].map(async (patientId) => {
+          try {
+            return {
+              ...(await adapter.readPatient(patientId)),
+              hasRecord: withRecord.has(patientId),
+            };
+          } catch (error) {
+            if ((error as { status?: number }).status === 404) return null;
+            throw error;
+          }
+        }),
       );
+      return patients.filter((patient) => patient !== null);
     },
     async readPatient(patientId) {
       // PatientView: Patient or PatientForCare; keep only the care projection.
@@ -91,8 +169,8 @@ export function createHttpClinicalAdapter(
       if (!record) throw { code: 'NOT_FOUND' };
       return record.id;
     },
-    readEntries(recordId) {
-      return get<ClinicalEntryPage>(`/clinical-records/${recordId}/entries`);
+    readEntries(recordId): Promise<ClinicalEntryPage> {
+      return getAll(`/clinical-records/${recordId}/entries`);
     },
     async readRecordVersion(recordId) {
       return (await get<{ version: number }>(`/clinical-records/${recordId}`))
@@ -100,14 +178,27 @@ export function createHttpClinicalAdapter(
     },
     async listTreatments(patientId) {
       return (
-        await get<Page<Treatment>>('/treatments', { patientId: [patientId] })
+        await getAll<Treatment>('/treatments', { patientId: [patientId] })
       ).data;
     },
     readCareClosure(closureId) {
       return get<CareClosure>(`/care-closures/${closureId}`);
     },
+    async readInCareAppointment(patientId) {
+      // An appointment in care started recently: search a day around now.
+      const now = Date.now();
+      const page = await getAll<{ id: string; status: string }>(
+        '/appointments',
+        {
+          patientId: [patientId],
+          from: [new Date(now - DAY_MS).toISOString()],
+          to: [new Date(now + DAY_MS).toISOString()],
+        },
+      );
+      return page.data.find((item) => item.status === 'EN_ATENCION')?.id;
+    },
     async listProcedurePrices() {
-      const page = await get<Page<ProcedurePrice>>('/procedure-prices');
+      const page = await getAll<ProcedurePrice>('/procedure-prices');
       return page.data.map(
         ({ procedureCode, name, basePrice, currency, status }) => ({
           procedureCode,
@@ -117,6 +208,15 @@ export function createHttpClinicalAdapter(
           status,
         }),
       );
+    },
+    async openRecord(patientId, idempotencyKey) {
+      try {
+        await post('/clinical-records', { patientId }, idempotencyKey);
+      } catch (error) {
+        // One record per patient: opened meanwhile by another request is the goal reached.
+        if ((error as { code?: unknown }).code !== 'RECORD_ALREADY_EXISTS')
+          throw error;
+      }
     },
     async appendEntry(recordId, request, idempotencyKey) {
       await post(
@@ -143,7 +243,7 @@ export function createHttpClinicalAdapter(
       );
     },
     completeProcedure(procedureId, request, idempotencyKey) {
-      return post<CareClosure>(
+      return post<ProcedureCompletion>(
         `/procedures/${procedureId}/completions`,
         request,
         idempotencyKey,
@@ -163,12 +263,9 @@ export function createHttpClinicalAdapter(
         idempotencyKey,
       );
     },
-    async readDashboard() {
-      // HU-CLN-003: no Gateway analytics operation exists yet; never invent one.
-      throw {
-        code: 'UNAVAILABLE',
-        message: 'La analítica clínica aún no tiene un contrato publicado.',
-      };
+    readDashboard() {
+      // HU-CLN-003: the service scopes by the token's role (clinical-service.yaml).
+      return get<DashboardSnapshot>('/clinical-analytics/dashboard');
     },
   };
   return adapter;

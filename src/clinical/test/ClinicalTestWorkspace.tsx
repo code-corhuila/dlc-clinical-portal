@@ -1,20 +1,25 @@
 import { useState } from 'react';
-import type { ClinicalRecordEntriesPort } from '../../../../application/clinicalRecordEntriesWorkflow';
-import type { RecordClinicalEntry } from '../../../../application/recordClinicalEntry';
-import type { ReadPatientForCare } from '../../../../application/readPatientForCare';
-import type { TreatmentPlan } from '../../../../application/treatmentPlan';
-import type { CompleteProcedure } from '../../../../application/completeProcedure';
-import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
-import type { CareClosureTracking } from '../../../../application/careClosureTracking';
-import type { BillingEstimate } from '../../../../application/billingEstimate';
-import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
-import type { ClinicalRole } from '../../../../model/clinicalAccess';
-import { ClinicalPortalPage } from './ClinicalPortalPage';
-import { ClinicalDashboardPage } from './ClinicalDashboardPage';
-import type { ReadDashboard } from '../../../../application/readDashboard';
+import {
+  createInMemoryClinicalAdapter,
+  testAppointments,
+  testProcedureCatalog,
+} from './inMemoryClinicalAdapter';
+import type { ClinicalRecordEntriesPort } from '../application/clinicalRecordEntriesWorkflow';
+import { RecordClinicalEntry } from '../application/recordClinicalEntry';
+import { ReadPatientForCare } from '../application/readPatientForCare';
+import { TreatmentPlan } from '../application/treatmentPlan';
+import { CompleteProcedure } from '../application/completeProcedure';
+import { DeclareCareCompletion } from '../application/declareCareCompletion';
+import { CareClosureTracking } from '../application/careClosureTracking';
+import { BillingEstimate } from '../application/billingEstimate';
+import { AmendClinicalEntry } from '../application/amendClinicalEntry';
+import type { ClinicalRole } from '../model/clinicalAccess';
+import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
+import { ClinicalDashboardPage } from '../adapter/in/ui/pages/ClinicalDashboardPage';
+import { ReadDashboard } from '../application/readDashboard';
 
-/** Synthetic patients offered by the demo patient selector. */
-const DEMO_PATIENTS = [
+/** Synthetic patients offered by the test patient selector. */
+const TEST_PATIENTS = [
   ['patient-a', 'Paciente sintético A'],
   ['patient-b', 'Paciente sintético B'],
   ['patient-c', 'Paciente sintético C'],
@@ -27,7 +32,7 @@ const DEMO_PATIENTS = [
   ['patient-j', 'Andrés Mejía Cárdenas (tratamiento cancelado)'],
 ] as const;
 
-export interface ClinicalDemoPageProps {
+export interface ClinicalTestWorkspaceProps {
   /** Inside dlc-front: the route owns the patient and the session owns the role. */
   readonly embedded?: boolean;
   readonly initialPatientId?: string;
@@ -47,15 +52,15 @@ export interface ClinicalDemoPageProps {
   readonly appointments: Readonly<Record<string, string>>;
 }
 
-/** Synthetic signed-in staff per demo role (the shell session supplies it in production). */
-const DEMO_STAFF: Record<ClinicalRole, { id: string; name: string }> = {
+/** Synthetic signed-in staff per role (the shell session supplies it in production). */
+const TEST_STAFF: Record<ClinicalRole, { id: string; name: string }> = {
   DENTIST: { id: 'demo-dentist', name: 'Dra. Valentina Ruiz' },
   ADMINISTRATOR: { id: 'demo-admin', name: 'Laura Gómez' },
   SECRETARY_ASSISTANT: { id: 'demo-assistant', name: 'Camila Rojas' },
 };
 
-/** Dev-only context controls; dependencies are injected by composition. */
-export function ClinicalDemoPage({
+/** Test-only context controls over injected use cases; never imported by production code. */
+export function ClinicalTestWorkspace({
   readPort,
   writer,
   authorName,
@@ -72,7 +77,7 @@ export function ClinicalDemoPage({
   initialPatientId,
   initialRole,
   embedded = false,
-}: ClinicalDemoPageProps) {
+}: ClinicalTestWorkspaceProps) {
   const [patientId, setPatientId] = useState(initialPatientId ?? 'patient-a');
   const [role, setRole] = useState<ClinicalRole>(initialRole ?? 'DENTIST');
   const [readAuthorized, setReadAuthorized] = useState(true);
@@ -80,8 +85,7 @@ export function ClinicalDemoPage({
   const [view, setView] = useState<'record' | 'dashboard'>('record');
 
   return (
-    <section className="cl-demo" aria-label="Controles de demostración clínica">
-      <p>Modo demostración — datos sintéticos</p>
+    <section aria-label="Controles de prueba clínica">
       {!embedded && (
         <label>
           Vista
@@ -104,7 +108,7 @@ export function ClinicalDemoPage({
             value={patientId}
             onChange={(event) => setPatientId(event.target.value)}
           >
-            {DEMO_PATIENTS.map(([id, label]) => (
+            {TEST_PATIENTS.map(([id, label]) => (
               <option key={id} value={id}>
                 {label}
               </option>
@@ -147,8 +151,8 @@ export function ClinicalDemoPage({
         <ClinicalDashboardPage
           reader={dashboard}
           role={role}
-          staffId={DEMO_STAFF[role].id}
-          staffName={DEMO_STAFF[role].name}
+          staffId={TEST_STAFF[role].id}
+          staffName={TEST_STAFF[role].name}
         />
       ) : (
         <ClinicalPortalPage
@@ -173,5 +177,46 @@ export function ClinicalDemoPage({
         />
       )}
     </section>
+  );
+}
+
+/** Wires the workspace over the in-memory adapter, as tests render it. */
+export function InMemoryClinicalTestWorkspace({
+  initialPatientId,
+  initialRole,
+}: Pick<ClinicalTestWorkspaceProps, 'initialPatientId' | 'initialRole'>) {
+  const [adapter] = useState(createInMemoryClinicalAdapter);
+  const [writer] = useState(() => new RecordClinicalEntry(adapter));
+  const [patientReader] = useState(() => new ReadPatientForCare(adapter));
+  const [treatmentPlan] = useState(() => new TreatmentPlan(adapter));
+  const [completer] = useState(
+    () => new CompleteProcedure(adapter, () => crypto.randomUUID()),
+  );
+  const [amender] = useState(() => new AmendClinicalEntry(adapter));
+  const [declarer] = useState(() => new DeclareCareCompletion(adapter));
+  const [tracking] = useState(() => new CareClosureTracking(adapter));
+  const [estimate] = useState(() => new BillingEstimate(adapter));
+  const [dashboard] = useState(
+    () => new ReadDashboard(adapter, () => new Date()),
+  );
+
+  return (
+    <ClinicalTestWorkspace
+      initialPatientId={initialPatientId}
+      initialRole={initialRole}
+      readPort={adapter}
+      writer={writer}
+      authorName={adapter.authorName}
+      patientReader={patientReader}
+      treatmentPlan={treatmentPlan}
+      completer={completer}
+      declarer={declarer}
+      tracking={tracking}
+      estimate={estimate}
+      dashboard={dashboard}
+      amender={amender}
+      catalog={testProcedureCatalog}
+      appointments={testAppointments}
+    />
   );
 }

@@ -174,6 +174,26 @@ describe('ClinicalRecordEntriesWorkflow', () => {
     expect(workflow.status).toEqual({ kind: 'ready', page: empty });
   });
 
+  // An assigned patient without a clinical record yet is not an error: the
+  // record can be opened (POST /clinical-records).
+  it('reports a patient without a clinical record as missing', async () => {
+    let read = false;
+    const workflow = new ClinicalRecordEntriesWorkflow({
+      findRecordId: async () => {
+        throw { code: 'NOT_FOUND' };
+      },
+      readEntries: async () => {
+        read = true;
+        return page('x');
+      },
+    });
+
+    await workflow.load('patient-1');
+
+    expect(workflow.status).toEqual({ kind: 'missing' });
+    expect(read).toBe(false);
+  });
+
   it('maps forbidden reads without retaining a previous narrative', async () => {
     const workflow = new ClinicalRecordEntriesWorkflow({
       findRecordId: async () => 'record-1',

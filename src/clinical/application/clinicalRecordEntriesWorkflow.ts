@@ -21,26 +21,42 @@ export class ClinicalRecordEntriesWorkflow {
   async load(patientId: string): Promise<void> {
     const generation = ++this.generation;
     this.status = { kind: 'loading' };
+    let recordId: string;
     try {
-      const recordId = await this.port.findRecordId(patientId);
+      recordId = await this.port.findRecordId(patientId);
+    } catch (error: unknown) {
+      if (generation !== this.generation) return;
+      // No record yet for this patient: it can be opened, it is not a failure.
+      if ((error as { code?: unknown } | null)?.code === 'NOT_FOUND') {
+        this.status = { kind: 'missing' };
+        return;
+      }
+      this.fail(error);
+      return;
+    }
+    try {
       if (generation !== this.generation) return;
       const page = await this.port.readEntries(recordId);
       if (generation === this.generation) this.status = { kind: 'ready', page };
     } catch (error: unknown) {
       if (generation !== this.generation) return;
-      const code = (error as { code?: unknown } | null)?.code;
-      // C06: a cancelled request is obsolete; a newer one owns the view.
-      if (code === 'CANCELLED') return;
-      this.status =
-        code === 'FORBIDDEN'
-          ? { kind: 'forbidden' }
-          : {
-              kind: 'error',
-              message: portFailureMessage(
-                error,
-                'No fue posible cargar el registro clínico.',
-              ),
-            };
+      this.fail(error);
     }
+  }
+
+  private fail(error: unknown): void {
+    const code = (error as { code?: unknown } | null)?.code;
+    // C06: a cancelled request is obsolete; a newer one owns the view.
+    if (code === 'CANCELLED') return;
+    this.status =
+      code === 'FORBIDDEN'
+        ? { kind: 'forbidden' }
+        : {
+            kind: 'error',
+            message: portFailureMessage(
+              error,
+              'No fue posible cargar el registro clínico.',
+            ),
+          };
   }
 }

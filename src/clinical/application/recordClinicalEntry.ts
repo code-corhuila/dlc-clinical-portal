@@ -24,6 +24,8 @@ export interface ClinicalWriteContext {
   readonly clinicalWriteAuthorized: boolean;
   /** One key per user intent, reused when that intent is retried. */
   readonly idempotencyKey: string;
+  /** The patient's appointment now EN_ATENCION, when there is one. */
+  readonly appointmentId?: string;
 }
 
 export class ClinicalEntryWriteError extends Error {
@@ -74,6 +76,12 @@ export class RecordClinicalEntry {
       );
 
     const recordId = await this.port.findRecordId(context.patientId);
-    await this.port.appendEntry(recordId, valid, context.idempotencyKey);
+    await this.port.appendEntry(
+      recordId,
+      context.appointmentId
+        ? { ...valid, appointmentId: context.appointmentId }
+        : valid,
+      context.idempotencyKey,
+    );
   }
 }

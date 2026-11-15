@@ -2,15 +2,12 @@
  * Additional synthetic patients for the demo build only: invented people and
  * records, no real data. Each one covers a distinct state of the portal.
  */
-import type {
-  ClinicalEntry,
-  ClinicalEntryKind,
-} from '../../../model/clinicalEntry';
-import type { PatientForCare } from '../../../model/patientForCare';
-import type { Treatment, TreatmentStatus } from '../../../model/treatment';
-import { consultationEntry } from '../../../fixtures/clinicalFixtures';
+import type { ClinicalEntry, ClinicalEntryKind } from '../model/clinicalEntry';
+import type { PatientForCare } from '../model/patientForCare';
+import type { Treatment, TreatmentStatus } from '../model/treatment';
+import { consultationEntry } from './clinicalFixtures';
 
-export interface DemoSeedPatient {
+export interface SeedPatient {
   readonly patient: PatientForCare;
   readonly appointmentId?: string;
   readonly entries: readonly ClinicalEntry[];
@@ -30,7 +27,7 @@ function seed(
     readonly procedures: readonly (readonly [string, TreatmentStatus])[];
   },
   status: PatientForCare['status'] = 'ACTIVE',
-): DemoSeedPatient {
+): SeedPatient {
   const patientId = `patient-${key}`;
   const appointmentId = `appointment-${key}`;
   const consultationId = `consultation-${key}`;
@@ -69,7 +66,7 @@ function seed(
   };
 }
 
-const buildSeedPatients = (): readonly DemoSeedPatient[] => [
+const buildSeedPatients = (): readonly SeedPatient[] => [
   seed(
     'e',
     'Valentina Castro Ríos',
@@ -200,4 +197,4 @@ const buildSeedPatients = (): readonly DemoSeedPatient[] => [
 ];
 
 // Pure, so the real build drops the synthetic data when nothing imports it.
-export const demoSeedPatients = /* @__PURE__ */ buildSeedPatients();
+export const seedPatients = /* @__PURE__ */ buildSeedPatients();

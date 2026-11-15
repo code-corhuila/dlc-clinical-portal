@@ -2,8 +2,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { ReadDashboard } from '../../../../application/readDashboard';
 import type { ClinicalRole } from '../../../../model/clinicalAccess';
 import { formatCop, formatCopCompact } from '../../../../model/copMoney';
-import type { DashboardSnapshot } from '../../../../model/dashboard';
+import {
+  weekdayLabel,
+  type DashboardSnapshot,
+} from '../../../../model/dashboard';
 import { portFailureMessage } from '../../../../model/portFailure';
+import { clinicTime } from '../clinicTime';
 import { ClinicalIcon } from '../components/ClinicalIcon';
 import './clinical-dashboard.css';
 
@@ -14,19 +18,19 @@ export interface ClinicalDashboardPageProps {
   readonly staffName: string;
   /** Inside dlc-front: navigation to the Appointments portal (C04). */
   readonly onViewAllAppointments?: () => void;
+  /**
+   * Mounted by dlc-front inside its Dashboard page (C04): the shell owns the
+   * page title, greeting and <main>; only the Analytics area is rendered.
+   */
+  readonly embedded?: boolean;
 }
 
 type View =
   | { readonly kind: 'loading' }
   | { readonly kind: 'error'; readonly message: string }
+  // HU-CLN-003: no projection built yet (503); no indicator is shown.
+  | { readonly kind: 'no-data' }
   | { readonly kind: 'ready'; snapshot: DashboardSnapshot; stale: boolean };
-
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('');
 
 /** Bar chart; the list below it is the required textual alternative. Every day tied for the busiest is highlighted, as in the mockup. */
 function WeeklyChart({
@@ -40,7 +44,7 @@ function WeeklyChart({
       className="db-chart"
       role="img"
       aria-label={`Actividad semanal: ${activity
-        .map((item) => `${item.day} ${item.count}`)
+        .map((item) => `${weekdayLabel(item.day)} ${item.count}`)
         .join(', ')}`}
     >
       {activity.map((item) => (
@@ -52,7 +56,7 @@ function WeeklyChart({
           <span style={{ height: `${(item.count / max) * 100}%` }}>
             {item.count === max && <b aria-hidden="true">{item.count}</b>}
           </span>
-          <small>{item.day}</small>
+          <small>{weekdayLabel(item.day)}</small>
         </span>
       ))}
     </div>
@@ -60,7 +64,7 @@ function WeeklyChart({
 }
 
 /** KPI cards; revenue appears only when the use case kept it (Administrator). */
-type Kpi = [string, ReactNode, string, 'calendar' | 'users' | 'money'];
+type Kpi = [string, ReactNode, string, 'calendar' | 'money'];
 
 function kpis(data: DashboardSnapshot): Kpi[] {
   const { count, deltaVsYesterday: delta } = data.todayAppointments;
@@ -68,14 +72,10 @@ function kpis(data: DashboardSnapshot): Kpi[] {
     [
       'Citas de hoy',
       count,
-      `${delta >= 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
+      delta === 0
+        ? 'Igual que ayer'
+        : `${delta > 0 ? '↑' : '↓'} ${Math.abs(delta)} vs ayer`,
       'calendar',
-    ],
-    [
-      'Pacientes pendientes',
-      data.pendingPatients,
-      'En sala de espera',
-      'users',
     ],
   ];
   if (data.monthlyRevenue) {
@@ -86,12 +86,19 @@ function kpis(data: DashboardSnapshot): Kpi[] {
         {formatCopCompact(amount)}
         <span className="db-sr">{formatCop(amount)}</span>
       </>,
-      `${change >= 0 ? '↑ +' : '↓ '}${change} % vs mes anterior`,
+      change === undefined
+        ? 'Sin referencia del mes anterior'
+        : `${change >= 0 ? '↑ +' : '↓ '}${Math.abs(change)} % vs mes anterior`,
       'money',
     ]);
   }
   return cards;
 }
+
+const isNoData = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  (error as { code?: unknown }).code === 'SERVICE_UNAVAILABLE';
 
 /** Clinical Analytics dashboard (Figma 88:1998); mounted by dlc-front. */
 export function ClinicalDashboardPage({
@@ -100,9 +107,11 @@ export function ClinicalDashboardPage({
   staffId,
   staffName,
   onViewAllAppointments,
+  embedded = false,
 }: ClinicalDashboardPageProps) {
   const key = `${role}:${staffId}`;
   const [loaded, setLoaded] = useState<{ key: string; view: View }>();
+  const [attempt, setAttempt] = useState(0);
   // A result from another role/staff context is never shown while reloading.
   const view: View = loaded?.key === key ? loaded.view : { kind: 'loading' };
 
@@ -115,26 +124,62 @@ export function ClinicalDashboardPage({
         active &&
         setLoaded({
           key,
-          view: {
-            kind: 'error',
-            message: portFailureMessage(
-              error,
-              'No fue posible cargar el panel.',
-            ),
-          },
+          view: isNoData(error)
+            ? { kind: 'no-data' }
+            : {
+                kind: 'error',
+                message: portFailureMessage(
+                  error,
+                  'No fue posible cargar el panel.',
+                ),
+              },
         }),
     );
     return () => {
       active = false;
     };
-  }, [key, reader, role, staffId]);
+  }, [key, reader, role, staffId, attempt]);
 
+  const retry = () => {
+    setLoaded(undefined);
+    setAttempt((value) => value + 1);
+  };
+
+  const Area = embedded ? 'section' : 'main';
   return (
-    <main className="db-page" aria-labelledby="dashboard-title">
-      <h1 id="dashboard-title">Panel</h1>
-      <p>Bienvenida de nuevo, {staffName}. Esto es lo que sucede hoy.</p>
+    <Area
+      className="db-page"
+      {...(embedded
+        ? { 'aria-label': 'Analítica clínica' }
+        : { 'aria-labelledby': 'dashboard-title' })}
+    >
+      {!embedded && (
+        <>
+          <h1 id="dashboard-title">Panel</h1>
+          <p>Bienvenida de nuevo, {staffName}. Esto es lo que sucede hoy.</p>
+        </>
+      )}
       {view.kind === 'loading' && <p role="status">Cargando panel…</p>}
-      {view.kind === 'error' && <p role="alert">{view.message}</p>}
+      {view.kind === 'no-data' && (
+        <div className="db-empty" role="status">
+          <h2>Aún no hay datos de analítica</h2>
+          <p>
+            Las métricas aparecen cuando Clinical procesa la primera actividad
+            (citas, atenciones o pagos).
+          </p>
+          <button type="button" onClick={retry}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      {view.kind === 'error' && (
+        <div className="db-empty">
+          <p role="alert">{view.message}</p>
+          <button type="button" onClick={retry}>
+            Reintentar
+          </button>
+        </div>
+      )}
       {view.kind === 'ready' && (
         <>
           {view.stale && (
@@ -165,52 +210,25 @@ export function ClinicalDashboardPage({
               <ul className="db-chart-text db-sr">
                 {view.snapshot.weeklyActivity.map((item) => (
                   <li key={item.day}>
-                    {item.day}: {item.count}
+                    {weekdayLabel(item.day)}: {item.count}
                   </li>
                 ))}
               </ul>
-            </section>
-            <section
-              aria-label="Próximas citas"
-              className="db-card db-upcoming"
-            >
-              <h2>Próximas citas</h2>
-              <ul>
-                {view.snapshot.upcomingAppointments.map((item, index) => (
-                  <li key={item.id}>
-                    <span aria-hidden="true" data-tone={index % 4}>
-                      {initials(item.patientName)}
-                    </span>
-                    <div>
-                      <strong>{item.patientName}</strong>
-                      {item.urgent ? (
-                        <small className="db-urgent">
-                          <ClinicalIcon name="alert" />
-                          Urgente
-                        </small>
-                      ) : (
-                        <small>{item.reason}</small>
-                      )}
-                    </div>
-                    <time>{item.time}</time>
-                  </li>
-                ))}
-              </ul>
-              {onViewAllAppointments && (
-                <button
-                  type="button"
-                  className="db-link"
-                  onClick={onViewAllAppointments}
-                >
-                  Ver todas las citas
-                </button>
-              )}
             </section>
           </div>
+          {onViewAllAppointments && (
+            <button
+              type="button"
+              className="db-link"
+              onClick={onViewAllAppointments}
+            >
+              Ver todas las citas
+            </button>
+          )}
           {/* HU-CLN-003: stale data must be identifiable, so freshness stays visible. */}
-          <p>Actualizado: {view.snapshot.asOf.slice(11, 16)} UTC</p>
+          <p>Actualizado: {clinicTime(view.snapshot.asOf)}</p>
         </>
       )}
-    </main>
+    </Area>
   );
 }

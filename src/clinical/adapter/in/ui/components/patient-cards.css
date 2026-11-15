@@ -83,6 +83,11 @@
   color: #66737a;
 }
 
+.pc-status--no-record {
+  margin-left: 8px;
+  color: #b45309;
+}
+
 .pc-card button,
 .pc-error button {
   grid-column: 1 / -1;

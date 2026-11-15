@@ -1,3 +1,4 @@
+import type { ManualChargeSource } from '../../../../model/billingNavigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ClinicalRecordEntriesWorkflow,
@@ -26,19 +27,25 @@ import type { BillingEstimate } from '../../../../application/billingEstimate';
 import type { DeclareCareCompletion } from '../../../../application/declareCareCompletion';
 import { CareCompletionCard } from '../components/CareCompletionCard';
 import { ClinicalDialog } from '../components/ClinicalDialog';
+import { clinicDay } from '../clinicTime';
 import type { AmendClinicalEntry } from '../../../../application/amendClinicalEntry';
+import type { OpenClinicalRecord } from '../../../../application/openClinicalRecord';
 
 export interface ClinicalPortalPageProps {
   readonly patientId?: string | null;
+  readonly onPriceExtra?: (source: ManualChargeSource) => Promise<void>;
   readonly role?: ClinicalRole | null;
   readonly clinicalReadAuthorized?: boolean;
   readonly clinicalWriteAuthorized?: boolean;
   readonly readPort?: ClinicalRecordEntriesPort;
   readonly writer?: RecordClinicalEntry;
+  readonly opener?: OpenClinicalRecord;
   readonly authorName?: (authorId: string) => string;
   readonly patientReader?: ReadPatientForCare;
   readonly amender?: AmendClinicalEntry;
   readonly declarer?: DeclareCareCompletion;
+  /** Appointment now EN_ATENCION; new entries belong to its encounter. */
+  readonly appointmentId?: string;
   readonly treatments?: {
     readonly plan: TreatmentPlan;
     readonly catalog: readonly { code: string; label: string }[];
@@ -66,18 +73,23 @@ interface RecordView {
  */
 export function ClinicalPortalPage({
   patientId,
+  onPriceExtra,
   role = null,
   clinicalReadAuthorized = false,
   clinicalWriteAuthorized = false,
   readPort,
   writer,
+  opener,
   authorName,
   patientReader,
   treatments,
+  appointmentId,
   amender,
   declarer,
 }: ClinicalPortalPageProps) {
   const request = useRef(0);
+  // One open intent per patient: its key is reused if the same intent is retried.
+  const openKeys = useRef(new Map<string, string>());
   const [retry, setRetry] = useState(0);
   const [patientView, setPatientView] = useState<PatientView>();
   const [dialog, setDialog] = useState<'entry' | 'declare'>();
@@ -149,7 +161,13 @@ export function ClinicalPortalPage({
     writer && patientId
       ? async (entry: ClinicalEntryRequest, idempotencyKey: string) => {
           await writer.execute(
-            { patientId, role, clinicalWriteAuthorized, idempotencyKey },
+            {
+              patientId,
+              role,
+              clinicalWriteAuthorized,
+              idempotencyKey,
+              appointmentId: appointmentId ?? treatments?.appointmentId,
+            },
             entry,
           );
           setRetry((value) => value + 1);
@@ -174,7 +192,7 @@ export function ClinicalPortalPage({
           .filter((entry) => entry.kind === 'CONSULTATION')
           .map((entry) => ({
             id: entry.id,
-            label: `${entry.createdAt?.slice(0, 10) ?? ''} · ${
+            label: `${entry.createdAt ? clinicDay(entry.createdAt) : ''} · ${
               entry.text.length > 40
                 ? `${entry.text.slice(0, 40)}…`
                 : entry.text
@@ -189,6 +207,24 @@ export function ClinicalPortalPage({
         : undefined,
     [clinicalReadAuthorized, estimate, role],
   );
+  const openRecord =
+    opener &&
+    patientId &&
+    status.kind === 'missing' &&
+    resolveClinicalWriteAccess(role, clinicalWriteAuthorized) === 'granted'
+      ? async () => {
+          if (!openKeys.current.has(patientId))
+            openKeys.current.set(patientId, crypto.randomUUID());
+          await opener.execute({
+            patientId,
+            role,
+            clinicalWriteAuthorized,
+            idempotencyKey: openKeys.current.get(patientId)!,
+          });
+          openKeys.current.delete(patientId);
+          setRetry((value) => value + 1);
+        }
+      : undefined;
   const canWrite =
     writer !== undefined &&
     status.kind === 'ready' &&
@@ -222,6 +258,11 @@ export function ClinicalPortalPage({
                     ? () => setDialog('declare')
                     : undefined
                 }
+                onPriceExtra={
+                  canWrite && (role === 'DENTIST' || role === 'ADMINISTRATOR')
+                    ? onPriceExtra
+                    : undefined
+                }
                 appointmentId={treatments.appointmentId}
                 diagnoses={
                   status.kind === 'ready'
@@ -239,31 +280,6 @@ export function ClinicalPortalPage({
                           { role, clinicalWriteAuthorized, idempotencyKey },
                           { procedureId, treatmentVersion: treatment.version },
                           extras,
-                        )
-                    : undefined
-                }
-                onRefreshClosure={
-                  treatments.tracking &&
-                  ((closure) =>
-                    treatments.tracking!.read(
-                      { role, clinicalReadAuthorized, clinicalWriteAuthorized },
-                      closure.id,
-                    ))
-                }
-                onRetryClosure={
-                  treatments.tracking &&
-                  resolveClinicalWriteAccess(role, clinicalWriteAuthorized) ===
-                    'granted'
-                    ? (closure, reason, idempotencyKey) =>
-                        treatments.tracking!.retry(
-                          {
-                            role,
-                            clinicalReadAuthorized,
-                            clinicalWriteAuthorized,
-                            idempotencyKey,
-                          },
-                          closure,
-                          reason,
                         )
                     : undefined
                 }
@@ -309,6 +325,7 @@ export function ClinicalPortalPage({
               clinicalReadAuthorized={clinicalReadAuthorized}
               status={status}
               authorName={authorName}
+              onOpenRecord={openRecord}
               onAmend={
                 canWrite && amender
                   ? async (entry, correction, idempotencyKey) => {
@@ -369,6 +386,28 @@ export function ClinicalPortalPage({
                       appointmentId: treatments?.appointmentId ?? '',
                     },
                   )
+                }
+                onReadClosure={
+                  treatments?.tracking &&
+                  ((closureId) =>
+                    treatments.tracking!.read(
+                      { role, clinicalReadAuthorized, clinicalWriteAuthorized },
+                      closureId,
+                    ))
+                }
+                onRetryClosure={
+                  treatments?.tracking &&
+                  ((closure, reason, idempotencyKey) =>
+                    treatments.tracking!.retry(
+                      {
+                        role,
+                        clinicalReadAuthorized,
+                        clinicalWriteAuthorized,
+                        idempotencyKey,
+                      },
+                      closure,
+                      reason,
+                    ))
                 }
               />
             </ClinicalDialog>

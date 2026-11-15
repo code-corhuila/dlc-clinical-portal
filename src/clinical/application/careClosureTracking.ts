@@ -3,7 +3,7 @@ import {
   resolveClinicalWriteAccess,
   type ClinicalRole,
 } from '../model/clinicalAccess';
-import type { CareClosure } from '../model/procedureCompletion';
+import type { CareClosure } from '../model/careCompletion';
 
 /** Host-provided care-closure boundary; it deliberately contains no HTTP details. */
 export interface CareClosurePort {

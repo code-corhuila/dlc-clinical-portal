@@ -1,29 +1,24 @@
-import type { ClinicalRecordEntriesPort } from '../../../application/clinicalRecordEntriesWorkflow';
-import type { ClinicalEntryWritePort } from '../../../application/recordClinicalEntry';
-import type { PatientForCarePort } from '../../../application/readPatientForCare';
-import type { PatientForCare } from '../../../model/patientForCare';
-import type { TreatmentPort } from '../../../application/treatmentPlan';
-import type { ClinicalEntryAmendPort } from '../../../application/amendClinicalEntry';
-import type { ProcedureCompletionPort } from '../../../application/completeProcedure';
-import type { CareClosure } from '../../../model/procedureCompletion';
-import type { CareCompletionPort } from '../../../application/declareCareCompletion';
-import type { CareClosurePort } from '../../../application/careClosureTracking';
-import type { ProcedurePricePort } from '../../../application/billingEstimate';
-import type { DashboardSnapshotPort } from '../../../application/readDashboard';
-import type { CarePatientsPort } from '../../../application/listCarePatients';
-import type { Treatment } from '../../../model/treatment';
-import type {
-  ClinicalEntry,
-  ClinicalEntryPage,
-} from '../../../model/clinicalEntry';
-import {
-  consultationEntry,
-  evolutionEntry,
-} from '../../../fixtures/clinicalFixtures';
-import { demoSeedPatients } from './demoSeed';
+import type { ClinicalRecordEntriesPort } from '../application/clinicalRecordEntriesWorkflow';
+import type { ClinicalEntryWritePort } from '../application/recordClinicalEntry';
+import type { PatientForCarePort } from '../application/readPatientForCare';
+import type { PatientForCare } from '../model/patientForCare';
+import type { TreatmentPort } from '../application/treatmentPlan';
+import type { ClinicalEntryAmendPort } from '../application/amendClinicalEntry';
+import type { ProcedureCompletionPort } from '../application/completeProcedure';
+import type { ProcedureCompletion } from '../model/procedureCompletion';
+import type { CareClosure } from '../model/careCompletion';
+import type { CareCompletionPort } from '../application/declareCareCompletion';
+import type { CareClosurePort } from '../application/careClosureTracking';
+import type { ProcedurePricePort } from '../application/billingEstimate';
+import type { DashboardSnapshotPort } from '../application/readDashboard';
+import type { CarePatientsPort } from '../application/listCarePatients';
+import type { Treatment } from '../model/treatment';
+import type { ClinicalEntry, ClinicalEntryPage } from '../model/clinicalEntry';
+import { consultationEntry, evolutionEntry } from './clinicalFixtures';
+import { seedPatients } from './inMemorySeed';
 
 /** In-memory synthetic adapter, wired only by the dev demo composition. */
-export interface DemoClinicalAdapter
+export interface InMemoryClinicalAdapter
   extends
     ClinicalRecordEntriesPort,
     ClinicalEntryWritePort,
@@ -40,25 +35,25 @@ export interface DemoClinicalAdapter
 }
 
 /** Synthetic Billing catalog references: codes and names only, never prices. */
-export const demoProcedureCatalog = [
+export const testProcedureCatalog = [
   { code: 'D1110', label: 'Limpieza profunda' },
   { code: 'D2391', label: 'Resina simple' },
   { code: 'D7140', label: 'Extracción simple' },
 ] as const;
 
 /** Synthetic EN_ATENCION appointment per assigned patient. */
-function buildDemoAppointments(): Record<string, string> {
+function buildSeedAppointments(): Record<string, string> {
   const appointments: Record<string, string> = {
     'patient-a': 'appointment-a',
     'patient-b': 'appointment-b',
   };
-  for (const { patient, appointmentId } of demoSeedPatients)
+  for (const { patient, appointmentId } of seedPatients)
     if (appointmentId) appointments[patient.id] = appointmentId;
   return appointments;
 }
 
 // Pure, so the real build drops the synthetic data when nothing imports it.
-export const demoAppointments = /* @__PURE__ */ buildDemoAppointments();
+export const testAppointments = /* @__PURE__ */ buildSeedAppointments();
 
 const records: Record<string, string> = {
   'patient-a': 'record-a',
@@ -96,7 +91,7 @@ const authors: Record<string, string> = {
   [evolutionEntry.authorId]: 'Dr. Mateo López',
 };
 
-export function createDemoClinicalAdapter(): DemoClinicalAdapter {
+export function createInMemoryClinicalAdapter(): InMemoryClinicalAdapter {
   const closedRecords = new Set(['record-d']);
   /** Idempotency-Key replay: a repeated intent has no second effect. */
   const applied = new Set<string>();
@@ -149,14 +144,20 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     'patient-b': [],
     'patient-d': [],
   };
-  for (const seed of demoSeedPatients) {
+  for (const seed of seedPatients) {
     patients[seed.patient.id] = seed.patient;
     records[seed.patient.id] = seed.patient.id.replace('patient-', 'record-');
     entries[records[seed.patient.id]] = [...seed.entries];
     treatments[seed.patient.id] = [...seed.treatments];
   }
   /** Demo convergence: unpriced additional needs fail Billing until a retry. */
-  const closures: Record<string, CareClosure & { needsPrice: boolean }> = {};
+  // observed: the declared state was already shown once; reads then progress.
+  const closures: Record<
+    string,
+    CareClosure & { needsPrice: boolean; observed?: boolean }
+  > = {};
+  // Procedures whose extras still need a manual price in Billing.
+  const unpriced = new Set<string>();
   return {
     /** Synthetic dashboard facts; a professional scope sees only own work. */
     async listCarePatients() {
@@ -164,34 +165,27 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     },
     async readDashboard(scope) {
       const own = scope.scope === 'PROFESSIONAL';
-      const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       const counts = own ? [3, 4, 6, 2, 5, 1, 0] : [8, 11, 15, 6, 12, 4, 1];
-      const upcoming = [
-        ['a-1', 'María Jiménez', 'Control y limpieza', '10:00', false],
-        ['a-2', 'David Bravo', 'Endodoncia', '11:30', false],
-        ['a-3', 'Ana López', 'Dolor agudo', '14:00', true],
-        ['a-4', 'Tomás Silva', 'Consulta', '16:15', false],
-      ] as const;
+      const today = new Date();
+      const monday = new Date(
+        Date.UTC(
+          today.getUTCFullYear(),
+          today.getUTCMonth(),
+          today.getUTCDate(),
+        ),
+      );
+      monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
       return {
         asOf: new Date().toISOString(),
         todayAppointments: { count: own ? 5 : 12, deltaVsYesterday: 2 },
-        pendingPatients: own ? 2 : 4,
         monthlyRevenue: own
           ? undefined
           : { amount: '14500000.00', changePercent: 15 },
-        weeklyActivity: days.map((day, index) => ({
-          day,
-          count: counts[index],
-        })),
-        upcomingAppointments: upcoming
-          .slice(0, own ? 2 : 4)
-          .map(([id, patientName, reason, time, urgent]) => ({
-            id,
-            patientName,
-            reason,
-            time,
-            urgent,
-          })),
+        weeklyActivity: counts.map((count, index) => {
+          const day = new Date(monday);
+          day.setUTCDate(monday.getUTCDate() + index);
+          return { day: day.toISOString().slice(0, 10), count };
+        }),
       };
     },
     /** Synthetic Billing catalog prices (exact COP strings); read-only for Clinical. */
@@ -211,7 +205,22 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
     async readCareClosure(closureId) {
       const closure = closures[closureId];
       if (!closure) throw { code: 'NOT_FOUND' };
-      const { needsPrice, ...current } = closure;
+      const { needsPrice, observed, ...current } = closure;
+      // ADR-015: Citas finalizes first; the awaiting state never fails.
+      if (current.status === 'AWAITING_ADMINISTRATIVE_FINALIZATION') {
+        if (!observed) {
+          closures[closureId] = { ...closure, observed: true };
+          return current;
+        }
+        const finalized: CareClosure = {
+          ...current,
+          status: 'CLOSURE_PENDING',
+          appointmentOutcome: 'COMPLETED',
+          version: current.version + 1,
+        };
+        closures[closureId] = { ...finalized, needsPrice };
+        return finalized;
+      }
       if (current.status !== 'CLOSURE_PENDING') return current;
       const next: CareClosure = needsPrice
         ? {
@@ -248,10 +257,13 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
           };
         const retried: CareClosure = {
           id: closure.id,
-          procedureId: closure.procedureId,
+          clinicalRecordId: closure.clinicalRecordId,
+          consultationId: closure.consultationId,
           appointmentId: closure.appointmentId,
-          status: 'CLOSURE_PENDING',
+          procedureIds: closure.procedureIds,
+          manualChargeIds: closure.manualChargeIds,
           appointmentOutcome: closure.appointmentOutcome,
+          status: 'CLOSURE_PENDING',
           billingOutcome: 'PENDING',
           version: closure.version + 1,
         };
@@ -287,20 +299,16 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
           ),
           version: current.version + 1,
         });
-        const closure: CareClosure = {
-          id: `closure-${procedureId}`,
+        if (request.additionalRequirements.length > 0)
+          unpriced.add(procedureId);
+        const completion: ProcedureCompletion = {
           procedureId,
+          treatmentId: current.id,
           appointmentId: procedure.appointmentId,
-          status: 'CLOSURE_PENDING',
-          appointmentOutcome: 'PENDING',
-          billingOutcome: 'PENDING',
-          version: 1,
+          completedAt: new Date().toISOString(),
+          version: 2,
         };
-        closures[closure.id] = {
-          ...closure,
-          needsPrice: request.additionalRequirements.length > 0,
-        };
-        return closure;
+        return completion;
       }),
     async listTreatments(patientId) {
       if (!treatments[patientId]) throw { code: 'FORBIDDEN' };
@@ -456,18 +464,37 @@ export function createDemoClinicalAdapter(): DemoClinicalAdapter {
         )!;
         closedRecords.add(recordId);
         versions[recordId] = version(recordId) + 1;
+        const procedureIds = treatments[patientId].flatMap((treatment) =>
+          treatment.procedures
+            .filter((procedure) => procedure.status === 'COMPLETED')
+            .map((procedure) => procedure.id),
+        );
+        // ADR-014: the declaration opens the one closure of the encounter.
+        const closure: CareClosure = {
+          id: `closure-${recordId}`,
+          clinicalRecordId: recordId,
+          consultationId: request.consultationId,
+          appointmentId: request.appointmentId,
+          procedureIds,
+          manualChargeIds: [],
+          status: 'AWAITING_ADMINISTRATIVE_FINALIZATION',
+          appointmentOutcome: 'PENDING',
+          billingOutcome: 'PENDING',
+          version: 1,
+        };
+        closures[closure.id] = {
+          ...closure,
+          needsPrice: procedureIds.some((id) => unpriced.has(id)),
+        };
         return {
           id: `completion-${recordId}`,
+          careClosureId: closure.id,
           clinicalRecordId: recordId,
           consultationId: request.consultationId,
           appointmentId: request.appointmentId,
           patientId,
           dentistId: 'demo-dentist',
-          procedureIds: treatments[patientId].flatMap((treatment) =>
-            treatment.procedures
-              .filter((procedure) => procedure.status === 'COMPLETED')
-              .map((procedure) => procedure.id),
-          ),
+          procedureIds,
           manualChargeIds: [],
           completedAt: '2026-10-09T10:00:00.000Z',
         };

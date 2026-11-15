@@ -1,8 +1,10 @@
+import { manualChargePath } from '../model/billingNavigation';
 import { useEffect, useState } from 'react';
 import { ClinicalPortalPage } from '../adapter/in/ui/pages/ClinicalPortalPage';
 import { createHttpClinicalAdapter } from '../adapter/out/http/httpClinicalAdapter';
 import type { PortalHttp } from '../adapter/out/http/portalHttp';
 import { AmendClinicalEntry } from '../application/amendClinicalEntry';
+import { OpenClinicalRecord } from '../application/openClinicalRecord';
 import { BillingEstimate } from '../application/billingEstimate';
 import { CareClosureTracking } from '../application/careClosureTracking';
 import { CompleteProcedure } from '../application/completeProcedure';
@@ -14,8 +16,12 @@ import type { ClinicalRole } from '../model/clinicalAccess';
 
 export interface ClinicalRealCompositionProps {
   readonly http: PortalHttp;
+  readonly onNavigateBilling?: (path: string) => Promise<void>;
   readonly patientId?: string;
   readonly role?: ClinicalRole;
+  /** Session grants; without them only a Dentist sees clinical content. */
+  readonly clinicalReadAuthorized?: boolean;
+  readonly clinicalWriteAuthorized?: boolean;
 }
 
 /** Use cases over the real adapter; created once per mounted patient context. */
@@ -24,6 +30,7 @@ function createRealUseCases(http: PortalHttp) {
   return {
     adapter,
     patientReader: new ReadPatientForCare(adapter),
+    opener: new OpenClinicalRecord(adapter),
     writer: new RecordClinicalEntry(adapter),
     amender: new AmendClinicalEntry(adapter),
     declarer: new DeclareCareCompletion(adapter),
@@ -40,8 +47,11 @@ function createRealUseCases(http: PortalHttp) {
  */
 export function ClinicalRealComposition({
   http,
+  onNavigateBilling,
   patientId,
   role,
+  clinicalReadAuthorized = role === 'DENTIST',
+  clinicalWriteAuthorized = role === 'DENTIST',
 }: ClinicalRealCompositionProps) {
   const [useCases] = useState(() => createRealUseCases(http));
   // Planning catalog comes from the Billing-owned price list (codes and names).
@@ -62,18 +72,38 @@ export function ClinicalRealComposition({
       active = false;
     };
   }, [useCases]);
+  // Procedures and the declaration belong to the appointment now EN_ATENCION.
+  const [appointmentId, setAppointmentId] = useState<string>();
+  useEffect(() => {
+    if (!patientId) return;
+    let active = true;
+    useCases.adapter.readInCareAppointment(patientId).then(
+      (id) => active && setAppointmentId(id),
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [useCases, patientId]);
 
   return (
     <ClinicalPortalPage
       patientId={patientId ?? null}
       role={role ?? null}
-      clinicalReadAuthorized
-      clinicalWriteAuthorized
+      clinicalReadAuthorized={clinicalReadAuthorized}
+      clinicalWriteAuthorized={clinicalWriteAuthorized}
       readPort={useCases.adapter}
       patientReader={useCases.patientReader}
+      opener={useCases.opener}
       writer={useCases.writer}
       amender={useCases.amender}
       declarer={useCases.declarer}
+      onPriceExtra={
+        patientId && onNavigateBilling
+          ? (source) => onNavigateBilling(manualChargePath(patientId, source))
+          : undefined
+      }
+      appointmentId={appointmentId}
       authorName={(authorId) => `Profesional ${authorId.slice(0, 8)}`}
       treatments={{
         plan: useCases.plan,
@@ -81,6 +111,7 @@ export function ClinicalRealComposition({
         tracking: useCases.tracking,
         estimate: useCases.estimate,
         catalog,
+        appointmentId,
       }}
     />
   );

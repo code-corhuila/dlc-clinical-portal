@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   consultationEntry,
   evolutionEntry,
-} from '../../../../fixtures/clinicalFixtures';
+} from '../../../../test/clinicalFixtures';
 import type { ClinicalEntry } from '../../../../model/clinicalEntry';
 import type { ClinicalRecordStatus } from '../../../../model/clinicalRecordView';
 import type { ClinicalRecordEntriesProps } from './ClinicalRecordEntries';
@@ -136,7 +136,8 @@ describe('ClinicalRecordEntries', () => {
       expect(timeElement.getAttribute('datetime')).toBe(
         consultationEntry.createdAt,
       );
-      expect(timeElement.textContent).toBe('02 mar 2026, 14:30 UTC');
+      // Clinic timezone (America/Bogota, UTC-5), as the API's CLINIC_TIMEZONE.
+      expect(timeElement.textContent).toBe('02 mar 2026, 09:30');
     });
 
     it('renders an EVOLUTION entry with its text and author', () => {

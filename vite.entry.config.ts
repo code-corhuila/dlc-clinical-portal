@@ -11,10 +11,8 @@ const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as {
  * /portals/clinical/{release}/entry.js. React is bundled (no bare imports or
  * shared globals); CSS is a sibling file that mount() attaches inside its host.
  */
-export default defineConfig(({ mode }) => {
-  const release =
-    process.env.CLINICAL_RELEASE ??
-    (mode === 'demo' ? `${version}-demo` : version);
+export default defineConfig(() => {
+  const release = process.env.CLINICAL_RELEASE ?? version;
   if (!/^(?!\.+$)[A-Za-z0-9._-]+$/.test(release))
     throw new Error(`Invalid Clinical release: ${release}`);
   const outRoot = process.env.CLINICAL_ENTRY_OUT ?? 'dist';
@@ -28,7 +26,7 @@ export default defineConfig(({ mode }) => {
       copyPublicDir: false,
       lib: {
         entry: 'src/clinical/entry.tsx',
-        formats: ['es'],
+        formats: ['es' as const],
         fileName: () => 'entry.js',
         cssFileName: 'entry',
       },

@@ -5,6 +5,8 @@ export interface ClinicalEntryRequest {
   readonly kind: ClinicalEntryRequestKind;
   readonly text: string;
   readonly consultationId?: string;
+  /** Appointment now EN_ATENCION: links the entry to its encounter (Billing admission). */
+  readonly appointmentId?: string;
 }
 
 export function validateClinicalEntryRequest(

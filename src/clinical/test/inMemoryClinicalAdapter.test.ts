@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoClinicalAdapter } from './demoClinicalAdapter';
+import { createInMemoryClinicalAdapter } from './inMemoryClinicalAdapter';
 
 describe('demoClinicalAdapter', () => {
   it('keeps patient histories isolated and appends a consultation', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const recordA = await adapter.findRecordId('patient-a');
     const recordB = await adapter.findRecordId('patient-b');
 
@@ -25,7 +25,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('appends an evolution without overwriting existing entries', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-b');
     const before = (await adapter.readEntries(record)).data;
     await adapter.appendEntry(
@@ -43,8 +43,8 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('keeps separate adapter instances isolated', async () => {
-    const first = createDemoClinicalAdapter();
-    const second = createDemoClinicalAdapter();
+    const first = createInMemoryClinicalAdapter();
+    const second = createInMemoryClinicalAdapter();
     const record = await first.findRecordId('patient-a');
     await first.appendEntry(
       record,
@@ -58,7 +58,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('rejects reads and writes for the unassigned patient record', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
 
     await expect(adapter.findRecordId('patient-c')).rejects.toMatchObject({
       code: 'FORBIDDEN',
@@ -76,7 +76,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('serves only the minimized care projection for assigned patients', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
 
     const patient = await adapter.readPatient('patient-a');
 
@@ -89,7 +89,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('links a diagnosis only to a consultation of the same record', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const recordA = await adapter.findRecordId('patient-a');
     const recordB = await adapter.findRecordId('patient-b');
     const [consultation] = (await adapter.readEntries(recordA)).data;
@@ -122,7 +122,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('lists treatments per patient without prices and denies patient C', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
 
     const [treatment] = await adapter.listTreatments('patient-a');
 
@@ -138,7 +138,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('plans treatments per patient and denies the unassigned patient', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const before = await adapter.listTreatments('patient-a');
 
     const planned = await adapter.planTreatment(
@@ -168,7 +168,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('starts a planned treatment once and rejects stale versions', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const [planned] = await adapter.listTreatments('patient-a');
 
     await expect(
@@ -196,7 +196,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('amends an entry by appending a linked correction', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-a');
     const [original] = (await adapter.readEntries(record)).data;
 
@@ -232,7 +232,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('rejects writes to the closed encounter of patient D', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-d');
     const [entry] = (await adapter.readEntries(record)).data;
 
@@ -256,7 +256,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('completes an in-progress procedure and stores extras without money', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const [planned] = await adapter.listTreatments('patient-a');
     const procedureId = planned.procedures[0].id;
 
@@ -276,7 +276,7 @@ describe('demoClinicalAdapter', () => {
       planned.version,
       'k-intent-5',
     );
-    const closure = await adapter.completeProcedure(
+    const completion = await adapter.completeProcedure(
       procedureId,
       {
         expectedVersion: started.version,
@@ -294,17 +294,19 @@ describe('demoClinicalAdapter', () => {
       'k-intent-4',
     );
 
-    expect(closure).toMatchObject({
+    // ADR-014: progress only, never a closure.
+    expect(completion).toEqual({
       procedureId,
+      treatmentId: planned.id,
       appointmentId: 'appointment-a',
-      status: 'CLOSURE_PENDING',
-      appointmentOutcome: 'PENDING',
-      billingOutcome: 'PENDING',
+      completedAt: expect.any(String),
+      version: 2,
     });
+    expect(completion).not.toHaveProperty('status');
     const [after] = await adapter.listTreatments('patient-a');
     expect(after.procedures[0].status).toBe('COMPLETED');
     expect(after.version).toBe(started.version + 1);
-    expect(JSON.stringify(closure)).not.toMatch(/price|amount|cost/i);
+    expect(JSON.stringify(completion)).not.toMatch(/price|amount|cost/i);
     await expect(
       adapter.completeProcedure(
         procedureId,
@@ -319,7 +321,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('declares care completion once and then rejects late writes', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-a');
     const [consultation] = (await adapter.readEntries(record)).data;
     const version = await adapter.readRecordVersion(record);
@@ -350,6 +352,7 @@ describe('demoClinicalAdapter', () => {
       consultationId: consultation.id,
       patientId: 'patient-a',
       manualChargeIds: [],
+      careClosureId: expect.any(String),
     });
     await expect(
       adapter.appendEntry(record, { kind: 'EVOLUTION', text: 'Tarde' }, 'k-11'),
@@ -365,14 +368,14 @@ describe('demoClinicalAdapter', () => {
         'k-declare-3',
       ),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
-    const fresh = createDemoClinicalAdapter();
+    const fresh = createInMemoryClinicalAdapter();
     await expect(
       fresh.appendEntry(record, { kind: 'EVOLUTION', text: 'Abierta' }, 'k-12'),
     ).resolves.toBeUndefined();
   });
 
   it('increments the record version on every write', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-b');
     const before = await adapter.readRecordVersion(record);
 
@@ -386,7 +389,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   async function completeFirstProcedure(withNeed: boolean) {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const [planned] = await adapter.listTreatments('patient-a');
     const started = await adapter.startTreatment(
       planned.id,
@@ -400,7 +403,7 @@ describe('demoClinicalAdapter', () => {
       description: 'Anestesia',
       clinicalReason: 'Sensibilidad',
     };
-    const closure = await adapter.completeProcedure(
+    await adapter.completeProcedure(
       started.procedures[0].id,
       {
         expectedVersion: started.version,
@@ -409,12 +412,39 @@ describe('demoClinicalAdapter', () => {
       },
       'k-intent-1',
     );
-    return { adapter, closure };
+    // The closure exists only after the Dentist declares the encounter.
+    const record = await adapter.findRecordId('patient-a');
+    const [consultation] = (await adapter.readEntries(record)).data;
+    const declared = await adapter.declareCareCompleted(
+      record,
+      {
+        consultationId: consultation.id,
+        appointmentId: 'appointment-a',
+        expectedVersion: await adapter.readRecordVersion(record),
+      },
+      'k-declare-closure',
+    );
+    return { adapter, closure: { id: declared.careClosureId } };
   }
+
+  it('waits for administrative finalization before any downstream outcome', async () => {
+    const { adapter, closure } = await completeFirstProcedure(true);
+
+    expect(await adapter.readCareClosure(closure.id)).toMatchObject({
+      status: 'AWAITING_ADMINISTRATIVE_FINALIZATION',
+      appointmentOutcome: 'PENDING',
+      billingOutcome: 'PENDING',
+    });
+  });
 
   it('converges a closure without manual extras to completed', async () => {
     const { adapter, closure } = await completeFirstProcedure(false);
 
+    await adapter.readCareClosure(closure.id);
+    expect(await adapter.readCareClosure(closure.id)).toMatchObject({
+      status: 'CLOSURE_PENDING',
+      appointmentOutcome: 'COMPLETED',
+    });
     expect(await adapter.readCareClosure(closure.id)).toMatchObject({
       status: 'CLOSURE_COMPLETED',
       appointmentOutcome: 'COMPLETED',
@@ -425,6 +455,8 @@ describe('demoClinicalAdapter', () => {
   it('fails a closure with unpriced needs until an authorized retry', async () => {
     const { adapter, closure } = await completeFirstProcedure(true);
 
+    await adapter.readCareClosure(closure.id);
+    await adapter.readCareClosure(closure.id);
     const failed = await adapter.readCareClosure(closure.id);
     expect(failed).toMatchObject({
       status: 'CLOSURE_FAILED',
@@ -459,7 +491,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('serves clinic and professional dashboard snapshots with COP revenue', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
 
     const clinic = await adapter.readDashboard({ scope: 'CLINIC' });
     const own = await adapter.readDashboard({
@@ -469,16 +501,20 @@ describe('demoClinicalAdapter', () => {
 
     expect(clinic.monthlyRevenue?.amount).toMatch(/^\d{1,12}\.\d{2}$/);
     expect(clinic.weeklyActivity).toHaveLength(7);
+    // Calendar dates of the current week, Monday to Sunday (contract).
+    expect(clinic.weeklyActivity[0].day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(
+      new Date(`${clinic.weeklyActivity[0].day}T12:00:00Z`).getUTCDay(),
+    ).toBe(1);
     expect(own.todayAppointments.count).toBeLessThan(
       clinic.todayAppointments.count,
     );
-    expect(own.upcomingAppointments.length).toBeLessThan(
-      clinic.upcomingAppointments.length,
-    );
+    expect(clinic).not.toHaveProperty('upcomingAppointments');
+    expect(clinic).not.toHaveProperty('pendingPatients');
   });
 
   it('applies a repeated write intent only once', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-a');
     const before = (await adapter.readEntries(record)).data.length;
     const note = { kind: 'EVOLUTION', text: 'Reintento' } as const;
@@ -499,7 +535,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('does not report an unknown record as an empty history', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
 
     await expect(adapter.readEntries('record-unknown')).rejects.toMatchObject({
       code: 'NOT_FOUND',
@@ -508,7 +544,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('resolves synthetic author names without exposing unknown identifiers differently', () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
 
     expect(adapter.authorName('a0700000-0000-4000-8000-0000000000d2')).toBe(
       'Dr. Mateo López',
@@ -517,7 +553,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('replays a repeated care-completion intent without a second effect', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const record = await adapter.findRecordId('patient-a');
     const [consultation] = (await adapter.readEntries(record)).data;
     const request = {
@@ -536,7 +572,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('replays repeated plan, start and completion intents without a second effect', async () => {
-    const adapter = createDemoClinicalAdapter();
+    const adapter = createInMemoryClinicalAdapter();
     const [planned] = await adapter.listTreatments('patient-a');
 
     const started = await adapter.startTreatment(
@@ -579,7 +615,7 @@ describe('demoClinicalAdapter', () => {
   });
 
   it('lists the synthetic patients in clinical care', async () => {
-    const patients = await createDemoClinicalAdapter().listCarePatients();
+    const patients = await createInMemoryClinicalAdapter().listCarePatients();
 
     expect(patients.map((patient) => patient.name)).toContain(
       'Ana García Rodríguez',
@@ -591,7 +627,7 @@ describe('demoClinicalAdapter', () => {
 
   describe('extended synthetic dataset', () => {
     it('lists nine patients in care, including an inactive one', async () => {
-      const patients = await createDemoClinicalAdapter().listCarePatients();
+      const patients = await createInMemoryClinicalAdapter().listCarePatients();
 
       expect(patients).toHaveLength(9);
       expect(patients.map((patient) => patient.name)).toContain(
@@ -603,7 +639,7 @@ describe('demoClinicalAdapter', () => {
     });
 
     it('seeds varied clinical records and treatment states', async () => {
-      const adapter = createDemoClinicalAdapter();
+      const adapter = createInMemoryClinicalAdapter();
       const kinds = async (patientId: string) =>
         (
           await adapter.readEntries(await adapter.findRecordId(patientId))
